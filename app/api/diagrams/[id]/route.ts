@@ -1,3 +1,4 @@
+import { isGtnhInstalled } from "@/lib/game-packs";
 import { catalog, db } from "@/lib/db";
 import {
   diagramSchema,
@@ -7,12 +8,22 @@ import {
 import { locked, readDiagram, writeDiagram } from "@/lib/storage";
 type Context = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: Context) {
+  if (!isGtnhInstalled())
+    return Response.json(
+      { error: "Install the GTNH game pack first." },
+      { status: 409 },
+    );
   const { id } = await context.params;
   if (!(await db.diagram.findUnique({ where: { id } })))
     return Response.json({ error: "Diagram not found" }, { status: 404 });
   return Response.json(await readDiagram(id));
 }
 export async function PUT(request: Request, context: Context) {
+  if (!isGtnhInstalled())
+    return Response.json(
+      { error: "Install the GTNH game pack first." },
+      { status: 409 },
+    );
   const { id } = await context.params;
   const parsed = diagramSchema.safeParse(
     await request.json().catch(() => null),

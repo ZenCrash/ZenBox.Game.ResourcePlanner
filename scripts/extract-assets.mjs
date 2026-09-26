@@ -7,7 +7,7 @@ if (!instance || !client)
   throw new Error(
     'Usage: node scripts/extract-assets.mjs "path/to/instance" "path/to/minecraft-client.jar"',
   );
-const out = path.resolve("public/assets/gtnh-2.8.4");
+const out = path.resolve("data/game-assets/gtnh-2.8.4");
 fs.mkdirSync(out, { recursive: true });
 fs.copyFileSync(
   path.join(
@@ -19,7 +19,7 @@ fs.copyFileSync(
 const zip = new AdmZip(client);
 const logo = zip.readFile("assets/minecraft/textures/gui/title/minecraft.png");
 if (!logo) throw new Error("Minecraft logo not found in client");
-fs.writeFileSync("public/assets/minecraft-logo.png", logo);
+fs.writeFileSync("data/game-assets/minecraft-logo.png", logo);
 console.log(
   "Copied original logos into project assets. Source files were opened read-only.",
 );

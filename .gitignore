@@ -44,3 +44,7 @@ next-env.d.ts
 /data/catalogs/*-wal
 /data/catalogs/*-shm
 /dist/
+
+# Game-pack content is installed locally and distributed separately as ZIP files
+/public/assets/
+/data/catalogs/

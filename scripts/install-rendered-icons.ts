@@ -51,7 +51,7 @@ async function main() {
       "utf8",
     ),
   );
-  const destination = path.resolve("public/assets/gtnh-2.8.4/items");
+  const destination = path.resolve("data/game-assets/gtnh-2.8.4/items");
   await mkdir(destination, { recursive: true });
   let installed = 0;
   for (let offset = 0; offset < icons.length; offset += 250) {

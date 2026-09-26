@@ -69,10 +69,10 @@ try {
         throw new Error(`Invalid block export: ${id}`);
       const row = item.get(id);
       if (!row?.image?.startsWith("/assets/gtnh-2.8.4/items/")) return;
-      const destination = path.resolve("public", row.image.slice(1));
+      const destination = path.resolve("data/game-assets", row.image.replace(/^\/assets\//, ""));
       if (
         path.dirname(destination) !==
-        path.resolve("public/assets/gtnh-2.8.4/items")
+        path.resolve("data/game-assets/gtnh-2.8.4/items")
       )
         throw new Error("Invalid image destination");
       if (installed.has(destination)) return;

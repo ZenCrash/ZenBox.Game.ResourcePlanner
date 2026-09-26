@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     "/*": ["./node_modules/better-sqlite3/build/Release/*.node"],
   },
   outputFileTracingExcludes: {
-    "/*": ["./data/extraction/**/*", "./data/research/**/*"],
+    "/*": ["./data/**/*"],
   },
 };
 

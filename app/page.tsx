@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { ArrowUpRight, GitBranch, Layers3 } from "lucide-react";
+import { ArrowUpRight, GitBranch, Blocks } from "lucide-react";
 export default function Home() {
   return (
     <main className="landing">
       <header className="brand">
-        <GitBranch size={23} />
-        <span>
-          RESOURCE<span className="muted"> / </span>PLANNER
-        </span>
-        <span className="badge">WORKSPACE</span>
+        <GitBranch size={23} /> RESOURCE<span className="muted"> / </span>
+        PLANNER
       </header>
       <section className="home-content">
         <div className="eyebrow">A LITTLE PLANNING. A LOT MORE PRODUCTION.</div>
@@ -22,49 +19,16 @@ export default function Home() {
           machine count.
         </p>
         <div className="section-label">
-          <span>01 / CHOOSE YOUR GAME</span>
-          <span>1 GAME AVAILABLE</span>
+          <span>CHOOSE YOUR GAME</span>
         </div>
-        <div className="game-heading">
-          <Layers3 size={18} /> Minecraft{" "}
-          <span className="muted">/ Choose an edition</span>
-        </div>
-        <div className="game-grid">
-          <button className="game-card vanilla" aria-disabled="true">
-            <div className="logo-stage">
-              <div className="minecraft-wordmark" role="img" aria-label="Minecraft"><span/><span/></div>
-            </div>
-            <div className="card-footer">
-              <div>
-                <h2>Vanilla Minecraft</h2>
-                <p>The original sandbox.</p>
-              </div>
-              <span className="badge">COMING SOON</span>
-            </div>
-          </button>
-          <Link href="/games/gtnh" className="game-card gtnh">
-            <div className="logo-stage">
-              <img
-                src="/assets/gtnh-2.8.4/logo.png"
-                alt="GregTech New Horizons"
-              />
-            </div>
-            <div className="card-footer">
-              <div>
-                <h2>GT: New Horizons</h2>
-                <p>One machine at a time. An entire world of possibilities.</p>
-              </div>
-              <ArrowUpRight size={22} />
-            </div>
-            <span className="version-tag">
-              <i /> 2.8.4
-            </span>
-          </Link>
-        </div>
-        <footer className="home-footer">
-          <span>YOUR NEXT FACTORY STARTS HERE.</span>
-          <span>Diagrams. Recipes. Everything connected.</span>
-        </footer>
+        <Link className="edition-row game-choice" href="/games/minecraft">
+          <Blocks size={42} />
+          <div>
+            <h2>Minecraft</h2>
+            <p>Choose Vanilla Minecraft or a modpack.</p>
+          </div>
+          <ArrowUpRight />
+        </Link>
       </section>
     </main>
   );

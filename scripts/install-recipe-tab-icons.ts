@@ -61,7 +61,7 @@ async function main() {
     const id = row[2].replace(/:0$/, "");
     const item = await catalog.item.findUnique({ where: { id } });
     if (!item?.image) continue;
-    await access("public" + item.image);
+    await access("data/game-assets" + item.image.replace(/^\/assets/, ""));
     icons[handler.name] = {
       image: item.image,
       itemId: item.id,
@@ -91,7 +91,7 @@ async function main() {
     );
     const item = lv ?? (!icons[handler.name] ? candidates[0] : undefined);
     if (!item?.image) continue;
-    await access("public" + item.image);
+    await access("data/game-assets" + item.image.replace(/^\/assets/, ""));
     icons[handler.name] = {
       image: item.image,
       itemId: item.id,
@@ -119,7 +119,7 @@ async function main() {
   for (const { name, itemId, handlerId } of machineIcons) {
     const item = await catalog.item.findUnique({ where: { id: itemId } });
     if (!item?.image) throw new Error(`Missing machine tab icon: ${name}`);
-    await access("public" + item.image);
+    await access("data/game-assets" + item.image.replace(/^\/assets/, ""));
     icons[name] = { image: item.image, itemId, handlerId };
   }
   await catalog.$transaction(

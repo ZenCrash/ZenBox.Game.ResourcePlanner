@@ -23,7 +23,7 @@ async function main() {
     );
     for (const item of recipe.craftingMachines ?? []) {
       assert.ok(item.image, item.name);
-      await access("public" + item.image);
+      await access("data/game-assets" + item.image.replace(/^\/assets/, ""));
     }
     console.log(
       `${recipe.handler}: ${recipe.craftingMachines?.map((item) => item.name).join(", ")}`,

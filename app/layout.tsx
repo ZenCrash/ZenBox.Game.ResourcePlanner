@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Resource Planner — GT: New Horizons",
+  title: "Resource Planner",
   description:
     "Plan production diagrams, connect recipes, and calculate machine ratios.",
 };

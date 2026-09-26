@@ -24,13 +24,9 @@ NEI group membership and colors are stored in SQLite (`ItemGroup` and `Item.coll
 
 `IngredientVariant` indexes 510,385 captured alternative memberships for usage navigation. The recipe API hydrates those items for one-second cycling; Shift pauses the browser, and selected input identities are persisted per node as `variants` in diagram JSON. A connection selects its actual output identity in a compatible receiving input. Exact inputs and conflicting simultaneous variant supplies are rejected. Missing GregTech backend alternatives still require an export update; arbitrary shared ore tags are not treated as permission to substitute.
 
-All data preparation happens during development. The distributable contains `data/catalogs/gtnh-2.8.4.sqlite` and every referenced file beneath `public/assets/`, plus the application and runtime. No game installation, file picker, import step, or internet access is required on the receiving PC. Each future supported game/version gets its own catalog and asset directory.
+All data preparation happens during development. Run `npm run pack:gtnh` to export the installed SQLite catalog, images and metadata as `dist/gtnh-2.8.4.gamepack.zip`. Game data is gitignored and kept separate from the application. Users install this ZIP from Minecraft → GT: New Horizons; installed packs offer Download ZIP. Personal projects are never included.
 
-`npm run catalog:check` verifies catalog readiness and local asset presence. `npm run package:offline` additionally builds a Windows x64 standalone folder with a fresh personal database and bundled Node runtime. Complete-release packaging refuses this unfinished catalog. The explicit `--preview` option allows a clearly labeled offline development preview and includes its coverage report. A catalog must not be relabeled `verified-nei-parity` just to bypass the release check.
-
-The candidate [NotEnoughRecipeDumps v1.0-beta](https://github.com/Hermanoid/NotEnoughRecipeDumps) uses `gregtech.api.util.GT_Recipe`, `gregtech.nei.GT_NEI_DefaultHandler`, and `gregtech.common.fluid.GT_Fluid`. The installed `gregtech-5.09.51.482.jar` uses renamed classes including `GTRecipe` and `GTNEIDefaultHandler`. The exporter also loses positioned slots, cycles only the first alternative, and does not preserve the full rendered presentation. Its output must not be presented as 1:1 GTNH 2.8.4 data.
-
-[NESQL Exporter](https://github.com/D-Cysteine/nesql-exporter) is another reference, but its documented recipe support covers crafting, furnace, and GT5 maps, not every NEI handler. [RecEx](https://github.com/GTNewHorizons/RecEx) likewise explicitly lists unsupported recipe sources.
+`npm run catalog:check` checks catalog readiness and assets. The present catalog is partial and must not be relabeled `verified-nei-parity`. `npm run package:offline` builds the application and Windows runtime without game data.
 
 ## Required next extraction work
 

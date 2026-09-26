@@ -136,7 +136,12 @@ async function main() {
             return;
           }
           try {
-            await access(path.join("public", item.image));
+            await access(
+              path.join(
+                "data/game-assets",
+                item.image.replace(/^\/assets\//, ""),
+              ),
+            );
           } catch {
             missing.push(item.id);
           }

@@ -11,7 +11,7 @@ export async function checkBundledCatalog({ allowPartial = false } = {}) {
     (!allowPartial && info.completeness !== "verified-nei-parity")
   ) {
     throw new Error(
-      "GTNH 2.8.4 is not ready to ship: a complete, verified catalog must be bundled during development. Planner users must not have to supply game files or import a catalog.",
+      "GTNH 2.8.4 is not ready to ship: a complete, verified catalog must be bundled during development. A preview pack may be exported separately with its partial coverage noted.",
     );
   }
   const [itemCount, recipeCount, missingImages, items, recipes] =
@@ -40,21 +40,21 @@ export async function checkBundledCatalog({ allowPartial = false } = {}) {
     throw new Error(
       `Incomplete bundled data: ${itemCount} visible items, ${recipeCount} enabled recipes, ${missingImages} required icons missing.`,
     );
-  const assets = new Set<string>([
-    "/assets/minecraft-logo.png",
-    "/assets/gtnh-2.8.4/logo.png",
-  ]);
+  const assets = new Set<string>(["/assets/gtnh-2.8.4/logo.png"]);
   for (const item of items) if (item.image) assets.add(item.image);
   for (const recipe of recipes) {
     const layout = JSON.parse(recipe.layout);
     if (layout.background) assets.add(layout.background);
   }
-  const root = path.resolve("public/assets");
+  const root = path.resolve("data/game-assets");
   const files: { path: string; bytes: number; sha256: string }[] = [];
   for (const asset of [...assets].sort()) {
     if (!asset.startsWith("/assets/"))
       throw new Error(`Non-local asset: ${asset}`);
-    const file = path.resolve("public", `.${asset}`);
+    const file = path.resolve(
+      "data/game-assets",
+      asset.replace(/^\/assets\//, ""),
+    );
     if (!file.startsWith(root + path.sep))
       throw new Error(`Asset escapes bundle: ${asset}`);
     await access(file);
@@ -62,7 +62,7 @@ export async function checkBundledCatalog({ allowPartial = false } = {}) {
     if (!(await stat(file)).isFile() || !bytes.length)
       throw new Error(`Empty or invalid asset: ${asset}`);
     files.push({
-      path: `public${asset}`,
+      path: `data/game-assets${asset.replace(/^\/assets/, "")}`,
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
     });

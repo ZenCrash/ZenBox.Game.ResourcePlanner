@@ -33,7 +33,7 @@ const { maps: recipeSlots } = JSON.parse(
 const visible = new Map(
   (await read("visible-items.json")).map((id, i) => [id, i]),
 );
-const assetDir = path.resolve("public/assets/gtnh-2.8.4/items");
+const assetDir = path.resolve("data/game-assets/gtnh-2.8.4/items");
 await mkdir(assetDir, { recursive: true });
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const items = new Map();

@@ -1,3 +1,4 @@
+import { isGtnhInstalled } from "@/lib/game-packs";
 import { catalog } from "@/lib/db";
 import { catalogTiles } from "@/lib/catalog-layout";
 import { AsyncCache } from "@/lib/async-cache";
@@ -20,6 +21,11 @@ async function readMetadata() {
   return { groups: groups.map((g) => g.group), itemGroups, info };
 }
 export async function GET(request: Request) {
+  if (!isGtnhInstalled())
+    return Response.json(
+      { error: "Install the GTNH game pack first." },
+      { status: 409 },
+    );
   const url = new URL(request.url),
     query = (url.searchParams.get("q") ?? "").slice(0, 200),
     group = url.searchParams.get("group");

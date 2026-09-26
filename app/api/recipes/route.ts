@@ -1,6 +1,12 @@
+import { isGtnhInstalled } from "@/lib/game-packs";
 import { catalog } from "@/lib/db";
 import { hydrateRecipeVariants } from "@/lib/recipe-data";
 export async function GET(request: Request) {
+  if (!isGtnhInstalled())
+    return Response.json(
+      { error: "Install the GTNH game pack first." },
+      { status: 409 },
+    );
   const url = new URL(request.url),
     item = url.searchParams.get("item"),
     ids = url.searchParams.get("ids");

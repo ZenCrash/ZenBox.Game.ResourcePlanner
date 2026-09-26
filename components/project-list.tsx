@@ -41,8 +41,8 @@ export function ProjectList() {
         PLANNER
       </header>
       <section className="home-content projects-page">
-        <Link className="back" href="/">
-          <ArrowLeft size={16} /> All games
+        <Link className="back" href="/games/minecraft">
+          <ArrowLeft size={16} /> Minecraft editions
         </Link>
         <div className="project-title">
           <div>

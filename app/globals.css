@@ -1929,3 +1929,58 @@ h3 {
 .minecraft-wordmark span + span {
   background-position: 0 -45px;
 }
+
+.edition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+}
+.edition-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.edition-description,
+.game-choice > div {
+  flex: 1;
+}
+.edition-row h2 {
+  font-size: 20px;
+}
+.edition-row p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+.edition-row .badge {
+  margin-left: 10px;
+  font-size: 10px;
+}
+.edition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.edition-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.game-choice:hover {
+  border-color: var(--accent);
+}
+@media (max-width: 700px) {
+  .edition-row {
+    flex-wrap: wrap;
+  }
+  .edition-description {
+    min-width: 60%;
+  }
+}

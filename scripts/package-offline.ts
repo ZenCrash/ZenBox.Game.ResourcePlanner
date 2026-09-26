@@ -3,13 +3,10 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { PrismaClient } from "../generated/app/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { catalog } from "../lib/db";
-import { checkBundledCatalog } from "./check-bundled-catalog";
 
 async function main() {
-  // Fail before building or creating a distributable when the real data is absent.
+  // Game packs are installed separately from the application.
   const preview = process.argv.includes("--preview");
-  const manifest = await checkBundledCatalog({ allowPartial: preview });
   if (process.platform !== "win32" || process.arch !== "x64")
     throw new Error(
       "This packaging target is Windows x64. Build on that platform so the bundled native SQLite module and Node runtime match.",
@@ -37,18 +34,7 @@ async function main() {
   await cp("public", path.join(destination, "public"), { recursive: true });
   await mkdir(path.join(destination, "data/catalogs"), { recursive: true });
   await mkdir(path.join(destination, "data/diagrams"), { recursive: true });
-  await cp(
-    "data/catalogs/gtnh-2.8.4.sqlite",
-    path.join(destination, "data/catalogs/gtnh-2.8.4.sqlite"),
-  );
-  await cp(
-    "data/catalogs/gtnh-2.8.4.coverage.json",
-    path.join(destination, "catalog-coverage.json"),
-  );
-  await cp(
-    "data/catalogs/gtnh-2.8.4.fluids.json",
-    path.join(destination, "data/catalogs/gtnh-2.8.4.fluids.json"),
-  );
+  await mkdir(path.join(destination, "data/game-assets"), { recursive: true });
   await mkdir(path.join(destination, "runtime"));
   await cp(process.execPath, path.join(destination, "runtime/node.exe"));
   // Node's license is stored alongside node.exe in official zip distributions; require it for release.
@@ -124,22 +110,14 @@ async function main() {
     '@echo off\r\ncd /d "%~dp0"\r\nset HOSTNAME=127.0.0.1\r\nif not defined PORT set PORT=3000\r\nset NODE_ENV=production\r\nset NEXT_TELEMETRY_DISABLED=1\r\necho Open http://127.0.0.1:%PORT% in your browser.\r\necho Press Ctrl+C in this window to stop the planner.\r\n"%~dp0runtime\\node.exe" server.js\r\nif errorlevel 1 pause\r\n',
   );
   await writeFile(
-    path.join(destination, "catalog-manifest.json"),
-    JSON.stringify(manifest, null, 2),
-  );
-  await writeFile(
     path.join(destination, "README.txt"),
     "RESOURCE PLANNER — OFFLINE WINDOWS X64 EDITION\r\n\r\nKeep this entire folder together. Double-click start.cmd and open http://127.0.0.1:3000.\r\nNo internet, Minecraft, Java, npm or separate Node installation is needed.\r\n" +
-      (preview
-        ? "DEVELOPMENT PREVIEW: the bundled GTNH 2.8.4 catalog is partial. Some recipes, images, grouping and exact NEI interactions remain incomplete. See catalog-coverage.json.\r\n"
-        : "GTNH 2.8.4 items, recipes and images are already bundled.\r\n") +
+      "Choose Minecraft, then install a GTNH game-pack ZIP to get recipes and images. Game data is distributed separately.\r\n" +
       "Close the server with Ctrl+C when finished.\r\nBack up data/app.sqlite and data/diagrams for your projects.\r\n",
   );
   console.log(`Offline package created: ${destination}`);
 }
-main()
-  .catch((error) => {
-    console.error(error.message);
-    process.exitCode = 1;
-  })
-  .finally(() => catalog.$disconnect());
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

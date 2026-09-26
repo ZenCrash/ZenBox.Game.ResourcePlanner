@@ -2,15 +2,15 @@
 
 A local Next.js 16 / React 19 production-diagram workspace for Minecraft modpacks. GT: New Horizons 2.8.4 is the first supported project version.
 
-**Status:** the project/diagram application and Prisma persistence are implemented. A real GTNH 2.8.4 runtime catalog is bundled: 116,898 item/fluid records and 237,773 recipes. **The catalog is partial and exact NEI parity is not complete.** Custom handler coverage, grouping, layouts and animation remain unfinished. See [catalog extraction status](docs/catalog-export.md) and `data/catalogs/gtnh-2.8.4.coverage.json` for measured coverage.
+**Status:** the project/diagram application and Prisma persistence are implemented. A real GTNH 2.8.4 runtime catalog is distributed as a separate game-pack ZIP: 116,898 item/fluid records and 237,773 recipes. **The catalog is partial and exact NEI parity is not complete.** Custom handler coverage, grouping, layouts and animation remain unfinished. See [catalog extraction status](docs/catalog-export.md) and `data/catalogs/gtnh-2.8.4.coverage.json` for measured coverage.
 
 ## Offline distribution
 
-The finished distribution includes the GTNH 2.8.4 SQLite catalog, all referenced images, a fresh project database, and a Windows x64 Node runtime. Users do not select game files, import data, install Minecraft, or connect to the internet. Images are local files referenced by SQLite, and must travel with the application folder.
+The application and game data are distributed separately. Run `npm run package:offline` to build the Windows application with a fresh personal database and Node runtime. Copy the entire output folder and run `start.cmd`.
 
-Developers prepare the catalog once, then run `npm run catalog:check` and `npm run package:offline`. Complete-release packaging refuses incomplete catalogs or missing assets. The resulting folder under `dist/` has a `start.cmd`; copy the entire folder to the destination PC and run that file.
+Open Minecraft, choose GT: New Horizons, and install its game-pack ZIP. A fresh installation shows **Not installed** until the ZIP has been imported. Vanilla Minecraft is **Coming soon**. Installed GTNH packs can be downloaded again from this page; personal projects and diagrams are excluded.
 
-For an explicitly labeled development preview, `npm run package:offline -- --preview` bundles the available real data and includes the coverage report. A preview still runs without internet or installed games, but does not claim a complete catalog or exact in-game behavior.
+To prepare the portable data file from an installed catalog, run `npm run pack:gtnh`. This creates `dist/gtnh-2.8.4.gamepack.zip`, containing the SQLite catalog, item/fluid/block images, and coverage metadata. The current catalog remains partial. Minecraft itself and an internet connection are not needed to import or use the pack.
 
 ## Run from source
 
@@ -24,7 +24,7 @@ npm run dev
 
 Open [Resource Planner](http://localhost:3000). On this Windows machine, if `npm.ps1` resolves to a broken global npm installation, use `& 'C:/Program Files/nodejs/npm.cmd' run dev` (and similarly for other npm commands).
 
-Native installation scripts for Prisma, esbuild and better-sqlite3 are pinned in `package.json`'s `allowScripts`. `db:setup` generates two separate Prisma clients and synchronizes the two SQLite schemas. It does not reset existing databases. Schema changes that require data loss fail rather than automatically accepting data loss. For production schema evolution, introduce reviewed migrations before changing existing user data.
+Native installation scripts for Prisma, esbuild and better-sqlite3 are pinned in `package.json`'s `allowScripts`. `db:setup` generates two separate Prisma clients and synchronizes the personal-project SQLite schema. It does not reset existing databases. Schema changes that require data loss fail rather than automatically accepting data loss. For production schema evolution, introduce reviewed migrations before changing existing user data.
 
 ## Storage
 
@@ -33,10 +33,10 @@ Native installation scripts for Prisma, esbuild and better-sqlite3 are pinned in
 | Projects, diagram metadata, settings                | `data/app.sqlite`                 | Prisma app client                       |
 | Versioned items, fluids, recipes, slots, provenance | `data/catalogs/gtnh-2.8.4.sqlite` | Prisma catalog client                   |
 | Individual diagrams                                 | `data/diagrams/<uuid>.json`       | Validated JSON, atomic file replacement |
-| Logos and catalog assets                            | `public/assets/`                  | SQLite references local asset paths     |
+| Logos and catalog assets                            | `data/game-assets/`                  | SQLite references local asset paths     |
 | Isolated game extraction copy                       | `data/extraction/instance/`       | Separate from the original instance     |
 
-The versioned catalog and local assets are distributable project content. Personal project databases, diagrams, extraction files and generated Prisma clients are gitignored. Back up `data/app.sqlite` and `data/diagrams` for your personal work; keep the matching catalog and assets with the application. Diagram JSON records reference catalog recipe IDs. Deleting a diagram removes it from the project; its JSON file is retained as a recovery copy.
+The versioned catalog and local assets are gitignored and distributed in game-pack ZIPs. Personal project databases, diagrams, extraction files and generated Prisma clients are gitignored. Back up `data/app.sqlite` and `data/diagrams` for your personal work; keep a copy of the matching game-pack ZIP. Diagram JSON records reference catalog recipe IDs. Deleting a diagram removes it from the project; its JSON file is retained as a recovery copy.
 
 The following is a developer-only data preparation step, never an end-user requirement. The original instance must stay read-only. The asset extraction script only reads it:
 
