@@ -887,7 +887,7 @@ function Editor({ project }: { project: Project }) {
               rate(input, target.data.recipe, target.data.machines),
             )
           : connectionColors.unrated,
-        strokeWidth: 2,
+        strokeWidth: 4,
       },
       label: (
         <>

@@ -275,7 +275,7 @@ export async function exportDiagram(
           rate(input, br, b.machines),
         )
       : connectionColors.unrated;
-    body += `<path d="${route.path}" fill="none" stroke="${color}" stroke-width="2"/>`;
+    body += `<path d="${route.path}" fill="none" stroke="${color}" stroke-width="4"/>`;
     const summary = connectionSummary(
       output,
       ar,

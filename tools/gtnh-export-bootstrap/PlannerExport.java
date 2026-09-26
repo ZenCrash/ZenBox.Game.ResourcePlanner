@@ -19,6 +19,7 @@ public class PlannerExport {
     private boolean disabled;
     private boolean fluidsOnly;
     private boolean repairsOnly;
+    private boolean blocksOnly;
     private File output;
     private final Map<String,Object> stacks = new LinkedHashMap<String,Object>();
     private final List<String> errors = new ArrayList<String>();
@@ -53,9 +54,10 @@ public class PlannerExport {
             }
             if (world == null || player == null) return;
             if (phase == 1) {
-                File repairFile=new File(game,"planner-export.image-repairs.json");
+                blocksOnly=new File(game,"planner-export.block-images.json").isFile();
+                File repairFile=new File(game,blocksOnly?"planner-export.block-images.json":"planner-export.image-repairs.json");
                 if(repairFile.isFile()) {
-                    repairsOnly=true;status("loading specific missing image variants");
+                    repairsOnly=!blocksOnly;status(blocksOnly?"loading block image variants":"loading specific missing image variants");
                     Object gson=Class.forName("com.google.gson.Gson").newInstance();
                     List<?> requests=(List<?>)call(gson,"fromJson",new String(Files.readAllBytes(repairFile.toPath()),StandardCharsets.UTF_8),List.class);
                     for(Object request:requests) {
@@ -63,6 +65,7 @@ public class PlannerExport {
                         try {
                             Object registry=field(Class.forName("net.minecraft.item.Item"),"field_150901_e|itemRegistry");
                             Object item=call(registry,"func_82594_a|getObject",row.get("registryId"));
+                            if(blocksOnly && !Class.forName("net.minecraft.item.ItemBlock").isInstance(item))continue;
                             int metadata=((Number)row.get("metadata")).intValue();
                             // Wildcards have no unique appearance; render the specified representative.
                             if(metadata==32767)metadata=((Number)row.get("representativeMetadata")).intValue();
@@ -146,30 +149,31 @@ public class PlannerExport {
                 ticks=0;return;
             }
             if (phase == 4) {
-                status("rendering original item icons");phase=5;
+                status(blocksOnly?"rendering 256px block icons":"rendering original item icons");phase=5;
+                int iconSize=blocksOnly?256:32;
                 Class<?> dumper=Class.forName("com.iouter.gtnhdumper.common.dumper.ItemIconDumper");
-                Object fbo=Class.forName("com.iouter.gtnhdumper.common.utils.FBOHelper").getConstructor(int.class).newInstance(32);
+                Object fbo=Class.forName("com.iouter.gtnhdumper.common.utils.FBOHelper").getConstructor(int.class).newInstance(iconSize);
                 Object renderer=call(Class.forName("net.minecraft.client.renderer.entity.RenderItem"),"getInstance");
-                File icons=new File(game,"dumps/icons");icons.mkdirs();int done=0;
+                File icons=new File(game,blocksOnly?"dumps/block-icons":"dumps/icons");icons.mkdirs();int done=0;
                 List<Object> rendered=new ArrayList<Object>();
                 for(Map.Entry<String,Object> entry:stacks.entrySet()) {
                     try {
                         String filename=(String)call(dumper,"getIconFileName",entry.getValue());
                         java.awt.image.BufferedImage img=(java.awt.image.BufferedImage)call(dumper,"renderItem",entry.getValue(),fbo,renderer,1f,null);
                         javax.imageio.ImageIO.write(img,"png",new File(icons,filename));
-                        call(fbo,"restoreTexture");rendered.add(Arrays.asList(entry.getKey(),filename,32,1));
+                        call(fbo,"restoreTexture");rendered.add(Arrays.asList(entry.getKey(),filename,iconSize,1));
                     } catch(Throwable error){errors.add("Icon "+entry.getKey()+": "+error);}
-                    if(++done%1000==0) { status("rendered "+done+" / "+stacks.size()+" item icons");write(repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors); }
+                    if(++done%1000==0) { status("rendered "+done+" / "+stacks.size()+" item icons");write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors); }
                 }
-                write(repairsOnly?"repair-icons.json":fluidsOnly?"fluid-icons.json":"icons.json",rendered);ticks=0;return;
+                write(blocksOnly?"block-icons.json":repairsOnly?"repair-icons.json":fluidsOnly?"fluid-icons.json":"icons.json",rendered);ticks=0;return;
             }
             if (phase == 5) {
-                write(repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("finished; validation required");disabled=true;
+                write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("finished; validation required");disabled=true;
                 call(mc,"func_71400_g|shutdown");
             }
         } catch(Throwable error) {
             errors.add(error.toString());error.printStackTrace(); disabled=true;
-            try { write(repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("failed: "+error); } catch(Throwable ignored) {}
+            try { write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("failed: "+error); } catch(Throwable ignored) {}
         }
     }
 

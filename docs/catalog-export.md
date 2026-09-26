@@ -61,3 +61,15 @@ The importer validates version, duplicate identities, slot uniqueness and ingred
 - Ratios use base recipe duration and expected chance output. Voltage overclocking, multiblock parallelism, machine efficiency and total flow allocation across branches are not simulated. Edge ratios are pairwise, not a global factory solver.
 - SVG/PDF use a portable vector representation of recipe cards, not pixel-exact screenshots of every mod's custom GUI.
 - Databases are local, single-user storage. Multi-user authentication, server deployment and simultaneous cross-process writers are outside this implementation.
+
+## High-resolution block icons
+
+Block and machine icons can be re-rendered at 256×256 from the isolated GTNH 2.8.4 extraction client. Ordinary item and fluid images are left unchanged. The exporter checks the runtime ItemBlock type; it does not infer block identity from names.
+
+1. Run `node scripts/upgrade-block-icons.mjs --prepare`.
+2. Run `node scripts/build-export-bootstrap.mjs "<PrismLauncher root>"`.
+3. Run `node scripts/launch-extraction.mjs "<PrismLauncher root>"` and wait for `dumps/planner/status.txt` to report completion.
+4. Inspect `dumps/planner/block-errors.json` and representative images in `dumps/block-icons`.
+5. Run `node scripts/upgrade-block-icons.mjs --install`. This validates image dimensions/transparency, backs up the originals under `data/block-icon-backup`, and replaces only matching block icon files. The completed request is renamed so later normal exports are unaffected.
+
+No images are downloaded from another planner. Original mod texture resolutions remain unchanged; the higher resolution improves the rendered block geometry and machine details.
