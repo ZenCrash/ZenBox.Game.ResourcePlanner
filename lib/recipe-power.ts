@@ -1,0 +1,49 @@
+import type { Recipe } from "./model";
+
+const tiers = [
+  "ULV",
+  "LV",
+  "MV",
+  "HV",
+  "EV",
+  "IV",
+  "LuV",
+  "ZPM",
+  "UV",
+  "UHV",
+  "UEV",
+  "UIV",
+  "UMV",
+  "UXV",
+  "MAX",
+];
+
+export function recipePowerInfo(recipe: Pick<Recipe, "euPerTick" | "details">) {
+  let details: string[] = [];
+  try {
+    const parsed: unknown = JSON.parse(recipe.details);
+    if (Array.isArray(parsed))
+      details = parsed.filter(
+        (line): line is string => typeof line === "string",
+      );
+  } catch {}
+  const amperage = details.find((line) => /^Amperage:/i.test(line));
+  const recordedVoltage = details.find((line) => /^Voltage:/i.test(line));
+  const amps =
+    Number(
+      amperage?.match(/^Amperage:\s*([\d,]+)\s*A/i)?.[1].replaceAll(",", ""),
+    ) || 1;
+  const voltage = Math.trunc(recipe.euPerTick / amps);
+  const tier = tiers.find((_, index) => voltage <= 8 * 4 ** index);
+  return {
+    voltage:
+      recipe.euPerTick > 0
+        ? (recordedVoltage ??
+          `Voltage: ${voltage.toLocaleString("en-US")} EU/t${tier ? ` (${tier})` : ""}`)
+        : undefined,
+    amperage: recipe.euPerTick > 0 ? amperage : undefined,
+    details: details.filter(
+      (line) => !/^(Voltage|Usage|Amperage):/i.test(line),
+    ),
+  };
+}

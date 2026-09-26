@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client"
+  output = "../generated/app"
+}
+datasource db {
+  provider = "sqlite"
+}
+model Project {
+  id String @id @default(uuid())
+  name String
+  game String @default("gtnh")
+  version String @default("2.8.4")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  diagrams Diagram[]
+}
+model Diagram {
+  id String @id @default(uuid())
+  name String
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revision Int @default(0)
+  updatedAt DateTime @updatedAt
+}
+model Setting {
+  key String @id
+  value String
+}

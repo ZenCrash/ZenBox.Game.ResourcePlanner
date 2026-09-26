@@ -34,3 +34,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated code, local data, extraction work and release packages
+/generated/
+/data/*
+!/data/catalogs/
+/data/catalogs/*.sqlite
+/data/catalogs/*-journal
+/data/catalogs/*-wal
+/data/catalogs/*-shm
+/dist/

@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client"
+  output = "../generated/catalog"
+}
+datasource db {
+  provider = "sqlite"
+}
+model CatalogInfo {
+  id String @id
+  version String
+  source String
+  completeness String
+  importedAt DateTime @default(now())
+}
+model Item {
+  id String @id
+  registryId String
+  metadata Int @default(0)
+  nbt String @default("")
+  name String
+  mod String
+  group String
+  tooltip String @default("[]")
+  image String?
+  hidden Boolean @default(false)
+  sortOrder Int @default(0)
+  kind String @default("item")
+  collapsibleGroupId String?
+  collapsibleGroup ItemGroup? @relation(fields: [collapsibleGroupId], references: [id])
+  ingredients Ingredient[]
+  @@index([name])
+  @@index([group, hidden])
+  @@index([collapsibleGroupId, hidden])
+}
+model ItemGroup {
+  id String @id
+  name String
+  collapsedColor String
+  expandedColor String
+  items Item[]
+}
+model Recipe {
+  id String @id
+  name String
+  handler String
+  durationTicks Float
+  euPerTick Float @default(0)
+  enabled Boolean @default(true)
+  layout String @default("{}")
+  details String @default("[]")
+  ingredients Ingredient[]
+  @@index([handler, enabled])
+}
+model Ingredient {
+  id Int @id @default(autoincrement())
+  recipeId String
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  itemId String
+  item Item @relation(fields: [itemId], references: [id])
+  direction String
+  amount Float
+  chance Float @default(1)
+  consumed Boolean @default(true)
+  slot Int
+  x Float?
+  y Float?
+  alternatives String @default("[]")
+  acceptedVariants IngredientVariant[]
+  @@index([itemId, direction])
+  @@index([recipeId, slot])
+}
+model IngredientVariant {
+  ingredientId Int
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  itemId String
+  @@id([ingredientId, itemId])
+  @@index([itemId])
+}

@@ -1,0 +1,947 @@
+{
+  "source": "GT5-Unofficial 5.09.51.482 RecipeMapBuilder.maxIO (item inputs, item outputs, fluid inputs, fluid outputs)",
+  "maps": {
+    "bw.recipe.biolab": {
+      "itemInputs": 6,
+      "itemOutputs": 2,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "bw.recipe.BacteriaVat": {
+      "itemInputs": 6,
+      "itemOutputs": 2,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "bw.fuels.acidgens": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "bw.recipe.cal": {
+      "itemInputs": 6,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "bw.recipe.radhatch": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.electricimplosioncompressor": {
+      "itemInputs": 6,
+      "itemOutputs": 2,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "bw.recipe.htgr": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "kubatech.defusioncrafter": {
+      "itemInputs": 9,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "ggfab.recipe.toolcast": {
+      "itemInputs": 1,
+      "itemOutputs": 4,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gg.recipe.naquadah_reactor": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gg.recipe.naquadah_fuel_refine_factory": {
+      "itemInputs": 6,
+      "itemOutputs": 0,
+      "fluidInputs": 4,
+      "fluidOutputs": 1
+    },
+    "gg.recipe.neutron_activator": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gg.recipe.extreme_heat_exchanger": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 2,
+      "fluidOutputs": 3
+    },
+    "gg.recipe.precise_assembler": {
+      "itemInputs": 4,
+      "itemOutputs": 1,
+      "fluidInputs": 4,
+      "fluidOutputs": 0
+    },
+    "gg.recipe.componentassemblyline": {
+      "itemInputs": 12,
+      "itemOutputs": 1,
+      "fluidInputs": 12,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.cokeoven": {
+      "itemInputs": 2,
+      "itemOutputs": 9,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.matterfab2": {
+      "itemInputs": 2,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.rocketenginefuel": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.quantumforcesmelter": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gtpp.recipe.chemicaldehydrator": {
+      "itemInputs": 2,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.vacfurnace": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 3,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.alloyblastsmelter": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 3,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.lftr": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gtpp.recipe.nuclearsaltprocessingplant": {
+      "itemInputs": 1,
+      "itemOutputs": 6,
+      "fluidInputs": 2,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.oremill": {
+      "itemInputs": 3,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.fissionfuel": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 6,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.coldtrap": {
+      "itemInputs": 2,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.reactorprocessingunit": {
+      "itemInputs": 2,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.simplewasher": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.moleculartransformer": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.fluidchemicaleactor": {
+      "itemInputs": 4,
+      "itemOutputs": 6,
+      "fluidInputs": 4,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.RTGgenerators": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.thermalgeneratorfuel": {
+      "itemInputs": 0,
+      "itemOutputs": 9,
+      "fluidInputs": 2,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.solartower": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.cyclotron": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.fishpond": {
+      "itemInputs": 1,
+      "itemOutputs": 25,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.lftr.sparging": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 9,
+      "fluidOutputs": 9
+    },
+    "gtpp.recipe.cryogenicfreezer": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gtpp.recipe.multicentrifuge": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gtpp.recipe.multielectro": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gtpp.recipe.multimixer": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gtpp.recipe.multidehydrator": {
+      "itemInputs": 6,
+      "itemOutputs": 9,
+      "fluidInputs": 3,
+      "fluidOutputs": 3
+    },
+    "gtpp.recipe.semifluidgeneratorfuels": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.flotationcell": {
+      "itemInputs": 6,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.multiblockrockbreaker": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.spaceResearch": {
+      "itemInputs": 7,
+      "itemOutputs": 1,
+      "fluidInputs": 3,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.spaceAssembler": {
+      "itemInputs": 16,
+      "itemOutputs": 1,
+      "fluidInputs": 4,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.spaceMining": {
+      "itemInputs": 5,
+      "itemOutputs": 16,
+      "fluidInputs": 2,
+      "fluidOutputs": 0
+    },
+    "gtnhlanth.recipe.digester": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gtnhlanth.recipe.disstank": {
+      "itemInputs": 2,
+      "itemOutputs": 3,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gtnhlanth.recipe.sc": {
+      "itemInputs": 1,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gtnhlanth.recipe.tc": {
+      "itemInputs": 3,
+      "itemOutputs": 4,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.orewasher": {
+      "itemInputs": 1,
+      "itemOutputs": 3,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.thermalcentrifuge": {
+      "itemInputs": 1,
+      "itemOutputs": 3,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.compressor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.neutroniumcompressor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.extractor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "ic.recipe.recycler": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.furnace": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.microwave": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.scanner": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.rockbreaker": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.quantumcomputer": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.replicator": {
+      "itemInputs": 0,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fakeAssemblylineProcess": {
+      "itemInputs": 16,
+      "itemOutputs": 1,
+      "fluidInputs": 4,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.plasmaarcfurnace": {
+      "itemInputs": 2,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.arcfurnace": {
+      "itemInputs": 1,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.printer": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.sifter": {
+      "itemInputs": 1,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.press": {
+      "itemInputs": 6,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.laserengraver": {
+      "itemInputs": 4,
+      "itemOutputs": 4,
+      "fluidInputs": 2,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.mixer": {
+      "itemInputs": 9,
+      "itemOutputs": 4,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.autoclave": {
+      "itemInputs": 2,
+      "itemOutputs": 4,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.electromagneticseparator": {
+      "itemInputs": 1,
+      "itemOutputs": 3,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.polarizer": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.macerator": {
+      "itemInputs": 1,
+      "itemOutputs": 4,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.chemicalbath": {
+      "itemInputs": 2,
+      "itemOutputs": 3,
+      "fluidInputs": 2,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.fluidcanner": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.brewer": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fluidheater": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.distillery": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fermenter": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fluidsolidifier": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.fluidextractor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.packager": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.unpackager": {
+      "itemInputs": 1,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.fusionreactor": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.centrifuge": {
+      "itemInputs": 2,
+      "itemOutputs": 6,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.electrolyzer": {
+      "itemInputs": 2,
+      "itemOutputs": 6,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.blastfurnace": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.plasmaforge": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 9,
+      "fluidOutputs": 9
+    },
+    "gt.recipe.transcendentplasmamixerrecipes": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 20,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fakespaceprojects": {
+      "itemInputs": 12,
+      "itemOutputs": 0,
+      "fluidInputs": 4,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.primitiveblastfurnace": {
+      "itemInputs": 3,
+      "itemOutputs": 3,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.implosioncompressor": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.vacuumfreezer": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.chemicalreactor": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.largechemicalreactor": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 6,
+      "fluidOutputs": 6
+    },
+    "gt.recipe.distillationtower": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 11
+    },
+    "gt.recipe.craker": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.pyro": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.solarfactory": {
+      "itemInputs": 9,
+      "itemOutputs": 1,
+      "fluidInputs": 3,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.wiremill": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.metalbender": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.alloysmelter": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.assembler": {
+      "itemInputs": 9,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.circuitassembler": {
+      "itemInputs": 6,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.canner": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.lathe": {
+      "itemInputs": 1,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.cuttingsaw": {
+      "itemInputs": 2,
+      "itemOutputs": 4,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.slicer": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.extruder": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.hammer": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 2,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.uuamplifier": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 0,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.massfab": {
+      "itemInputs": 1,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.dieselgeneratorfuel": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.extremedieselgeneratorfuel": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.gasturbinefuel": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.thermalgeneratorfuel": {
+      "itemInputs": 1,
+      "itemOutputs": 4,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.semifluidboilerfuels": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.plasmageneratorfuels": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.magicfuels": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.smallnaquadahreactor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.largenaquadahreactor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.fluidnaquadahreactor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.hugenaquadahreactor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.extrahugenaquadahreactor": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.largeboilerfakefuels": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.nanoforge": {
+      "itemInputs": 6,
+      "itemOutputs": 2,
+      "fluidInputs": 3,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.pcbfactory": {
+      "itemInputs": 6,
+      "itemOutputs": 9,
+      "fluidInputs": 3,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.purificationplantclarifier": {
+      "itemInputs": 1,
+      "itemOutputs": 4,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.purificationplantozonation": {
+      "itemInputs": 0,
+      "itemOutputs": 4,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.purificationplantflocculation": {
+      "itemInputs": 0,
+      "itemOutputs": 3,
+      "fluidInputs": 2,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.purificationplantphadjustment": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.purificationplantplasmaheating": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.purificationplantuvtreatment": {
+      "itemInputs": 0,
+      "itemOutputs": 0,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.purificationplantdegasifier": {
+      "itemInputs": 0,
+      "itemOutputs": 3,
+      "fluidInputs": 1,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.purificationplantquarkextractor": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 1,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.ic2nuke": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.entropic-processing": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 3,
+      "fluidOutputs": 3
+    },
+    "gt.recipe.isotope-decay": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.researchStation": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.fog_plasma": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fog_exotic": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 2,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.fog_molten": {
+      "itemInputs": 6,
+      "itemOutputs": 6,
+      "fluidInputs": 1,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.upgrade_costs": {
+      "itemInputs": 12,
+      "itemOutputs": 2,
+      "fluidInputs": 0,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.eyeofharmony": {
+      "itemInputs": 1,
+      "itemOutputs": 81,
+      "fluidInputs": 0,
+      "fluidOutputs": 18
+    },
+    "gtpp.recipe.treefarm": {
+      "itemInputs": 4,
+      "itemOutputs": 4,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.alloy_smelter_molding": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.alloy_smelter_recycling": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.tic_bolt_molding": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.tic_part_extruding": {
+      "itemInputs": 2,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.macerator_recycling": {
+      "itemInputs": 1,
+      "itemOutputs": 4,
+      "fluidInputs": 0,
+      "fluidOutputs": 0
+    },
+    "gt.recipe.category.fluid_extractor_recycling": {
+      "itemInputs": 1,
+      "itemOutputs": 1,
+      "fluidInputs": 0,
+      "fluidOutputs": 1
+    },
+    "gt.recipe.category.forge_hammer_recycling": {
+      "itemInputs": 2,
+      "itemOutputs": 2,
+      "fluidInputs": 2,
+      "fluidOutputs": 2
+    },
+    "gt.recipe.category.arc_furnace_recycling": {
+      "itemInputs": 1,
+      "itemOutputs": 9,
+      "fluidInputs": 1,
+      "fluidOutputs": 0
+    },
+    "gtpp.recipe.category.abs_non_alloy_recipes": {
+      "itemInputs": 9,
+      "itemOutputs": 9,
+      "fluidInputs": 3,
+      "fluidOutputs": 3
+    }
+  }
+}
