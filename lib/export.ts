@@ -12,6 +12,7 @@ import {
 } from "./model";
 import { connectionRoute, connectionLabelPosition } from "./diagram-geometry";
 import { recipePowerInfo } from "./recipe-power";
+import { overclockRecipe } from "./recipe-overclock";
 import { connectionSummary } from "./connection-summary";
 import { initialPortRows } from "./port-layout";
 import { GRID_SIZE } from "./diagram-geometry";
@@ -48,7 +49,10 @@ export async function exportDiagram(
   const map = new Map(
     doc.nodes.map((node) => [
       node.id,
-      applyVariants(baseRecipes.get(node.recipeId)!, node.variants),
+      overclockRecipe(
+        applyVariants(baseRecipes.get(node.recipeId)!, node.variants),
+        node.machineId,
+      ),
     ]),
   );
   const portRows = new Map(
@@ -78,7 +82,8 @@ export async function exportDiagram(
         position: node.position,
         width: node.size?.width ?? 340,
         height: node.size?.height ?? 240,
-        recipe: map.get(node.id)!,
+        recipe: baseRecipes.get(node.recipeId)!,
+        machineId: node.machineId,
         machines: node.machines,
         variants: node.variants,
       })),

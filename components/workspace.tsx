@@ -16,8 +16,8 @@ import {
   Panel,
   MiniMap,
   ConnectionMode,
-  applyNodeChanges,
   applyEdgeChanges,
+  useStore,
   type Node,
   type Edge,
   type NodeProps,
@@ -69,6 +69,7 @@ import {
 } from "./recipe-view";
 import { GridEdge, type DiagramEdge } from "./grid-edge";
 import { GRID_SIZE, snapPoint } from "@/lib/diagram-geometry";
+import { initialRoute } from "@/lib/initial-route";
 import { exportDiagram, download } from "@/lib/export";
 import { connectionSummary } from "@/lib/connection-summary";
 import { RecipePorts } from "./recipe-ports";
@@ -76,14 +77,20 @@ import type { PortRows } from "@/lib/port-layout";
 import { useGraphHistory } from "./use-graph-history";
 import { copySelection, pasteSelection } from "@/lib/editor-clipboard";
 import { CanvasSelection } from "./canvas-selection";
-import { moveConnectedEdges } from "@/lib/canvas-interactions";
+import { GridBackground } from "./grid-background";
+import { RecipeChevron } from "./recipe-chevron";
 import { SummaryArea } from "./summary-area";
+import { MachineSelector } from "./machine-selector";
+import { overclockRecipe } from "@/lib/recipe-overclock";
+import { selectedMachine } from "@/lib/machine-selection";
+import { ItemTooltip } from "./item-tooltip";
 import { summarizeArea, summaryRecipe } from "@/lib/area-summary";
 import type { SummaryCalculation } from "@/lib/summary-rate";
 type RecipeNode = Node<
   {
     recipe: Recipe;
     machines: number;
+    machineId?: string;
     variants: VariantSelection;
     portRows?: PortRows;
     calculators?: SummaryCalculation[];
@@ -93,6 +100,7 @@ type RecipeNode = Node<
 const EditorContext = createContext<{
   browse: Browse;
   count: (id: string, value: number) => void;
+  selectMachine: (id: string, machineId: string) => void;
   color: (itemId: string) => string;
   connected: Set<string>;
   selectedConnections: Map<string, string[]>;
@@ -102,6 +110,7 @@ const EditorContext = createContext<{
 }>({
   browse: () => {},
   count: () => {},
+  selectMachine: () => {},
   color: itemColor,
   connected: new Set(),
   selectedConnections: new Map(),
@@ -110,9 +119,11 @@ const EditorContext = createContext<{
   remove: () => {},
 });
 function MachineCard({ id, data, selected }: NodeProps<RecipeNode>) {
+  const overview = useStore((state) => state.transform[2] < 0.5);
   const {
       browse,
       count,
+      selectMachine,
       color,
       connected,
       movePorts,
@@ -120,7 +131,8 @@ function MachineCard({ id, data, selected }: NodeProps<RecipeNode>) {
       selectedConnections,
       disconnect,
     } = useContext(EditorContext),
-    recipe = applyVariants(data.recipe, data.variants);
+    baseRecipe = applyVariants(data.recipe, data.variants),
+    recipe = overclockRecipe(baseRecipe, data.machineId);
   const ports = (
     <RecipePorts
       id={id}
@@ -163,11 +175,57 @@ function MachineCard({ id, data, selected }: NodeProps<RecipeNode>) {
       </div>
     );
   }
+  const machine = selectedMachine(baseRecipe, data.machineId);
+  const overviewImage = machine?.image ?? recipeTabIcon(baseRecipe);
   return (
-    <div className={`machine-card ${selected ? "selected" : ""}`}>
+    <div
+      className={`machine-card ${selected ? "selected" : ""}${overview ? " machine-card-overview" : ""}`}
+    >
       <RecipeView
         recipe={recipe}
+        referenceRecipe={baseRecipe}
         onBrowse={browse}
+        footerControl={
+          <div
+            className="machine-amount-control nodrag nopan"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => event.stopPropagation()}
+          >
+            <div className="machine-count-controls">
+              <MachineSelector
+                recipe={baseRecipe}
+                machineId={data.machineId}
+                amount={data.machines}
+                onSelect={(machineId) => selectMachine(id, machineId)}
+              />
+              <div className="machine-count-stepper nopan">
+                <button
+                  type="button"
+                  className="recipe-nav-button"
+                  aria-label="Increase machine amount"
+                  title="Increase machine amount"
+                  disabled={data.machines >= 1e9}
+                  onClick={() => count(id, Math.min(1e9, data.machines + 1))}
+                >
+                  <RecipeChevron direction="up" />
+                </button>
+                <button
+                  type="button"
+                  className="recipe-nav-button"
+                  aria-label="Decrease machine amount"
+                  title="Decrease machine amount"
+                  onClick={() => {
+                    if (data.machines > 1)
+                      count(id, Math.max(1, data.machines - 1));
+                  }}
+                >
+                  <RecipeChevron direction="down" />
+                </button>
+              </div>
+            </div>
+          </div>
+        }
         minHeight={
           Math.max(
             ...["input", "output"].map(
@@ -181,22 +239,21 @@ function MachineCard({ id, data, selected }: NodeProps<RecipeNode>) {
         }
       >
         {deleteButton}
-        <label className="machine-count nodrag">
-          Machines{" "}
-          <input
-            type="number"
-            min={0}
-            max={1e9}
-            step="any"
-            value={data.machines}
-            onChange={(e) => {
-              const value = e.target.valueAsNumber;
-              if (Number.isFinite(value) && value >= 0 && value <= 1e9)
-                count(id, value);
-            }}
-          />
-        </label>
       </RecipeView>
+      <div className="machine-overview-image" aria-hidden={!overview}>
+        {overviewImage ? (
+          <img src={overviewImage} alt={machine?.name ?? recipe.handler} />
+        ) : (
+          <span>{recipe.handler}</span>
+        )}
+      </div>
+      {overview && (
+        <ItemTooltip compact followPointer placement="top-right">
+          <strong>
+            {(machine?.name ?? recipe.handler).replace(/§./g, "")}
+          </strong>
+        </ItemTooltip>
+      )}
       {ports}
     </div>
   );
@@ -220,6 +277,7 @@ function Editor({ project }: { project: Project }) {
     undo,
     redo,
     resetHistory,
+    changeNodes,
     canUndo,
     canRedo,
   } = useGraphHistory<RecipeNode, DiagramEdge>();
@@ -250,14 +308,14 @@ function Editor({ project }: { project: Project }) {
     [busy, setBusy] = useState(false);
   const [browser, setBrowser] = useState<{
       item: Item;
-      mode: "recipes" | "uses";
+      mode: "recipes" | "uses" | "category";
     } | null>(null),
     [recipes, setRecipes] = useState<Recipe[]>([]),
     [recipeLoading, setRecipeLoading] = useState(false),
     [handler, setHandler] = useState(""),
     [recipePage, setRecipePage] = useState(0),
     [history, setHistory] = useState<
-      { item: Item; mode: "recipes" | "uses" }[]
+      { item: Item; mode: "recipes" | "uses" | "category" }[]
     >([]);
   useEffect(() => {
     const strip = recipeTabs.current;
@@ -282,28 +340,39 @@ function Editor({ project }: { project: Project }) {
     if (!content || !card) return;
     const measure = () => {
       const bounds = card.getBoundingClientRect();
-      const count = content.querySelectorAll(
-        ".recipe-machine-slots > .item-slot",
-      ).length;
-      // Slots are 32px with 3px gaps, plus 16px vertical padding/borders.
-      const rows = Math.max(
-        1,
-        Math.min(count, Math.floor((bounds.height - 13) / 35)),
-      );
-      const columns = Math.max(1, Math.ceil(count / rows));
-      const width = 48 + (columns - 1) * 35;
       content.style.setProperty(
         "--machine-strip-top",
         `${bounds.top - content.getBoundingClientRect().top}px`,
       );
-      content.style.setProperty("--machine-strip-rows", String(rows));
-      content.style.setProperty("--machine-strip-width", `${width}px`);
-      content
-        .closest<HTMLElement>(".recipe-dialog")
-        ?.style.setProperty(
-          "--machine-extra-width",
-          `${count ? width - 48 : 0}px`,
+      content.style.setProperty("--machine-strip-height", `${bounds.height}px`);
+      const machines = content.querySelector<HTMLElement>(
+        ".recipe-machine-slots",
+      );
+      if (machines && machines.children.length) {
+        const styles = getComputedStyle(machines);
+        const gap = parseFloat(styles.rowGap) || 0;
+        const verticalInset =
+          parseFloat(styles.paddingTop) +
+          parseFloat(styles.paddingBottom) +
+          parseFloat(styles.borderTopWidth) +
+          parseFloat(styles.borderBottomWidth);
+        const slotHeight = (machines.firstElementChild as HTMLElement)
+          .offsetHeight;
+        const visibleRows = Math.max(
+          1,
+          Math.floor(
+            (bounds.height - verticalInset + gap) / (slotHeight + gap),
+          ),
         );
+        const count = machines.children.length;
+        const columns = Math.min(3, Math.ceil(count / visibleRows));
+        const rows =
+          count > visibleRows * 3
+            ? Math.ceil(count / 3)
+            : Math.min(count, visibleRows);
+        machines.style.gridTemplateColumns = `repeat(${columns}, 32px)`;
+        machines.style.gridTemplateRows = `repeat(${rows}, 32px)`;
+      }
     };
     const observer = new ResizeObserver(measure);
     observer.observe(card);
@@ -346,6 +415,7 @@ function Editor({ project }: { project: Project }) {
             ? { itemId: n.data.recipe.sourceItemId }
             : {}),
           machines: n.data.machines,
+          machineId: n.data.machineId,
           ...(n.measured?.width && n.measured?.height
             ? { size: { width: n.measured.width, height: n.measured.height } }
             : {}),
@@ -375,6 +445,9 @@ function Editor({ project }: { project: Project }) {
         ...(e.data?.waypoints ? { waypoints: e.data.waypoints } : {}),
         ...(e.data?.labelPosition
           ? { labelPosition: e.data.labelPosition }
+          : {}),
+        ...(e.data?.imagePosition
+          ? { imagePosition: e.data.imagePosition }
           : {}),
       })),
       viewport: flow.current?.getViewport() ?? blankDiagram().viewport,
@@ -444,7 +517,8 @@ function Editor({ project }: { project: Project }) {
             position: n.position,
             data: {
               recipe: map.get(n.recipeId)!,
-              machines: n.machines,
+              machines: Math.max(1, n.machines),
+              machineId: n.machineId,
               variants: n.variants,
               portRows: n.portRows,
             },
@@ -473,6 +547,7 @@ function Editor({ project }: { project: Project }) {
               targetBendX: edge.targetBendX,
               waypoints: edge.waypoints,
               labelPosition: edge.labelPosition,
+              imagePosition: edge.imagePosition,
             },
           })),
         );
@@ -624,8 +699,17 @@ function Editor({ project }: { project: Project }) {
     setNodes,
     setEdges,
   ]);
+  const [recentItems, setRecentItems] = useState<Item[]>([]);
   const browse: Browse = useCallback(
-    async (item, mode) => {
+    async (item, mode, selectedRecipeId) => {
+      if (mode !== "category") {
+        setRecentItems((items) =>
+          [item, ...items.filter((recent) => recent.id !== item.id)].slice(
+            0,
+            64,
+          ),
+        );
+      }
       if (browser) setHistory((h) => [...h, browser]);
       const token = ++browserEpoch.current;
       setBrowser({ item, mode });
@@ -639,7 +723,19 @@ function Editor({ project }: { project: Project }) {
         );
         if (token === browserEpoch.current) {
           setRecipes(list);
-          setHandler(list[0]?.handler ?? "");
+          const selected = list.find(
+            (recipe) => recipe.id === selectedRecipeId,
+          );
+          const nextHandler = selected?.handler ?? list[0]?.handler ?? "";
+          setHandler(nextHandler);
+          setRecipePage(
+            Math.max(
+              0,
+              list
+                .filter((recipe) => recipe.handler === nextHandler)
+                .findIndex((recipe) => recipe.id === selectedRecipeId),
+            ),
+          );
         }
       } catch (e) {
         setError((e as Error).message);
@@ -668,7 +764,14 @@ function Editor({ project }: { project: Project }) {
         setEdges((values) =>
           values.map((edge) =>
             edge.source === id || edge.target === id
-              ? { ...edge, data: { ...edge.data, labelPosition: undefined } }
+              ? {
+                  ...edge,
+                  data: {
+                    ...edge.data,
+                    labelPosition: undefined,
+                    imagePosition: undefined,
+                  },
+                }
               : edge,
           ),
         );
@@ -704,7 +807,19 @@ function Editor({ project }: { project: Project }) {
       count: (id: string, machines: number) => {
         setNodes((ns) =>
           ns.map((n) =>
-            n.id === id ? { ...n, data: { ...n.data, machines } } : n,
+            n.id === id
+              ? { ...n, data: { ...n.data, machines: Math.max(1, machines) } }
+              : n,
+          ),
+        );
+        markDirty();
+      },
+      selectMachine: (id: string, machineId: string) => {
+        setNodes((ns) =>
+          ns.map((node) =>
+            node.id === id
+              ? { ...node, data: { ...node.data, machineId } }
+              : node,
           ),
         );
         markDirty();
@@ -783,19 +898,24 @@ function Editor({ project }: { project: Project }) {
         values.map((node) => ({ ...node, selected: false })),
       );
   };
+  const runtimeRecipes = new Map(
+    nodes.map((node) => [
+      node.id,
+      overclockRecipe(
+        applyVariants(node.data.recipe, node.data.variants),
+        node.data.machineId,
+      ),
+    ]),
+  );
   const inputSupply = new Map<string, number>();
   for (const edge of edges) {
     const source = nodes.find((node) => node.id === edge.source);
     const output =
-      source &&
-      port(
-        applyVariants(source.data.recipe, source.data.variants),
-        edge.sourceHandle,
-      );
+      source && port(runtimeRecipes.get(source.id)!, edge.sourceHandle);
     const key = `${edge.target}/${edge.targetHandle}`;
     const supplied =
       source && output && hasRecipeTiming(source.data.recipe)
-        ? rate(output, source.data.recipe, source.data.machines)
+        ? rate(output, runtimeRecipes.get(source.id)!, source.data.machines)
         : NaN;
     inputSupply.set(key, (inputSupply.get(key) ?? 0) + supplied);
   }
@@ -803,18 +923,17 @@ function Editor({ project }: { project: Project }) {
     const source = nodes.find((n) => n.id === edge.source),
       target = nodes.find((n) => n.id === edge.target);
     if (!source || !target) return edge;
-    const output = port(source.data.recipe, edge.sourceHandle),
-      input = port(
-        applyVariants(target.data.recipe, target.data.variants),
-        edge.targetHandle,
-      );
+    const sourceRecipe = runtimeRecipes.get(source.id)!,
+      targetRecipe = runtimeRecipes.get(target.id)!;
+    const output = port(sourceRecipe, edge.sourceHandle),
+      input = port(targetRecipe, edge.targetHandle);
     if (!output || !input) return edge;
     const summary = connectionSummary(
       output,
-      source.data.recipe,
+      sourceRecipe,
       source.data.machines,
       input,
-      target.data.recipe,
+      targetRecipe,
       target.data.machines,
     );
     return {
@@ -823,16 +942,25 @@ function Editor({ project }: { project: Project }) {
       zIndex: edge.selected ? 2000 : 0,
       data: {
         ...edge.data,
+        item: output.item,
         select: (additive: boolean, toggle?: boolean) =>
           selectEdge(edge.id, additive, toggle, true),
-        moveLabel: (id: string, labelPosition: { x: number; y: number }) => {
+        moveLabel: (
+          id: string,
+          labelPosition: { x: number; y: number },
+          image = false,
+        ) => {
           setEdges((values) =>
             values.map((value) =>
               value.id === id
                 ? {
                     ...value,
                     selected: true,
-                    data: { ...value.data, labelPosition },
+                    data: {
+                      ...value.data,
+                      [image ? "imagePosition" : "labelPosition"]:
+                        labelPosition,
+                    },
                   }
                 : value,
             ),
@@ -850,6 +978,7 @@ function Editor({ project }: { project: Project }) {
                       ...value.data,
                       waypoints,
                       labelPosition: undefined,
+                      imagePosition: undefined,
                     },
                   }
                 : value,
@@ -870,6 +999,7 @@ function Editor({ project }: { project: Project }) {
                     data: {
                       ...value.data,
                       labelPosition: undefined,
+                      imagePosition: undefined,
                       bend: snapPoint(point),
                       targetBendX,
                     },
@@ -884,7 +1014,7 @@ function Editor({ project }: { project: Project }) {
         stroke: hasRecipeTiming(target.data.recipe)
           ? supplyColor(
               inputSupply.get(`${edge.target}/${edge.targetHandle}`) ?? NaN,
-              rate(input, target.data.recipe, target.data.machines),
+              rate(input, targetRecipe, target.data.machines),
             )
           : connectionColors.unrated,
         strokeWidth: 4,
@@ -901,35 +1031,62 @@ function Editor({ project }: { project: Project }) {
         </>
       ),
       labelStyle: { fill: "#e7e7e5", fontSize: 11 },
-      labelBgStyle: { fill: "#242927" },
+      labelBgStyle: { fill: "#282828" },
       labelBgPadding: [9, 6] as [number, number],
     };
   });
   const current = diagrams.find((d) => d.id === active),
     filtered = recipes.filter((r) => r.handler === handler),
     selectedRecipe = filtered[recipePage];
-  function addCard(recipe: Recipe, variants: VariantSelection = {}) {
+  const recipeHandlers = [...new Set(recipes.map((recipe) => recipe.handler))];
+  const changeHandler = (step: number) => {
+    const index = recipeHandlers.indexOf(handler);
+    setHandler(
+      recipeHandlers[
+        (index + step + recipeHandlers.length) % recipeHandlers.length
+      ],
+    );
+    setRecipePage(0);
+  };
+  function addCard(
+    recipe: Recipe,
+    variants: VariantSelection = {},
+    keepOpen = false,
+  ) {
     if (!ready) {
       setError("Create or open a diagram before adding a card.");
       return;
     }
-    const position = insertionPoint();
-    setNodes((ns) => [
-      ...ns.map((node) => ({ ...node, selected: false })),
-      {
-        id: crypto.randomUUID(),
-        type: "recipe",
-        selected: true,
-        position: snapPoint(position),
-        data: { recipe, machines: 1, variants },
-      },
-    ]);
+    const origin = insertionPoint();
+    const id = crypto.randomUUID();
+    setNodes((ns) => {
+      const position = snapPoint(origin);
+      const occupied = new Set(
+        ns
+          .filter((node) => node.type === "recipe")
+          .map((node) => `${node.position.x},${node.position.y}`),
+      );
+      while (occupied.has(`${position.x},${position.y}`)) {
+        position.x += GRID_SIZE * 2;
+        position.y += GRID_SIZE * 2;
+      }
+      return [
+        ...ns.map((node) => ({ ...node, selected: false })),
+        {
+          id,
+          type: "recipe",
+          selected: true,
+          position,
+          data: { recipe, machines: 1, variants },
+        },
+      ];
+    });
     setEdges((values) => values.map((edge) => ({ ...edge, selected: false })));
     markDirty();
-    setBrowser(null);
+    if (!keepOpen) setBrowser(null);
   }
-  function addRecipe(variants: VariantSelection) {
-    if (selectedRecipe) addCard(selectedRecipe, variants);
+  function addRecipe(variants: VariantSelection, keepOpen: boolean) {
+    if (selectedRecipe) addCard(selectedRecipe, variants, keepOpen);
   }
   function addArea() {
     if (!ready) return;
@@ -1286,37 +1443,7 @@ function Editor({ project }: { project: Project }) {
                 }}
                 onNodesChange={(changes) => {
                   if (!ready) return;
-                  const movements = new Map<string, { x: number; y: number }>();
-                  for (const change of changes) {
-                    if (change.type !== "position" || !change.position)
-                      continue;
-                    const previous = nodes.find(
-                      (node) => node.id === change.id,
-                    )?.position;
-                    if (
-                      previous &&
-                      (previous.x !== change.position.x ||
-                        previous.y !== change.position.y)
-                    )
-                      movements.set(change.id, {
-                        x: change.position.x - previous.x,
-                        y: change.position.y - previous.y,
-                      });
-                  }
-                  if (movements.size)
-                    setEdges((values) => moveConnectedEdges(values, movements));
-                  setNodes((ns) => applyNodeChanges(changes, ns));
-                  const removed = changes
-                    .filter((c) => c.type === "remove")
-                    .map((c) => c.id);
-                  if (removed.length)
-                    setEdges((es) =>
-                      es.filter(
-                        (e) =>
-                          !removed.includes(e.source) &&
-                          !removed.includes(e.target),
-                      ),
-                    );
+                  changeNodes(changes);
                   if (
                     changes.some(
                       (c) =>
@@ -1357,9 +1484,66 @@ function Editor({ project }: { project: Project }) {
                           : node,
                       ),
                     );
+                    const sourceNode = flow.current?.getInternalNode(c.source);
+                    const targetNode = flow.current?.getInternalNode(c.target);
+                    const sourceHandle =
+                      sourceNode?.internals.handleBounds?.source?.find(
+                        (handle) => handle.id === c.sourceHandle,
+                      );
+                    const targetHandle =
+                      targetNode?.internals.handleBounds?.target?.find(
+                        (handle) => handle.id === c.targetHandle,
+                      );
+                    let waypoints: ReturnType<typeof initialRoute>;
+                    if (
+                      sourceNode &&
+                      targetNode &&
+                      sourceHandle &&
+                      targetHandle
+                    ) {
+                      const start = {
+                        x:
+                          sourceNode.internals.positionAbsolute.x +
+                          sourceHandle.x +
+                          sourceHandle.width,
+                        y:
+                          sourceNode.internals.positionAbsolute.y +
+                          sourceHandle.y +
+                          sourceHandle.height / 2,
+                      };
+                      const end = {
+                        x:
+                          targetNode.internals.positionAbsolute.x +
+                          targetHandle.x,
+                        y:
+                          targetNode.internals.positionAbsolute.y +
+                          targetHandle.y +
+                          targetHandle.height / 2,
+                      };
+                      const cards = nodes
+                        .filter((node) => node.type === "recipe")
+                        .flatMap((node) => {
+                          const internal = flow.current?.getInternalNode(
+                            node.id,
+                          );
+                          return internal
+                            ? [
+                                {
+                                  id: node.id,
+                                  ...internal.internals.positionAbsolute,
+                                  width: internal.measured.width ?? 352,
+                                  height: internal.measured.height ?? 200,
+                                },
+                              ]
+                            : [];
+                        });
+                      waypoints =
+                        initialRoute(start, end, c.source, c.target, cards) ??
+                        initialRoute(start, end, c.source, c.target, cards, 0);
+                    }
                     setEdges((es) => [
                       ...es,
-                      { ...normalize(connection), id: crypto.randomUUID() },
+                      { ...c, id: crypto.randomUUID(), data: { waypoints } },
                     ]);
                     markDirty();
                   }
@@ -1378,6 +1562,7 @@ function Editor({ project }: { project: Project }) {
                 }
                 colorMode="dark"
               >
+                <GridBackground />
                 <Panel position="top-center" className="diagram-create-tools">
                   <button
                     aria-label="Add item card"
@@ -1421,7 +1606,7 @@ function Editor({ project }: { project: Project }) {
                   </button>
                 </Panel>
                 <Controls showInteractive={false} />
-                <MiniMap nodeColor="#8baf8b" maskColor="rgba(15,20,18,.8)" />
+                <MiniMap nodeColor="#a3a3a3" maskColor="rgba(18,18,18,.8)" />
               </ReactFlow>
               {!nodes.length && (
                 <div className="canvas-empty">
@@ -1455,6 +1640,7 @@ function Editor({ project }: { project: Project }) {
             </footer>
           </section>
           <Inventory
+            recentItems={recentItems}
             onBrowse={browse}
             onAddItem={(item) => addCard(itemSourceRecipe(item))}
           />
@@ -1616,7 +1802,11 @@ function Editor({ project }: { project: Project }) {
                 </button>
                 <div>
                   <small>
-                    {browser.mode === "recipes" ? "RECIPES FOR" : "USED IN"}
+                    {browser.mode === "category"
+                      ? "MACHINE CATEGORY"
+                      : browser.mode === "recipes"
+                        ? "RECIPES FOR"
+                        : "USED IN"}
                   </small>
                   <h2>{browser.item.name}</h2>
                 </div>
@@ -1627,7 +1817,10 @@ function Editor({ project }: { project: Project }) {
                   <X size={20} />
                 </button>
               </div>
-              <div className="browser-mode">
+              <div
+                className="browser-mode"
+                hidden={browser.mode === "category"}
+              >
                 <button
                   className={browser.mode === "recipes" ? "active" : ""}
                   onClick={() => browse(browser.item, "recipes")}
@@ -1751,27 +1944,49 @@ function Editor({ project }: { project: Project }) {
                     <CyclingRecipe
                       key={selectedRecipe.id}
                       recipe={selectedRecipe}
+                      navigation={{
+                        previous: (
+                          <button
+                            className="recipe-nav-button"
+                            aria-label="Previous recipe type"
+                            disabled={recipeHandlers.length < 2}
+                            onClick={() => changeHandler(-1)}
+                          >
+                            <RecipeChevron direction="left" />
+                          </button>
+                        ),
+                        next: (
+                          <button
+                            className="recipe-nav-button"
+                            aria-label="Next recipe type"
+                            disabled={recipeHandlers.length < 2}
+                            onClick={() => changeHandler(1)}
+                          >
+                            <RecipeChevron direction="right" />
+                          </button>
+                        ),
+                      }}
                       pager={
                         <div className="recipe-pager">
                           <button
-                            className="recipe-tab-scroll"
+                            className="recipe-nav-button"
                             disabled={!recipePage}
                             aria-label="Previous recipe"
                             onClick={() => setRecipePage(recipePage - 1)}
                           >
-                            <ChevronLeft size={17} />
+                            <RecipeChevron direction="left" />
                           </button>
                           <span>
                             Page {filtered.length ? recipePage + 1 : 0}/
                             {filtered.length}
                           </span>
                           <button
-                            className="recipe-tab-scroll"
+                            className="recipe-nav-button"
                             disabled={recipePage >= filtered.length - 1}
                             aria-label="Next recipe"
                             onClick={() => setRecipePage(recipePage + 1)}
                           >
-                            <ChevronRight size={17} />
+                            <RecipeChevron direction="right" />
                           </button>
                         </div>
                       }
@@ -1789,6 +2004,7 @@ function Editor({ project }: { project: Project }) {
                   <aside
                     className="recipe-machine-slots"
                     aria-label="Crafting machines"
+                    tabIndex={0}
                   >
                     {selectedRecipe.craftingMachines.map((machine) => (
                       <ItemSlot

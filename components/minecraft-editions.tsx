@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Blocks, Download, GitBranch, Upload } from "lucide-react";
+import { ArrowLeft, Download, GitBranch, Upload } from "lucide-react";
+import { GameLogo } from "./game-logo";
 export function MinecraftEditions() {
   const [installed, setInstalled] = useState(false),
     [loading, setLoading] = useState(true),
@@ -64,7 +65,7 @@ export function MinecraftEditions() {
         </p>
         <div className="edition-list">
           <article className="edition-row">
-            <Blocks size={36} />
+            <GameLogo game="vanilla" />
             <div className="edition-description">
               <h2>
                 Vanilla Minecraft <span className="badge">Coming soon</span>
@@ -76,7 +77,7 @@ export function MinecraftEditions() {
             </button>
           </article>
           <article className="edition-row">
-            <Blocks size={36} />
+            <GameLogo game="gtnh" />
             <div className="edition-description">
               <h2>GT: New Horizons</h2>
               <p>

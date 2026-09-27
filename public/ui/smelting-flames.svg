@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="26" viewBox="0 0 28 26" shape-rendering="crispEdges">
+  <defs><g id="flame"><path fill="#eee" d="M3 0h3v5h2v6H6v5h2v10H0V15h2V8h1z"/><path fill="#ffe83e" d="M3 1h2v6h2v3H5v7h2v7H1v-7h2v-7H2V7h1z"/><path fill="#f59b24" d="M3 2h2v4H3zM5 8h2v3H5zM2 12h2v4H2zM4 18h2v4H4z"/><path fill="#e15b1b" d="M3 3h1v3H3zM5 9h1v2H5zM2 13h1v3H2zM4 19h1v3H4z"/></g></defs>
+  <use href="#flame"/><use href="#flame" x="10"/><use href="#flame" x="20"/>
+</svg>

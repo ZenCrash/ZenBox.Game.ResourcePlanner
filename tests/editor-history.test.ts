@@ -50,6 +50,96 @@ const initial = (): GraphHistory<Node, Edge> => ({
   group: null,
 });
 
+test("overview image positions persist, undo, paste and follow group moves while endpoint edits reset them", () => {
+  const imagePosition = { x: 300, y: 180 };
+  let state = reduce(initial(), {
+    type: "edges",
+    group: 1,
+    value: (values) =>
+      values.map((edge) => ({
+        ...edge,
+        data: { ...edge.data, imagePosition },
+      })),
+  });
+  const placed = state.present;
+  state = reduce(state, { type: "undo" });
+  assert.equal(state.present.edges[0].data?.imagePosition, undefined);
+  state = reduce(state, { type: "redo" });
+  assert.deepEqual(state.present, placed);
+  const moved = moveConnectedEdges(
+    placed.edges,
+    new Map([
+      ["a", { x: 40, y: -20 }],
+      ["b", { x: 40, y: -20 }],
+    ]),
+  );
+  assert.deepEqual(moved[0].data?.imagePosition, { x: 340, y: 160 });
+  assert.equal(
+    moveConnectedEdges(placed.edges, new Map([["a", { x: 20, y: 0 }]]))[0].data
+      ?.imagePosition,
+    undefined,
+  );
+  const pasted = pasteSelection(placed, { x: 200, y: 300 }, () =>
+    crypto.randomUUID(),
+  );
+  assert.deepEqual(pasted.edges[0].data?.imagePosition, { x: 400, y: 280 });
+  const edge = edgeSchema.parse({
+    id: crypto.randomUUID(),
+    source: crypto.randomUUID(),
+    target: crypto.randomUUID(),
+    sourceHandle: "output:0",
+    targetHandle: "input:0",
+    imagePosition,
+  });
+  assert.deepEqual(edge.imagePosition, imagePosition);
+});
+
+test("queued group drag updates translate routes exactly once and undo together", () => {
+  let state = initial();
+  state.present.edges = edges.map((edge) => ({
+    ...edge,
+    data: { ...edge.data, labelPosition: { x: 300, y: 180 } },
+  }));
+  const original = state.present;
+  // Absolute positions from consecutive pointer events, including the repeated
+  // final position on pointer-up, must use the latest reducer state.
+  for (const delta of [20, 40, 80, 80]) {
+    state = reduce(state, {
+      type: "nodeChanges",
+      group: 1,
+      changes: nodes.slice(0, 2).map((node) => ({
+        type: "position",
+        id: node.id,
+        position: { x: node.position.x + delta, y: node.position.y - delta },
+      })),
+    });
+  }
+  assert.deepEqual(state.present.edges[0].data, {
+    bend: { x: 480, y: 220 },
+    targetBendX: 560,
+    waypoints: [
+      { x: 480, y: 120 },
+      { x: 480, y: 320 },
+    ],
+    labelPosition: { x: 380, y: 100 },
+  });
+  assert.equal(state.present.edges[1].data?.labelPosition, undefined);
+  assert.equal(state.past.length, 1);
+  const moved = state.present;
+  state = reduce(state, { type: "undo" });
+  assert.deepEqual(state.present, original);
+  state = reduce(state, { type: "redo" });
+  assert.deepEqual(state.present, moved);
+  state = reduce(state, {
+    type: "nodeChanges",
+    group: 2,
+    changes: [{ type: "remove", id: "b" }],
+  });
+  assert.equal(state.present.edges.length, 0);
+  state = reduce(state, { type: "undo" });
+  assert.deepEqual(state.present, moved);
+});
+
 test("a drag is one undo step and deletion restores nodes and connected edges together", () => {
   let state = initial();
   for (const x of [120, 140, 160])
@@ -251,8 +341,8 @@ test("directly connected corners merge in either direction without leaving dupli
     }
   }
   assert.equal(mergeRouteCorner(route, 0, route.points[2]), null);
-  assert.equal(mergeRouteCorner(route, 1, route.points[1]), null);
-  assert.equal(mergeRouteCorner(route, 4, route.points[6]), null);
+  assert.ok(mergeRouteCorner(route, 1, route.points[1]));
+  assert.ok(mergeRouteCorner(route, 4, route.points[6]));
   assert.equal(mergeRouteCorner(route, 5, route.points[5]), null);
 });
 
@@ -314,7 +404,7 @@ test("off-grid neighboring corners merge near the drop without creating diagonal
   }
   assert.equal(mergeRouteCorner(route, 1, { x: 76, y: 43.5 }), null);
   assert.equal(mergeRouteCorner(route, 0, { x: 20, y: 43.5 }), null);
-  assert.equal(mergeRouteCorner(route, 4, { x: 100, y: 100 }), null);
+  assert.ok(mergeRouteCorner(route, 4, { x: 100, y: 100 }));
 });
 
 test("area selection requires more than a quarter of a card and the whole line", () => {
@@ -439,5 +529,28 @@ test("manual card placement survives undo, paste and diagram serialization", () 
   assert.deepEqual(
     edgeSchema.parse(JSON.parse(JSON.stringify(edge))).labelPosition,
     edge.labelPosition,
+  );
+});
+
+test("endpoint-adjacent angles collapse to one straight line without moving ports", () => {
+  const source = { x: 0, y: 0 },
+    target = { x: 200, y: 40 };
+  const route = connectionRoute(source, target, undefined, undefined, [
+    { x: 20, y: 0 },
+    { x: 20, y: 40 },
+    { x: 80, y: 40 },
+    { x: 80, y: 40 },
+  ]);
+  const merged = mergeRouteCorner(route, 1, route.points[1]);
+  assert.ok(merged);
+  const result = connectionRoute(source, target, undefined, undefined, merged);
+  assert.deepEqual(result.points[0], source);
+  assert.deepEqual(result.points.at(-1), target);
+  assert(
+    result.points
+      .slice(1)
+      .every(
+        (p, i) => p.x === result.points[i].x || p.y === result.points[i].y,
+      ),
   );
 });

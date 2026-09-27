@@ -8,6 +8,8 @@ import {
   type VariantSelection,
 } from "./model";
 import { recipePowerInfo } from "./recipe-power";
+import { overclockRecipe } from "./recipe-overclock";
+import { selectedMachine, machineTier } from "./machine-selection";
 
 export type SummaryBounds = {
   position: { x: number; y: number };
@@ -17,6 +19,7 @@ export type SummaryBounds = {
 export type SummaryRecipe = SummaryBounds & {
   recipe: Recipe;
   machines: number;
+  machineId?: string;
   variants: VariantSelection;
 };
 export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
@@ -41,17 +44,23 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     machineCount = 0,
     untimed = 0;
   for (const node of inside) {
-    const recipe = applyVariants(node.recipe, node.variants);
+    const recipe = overclockRecipe(
+      applyVariants(node.recipe, node.variants),
+      node.machineId,
+    );
+    const chosenMachine = selectedMachine(node.recipe, node.machineId);
     euPerTick += Math.max(0, recipe.euPerTick) * node.machines;
     machineCount += node.machines;
     const tier =
+      (chosenMachine && machineTier(chosenMachine)) ??
       recipePowerInfo(recipe).voltage?.match(/\(([^)]+)\)/)?.[1] ??
       (recipe.euPerTick > 0 ? "Unknown tier" : "Non-EU");
-    const key = `${recipe.handler}/${tier}`;
+    const key = `${recipe.handler}/${chosenMachine?.id ?? tier}`;
     const machine = machines.get(key) ?? {
-      name: recipe.handler,
+      name: chosenMachine?.name ?? recipe.handler,
       tier,
       image:
+        chosenMachine?.image ??
         recipe.craftingMachines?.find((item) =>
           new RegExp(`\\b${tier}\\b`, "i").test(item.name),
         )?.image ??

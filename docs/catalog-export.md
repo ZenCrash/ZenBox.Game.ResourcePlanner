@@ -53,12 +53,48 @@ The importer validates version, duplicate identities, slot uniqueness and ingred
 
 ## Known planner limitations
 
+After installing an older catalog, `node scripts/fix-recipe-category-machines.mjs`
+backfills GregTech catalysts for Alloy Smelter Molding/Recycling, Fluid Extractor
+Recycling, and Arc Furnace Recycling from their parent maps. The normal machine
+installer also performs this inheritance. Ender IO's separate Alloy Smelter
+handler is excluded from these GregTech subcategories.
+
 - Current recipe panels reproduce the basic Minecraft slot visual language and use provided slot coordinates/backgrounds. Group expansion and captured input variant cycling are implemented. Full handler-specific in-game interactions, complete alternative coverage, rich tooltip formatting and animated textures remain incomplete.
 - Ratios use base recipe duration and expected chance output. Voltage overclocking, multiblock parallelism, machine efficiency and total flow allocation across branches are not simulated. Edge ratios are pairwise, not a global factory solver.
 - SVG/PDF use a portable vector representation of recipe cards, not pixel-exact screenshots of every mod's custom GUI.
 - Databases are local, single-user storage. Multi-user authentication, server deployment and simultaneous cross-process writers are outside this implementation.
 
+## Tinkers' Construct Casting Table supplement
+
+The generic NEI export cannot enumerate this custom handler. In the isolated
+extraction copy, create `planner-export.casting-only` alongside
+`planner-export.enabled`, rebuild the bootstrap and launch the extraction client.
+It reads `TConstructRegistry.getTableCasting().getCastingRecipes()` after the
+world loads, including pack script changes, fluid amounts, cooling ticks and
+whether the cast is consumed. It writes `dumps/planner/casting-table.json`, renders
+the referenced item stacks through the existing GTNH-Dumper dependency, and writes
+`casting-icons.json` before exiting. It does not re-export NEI.
+
+Run `node scripts/install-casting-table.mjs` to validate all item/fluid references
+and atomically add the recipes and any missing item variants to the existing
+catalog. Newly captured variants use their original rendered game icons.
+Wildcard and NBT-agnostic
+casts retain accepted item variants, including the usage lookup index. Stable
+recipe IDs make repeated imports safe. Include the updated catalog in the next
+GTNH pack export. Remove the `planner-export.casting-only` marker before doing a
+different export. A Java 8-compatible compiler can be selected by setting
+`PLANNER_JAVAC` to a modern JDK's `javac` executable when ECJ is unavailable.
+
 ## High-resolution block icons
+
+For the Infernal Blast Furnace's missing bonus outputs, place
+`planner-export.infernal-only` in the isolated game directory, rebuild and launch
+the bootstrap, then run `node scripts/install-infernal-bonuses.mjs`. This matches
+the captured NEI input/output stacks to existing recipes, preserves their IDs,
+and imports NEI's other-stack slot as a bonus output. Its base chance is 25%
+without Arcane Bellows, verified against `TileEntityBlastfurnace`; bellows bonuses
+are not modeled. The full normalizer also classifies these slots for future
+exports. Remove the marker after the targeted capture.
 
 Block and machine icons can be re-rendered at 256×256 from the isolated GTNH 2.8.4 extraction client. Ordinary item and fluid images are left unchanged. The exporter checks the runtime ItemBlock type; it does not infer block identity from names.
 

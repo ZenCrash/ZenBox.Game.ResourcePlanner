@@ -34,6 +34,8 @@ export type Recipe = {
   details: string;
   ingredients: Ingredient[];
   craftingMachines?: Item[];
+  smeltingFuel?: Item;
+  bottlerFluid?: { item: Item; amount: number };
 };
 export const nodeSchema = z.object({
   id: z.string().uuid(),
@@ -41,6 +43,7 @@ export const nodeSchema = z.object({
   itemId: z.string().min(1).optional(),
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
   machines: z.number().finite().min(0).max(1e9),
+  machineId: z.string().min(1).optional(),
   size: z
     .object({
       width: z.number().finite().positive(),
@@ -66,6 +69,9 @@ export const edgeSchema = z.object({
   bend: z.object({ x: z.number().finite(), y: z.number().finite() }).optional(),
   targetBendX: z.number().finite().optional(),
   labelPosition: z
+    .object({ x: z.number().finite(), y: z.number().finite() })
+    .optional(),
+  imagePosition: z
     .object({ x: z.number().finite(), y: z.number().finite() })
     .optional(),
   waypoints: z
@@ -150,6 +156,24 @@ export function hasRecipeTiming(recipe: Pick<Recipe, "durationTicks">) {
   return Number.isFinite(recipe.durationTicks) && recipe.durationTicks > 0;
 }
 export function recipeTabIcon(recipe: Recipe): string | null {
+  if (recipe.handler === "Alloy Smelter Recycling")
+    return "/ui/alloy-smelter-recycling-tab.png";
+  if (recipe.handler === "Infernal Blast Furnace")
+    return "/ui/infernal-blast-bricks.png";
+  if (recipe.handler === "Blast Furnace")
+    return "/assets/gtnh-2.8.4/items/aabed81396f949c4b662a13825847ef43f256e1e7ea516c23cfbbaf0d422947d.png";
+  if (recipe.handler === "Blasting")
+    return "/assets/gtnh-2.8.4/items/b5ac2e0d8bbb93ade6968343c243f82a89632f33a5896431ab2a275dfa72af1a.png";
+  if (recipe.handler === "Alloy Smelter Molding")
+    return "/ui/alloy-smelter-molding-tab.png";
+  if (recipe.handler === "Smelting")
+    return "/assets/gtnh-2.8.4/items/92fce8ad7a435e09d291001a20d6296d3d9a456731fd67d303fdb64758399fd4.png";
+  if (recipe.handler === "Arc Furnace Recycling")
+    return "/ui/arc-furnace-recycling-tab.png";
+  if (recipe.handler === "Macerator Recycling")
+    return "/ui/macerator-recycling-tab.png";
+  if (recipe.handler === "Fluid Extractor Recycling")
+    return "/ui/fluid-extractor-tab.png";
   try {
     const layout = JSON.parse(recipe.layout);
     if (

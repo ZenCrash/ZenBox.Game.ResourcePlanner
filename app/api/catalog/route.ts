@@ -33,6 +33,11 @@ export async function GET(request: Request) {
     0,
     Math.min(100000, Number(url.searchParams.get("page")) || 0),
   );
+  const requestedSize = Number(url.searchParams.get("pageSize"));
+  const pageSize =
+    Number.isFinite(requestedSize) && requestedSize > 0
+      ? Math.min(1000, Math.max(1, Math.floor(requestedSize)))
+      : 104;
   const where = {
     hidden: false,
     ...(group ? { group } : {}),
@@ -71,9 +76,12 @@ export async function GET(request: Request) {
   ]);
   const currentPage = Math.min(
     page,
-    Math.max(0, Math.ceil(tiles.length / 104) - 1),
+    Math.max(0, Math.ceil(tiles.length / pageSize) - 1),
   );
-  const visible = tiles.slice(currentPage * 104, (currentPage + 1) * 104);
+  const visible = tiles.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize,
+  );
   const items = await catalog.item.findMany({
     where: {
       id: {

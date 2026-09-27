@@ -35,13 +35,17 @@ export function Inventory({
   onBrowse,
   onAddItem,
   picker = false,
+  recentItems = [],
 }: {
   onBrowse: Browse;
   onAddItem?: (item: Item) => void;
   picker?: boolean;
+  recentItems?: Item[];
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [columns, setColumns] = useState(8);
+  const [pageSize, setPageSize] = useState(104);
+  const body = useRef<HTMLDivElement>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const grid = useRef<HTMLDivElement>(null);
   const previousQuery = useRef("");
@@ -65,7 +69,7 @@ export function Inventory({
     const delay = previousQuery.current === query ? 0 : 120;
     previousQuery.current = query;
     const load = (targetPage: number) => {
-      const url = `/api/catalog?q=${encodeURIComponent(query)}&group=${encodeURIComponent(group)}&page=${targetPage}&expanded=${[...expanded].sort().join(",")}`;
+      const url = `/api/catalog?q=${encodeURIComponent(query)}&group=${encodeURIComponent(group)}&page=${targetPage}&pageSize=${pageSize}&expanded=${[...expanded].sort().join(",")}`;
       return pages.get(url, () => api<Result>(url));
     };
     const run = () => {
@@ -77,7 +81,7 @@ export function Inventory({
           setPage(r.page);
           setError("");
           for (const neighbor of [r.page + 1, r.page - 1]) {
-            if (neighbor < 0 || neighbor * 104 >= r.displayTotal) continue;
+            if (neighbor < 0 || neighbor * pageSize >= r.displayTotal) continue;
             void load(neighbor)
               .then((next) => {
                 if (active) preloadImages(next);
@@ -98,16 +102,24 @@ export function Inventory({
       clearTimeout(timer);
       active = false;
     };
-  }, [query, group, page, expanded]);
+  }, [query, group, page, expanded, pageSize]);
   useEffect(() => {
     const element = grid.current;
     if (!element) return;
-    const resize = new ResizeObserver(() =>
-      setColumns(
-        getComputedStyle(element).gridTemplateColumns.split(" ").length,
-      ),
-    );
+    const measure = () => {
+      const columnCount =
+        getComputedStyle(element).gridTemplateColumns.split(" ").length;
+      const rows = Math.max(
+        1,
+        Math.floor((body.current?.clientHeight ?? 468) / 36),
+      );
+      setColumns(columnCount);
+      setPageSize(Math.min(1000, columnCount * rows));
+    };
+    const resize = new ResizeObserver(measure);
     resize.observe(element);
+    if (body.current) resize.observe(body.current);
+    measure();
     return () => resize.disconnect();
   }, []);
   const itemGroups = new Map(
@@ -189,18 +201,19 @@ export function Inventory({
             <ChevronLeft size={15} />
           </button>
           <span>
-            {page + 1} / {Math.max(1, Math.ceil(result.displayTotal / 104))}
+            {page + 1} /{" "}
+            {Math.max(1, Math.ceil(result.displayTotal / pageSize))}
           </span>
           <button
             aria-label="Next item page"
-            disabled={(page + 1) * 104 >= result.displayTotal || loading}
+            disabled={(page + 1) * pageSize >= result.displayTotal || loading}
             onClick={() => setPage(page + 1)}
           >
             <ChevronRight size={15} />
           </button>
         </div>
       </div>
-      <div className="inventory-body">
+      <div className="inventory-body" ref={body}>
         {error ? (
           <p role="alert" className="error">
             {error}
@@ -262,6 +275,7 @@ export function Inventory({
                           />
                         )}
                         <ItemSlot
+                          tooltipAtPointer
                           item={tile.item}
                           onBrowse={onBrowse}
                           onAddItem={onAddItem}
@@ -315,6 +329,26 @@ export function Inventory({
         )}
       </div>
       <div className="inventory-bottom">
+        {!picker && (
+          <div
+            className="recent-items"
+            role="group"
+            aria-label="Recently looked-up items"
+            style={{
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            }}
+          >
+            {recentItems.slice(0, columns * 2).map((item) => (
+              <ItemSlot
+                key={item.id}
+                item={item}
+                onBrowse={onBrowse}
+                onAddItem={onAddItem}
+                tooltipAtPointer
+              />
+            ))}
+          </div>
+        )}
         <label className="search-input">
           <Search size={15} />
           <input

@@ -1,0 +1,5 @@
+Game-rendered icon of WitchingGadgets:WG_StoneDevice, metadata 2.
+Rendered at 256 x 256 using the isolated GTNH 2.8.4 client and GTNH-Dumper.
+Mod: WitchingGadgets-1.7.25-GTNH.jar.
+NotEnoughItems 2.8.44-GTNH handlers.csv identifies this block as the icon for
+witchinggadgets.client.nei.NEIInfernalBlastfurnaceHandler.

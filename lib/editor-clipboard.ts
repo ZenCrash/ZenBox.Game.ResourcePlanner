@@ -51,6 +51,9 @@ export function pasteSelection<N extends Node, E extends Edge>(
         ...(e.data?.labelPosition
           ? { labelPosition: translate(e.data.labelPosition as Point) }
           : {}),
+        ...(e.data?.imagePosition
+          ? { imagePosition: translate(e.data.imagePosition as Point) }
+          : {}),
         ...(typeof e.data?.targetBendX === "number"
           ? { targetBendX: e.data.targetBendX + delta.x }
           : {}),

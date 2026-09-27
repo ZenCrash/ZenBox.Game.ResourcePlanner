@@ -44,7 +44,35 @@ async function main() {
     }
     mappings.set(handler.name, machines);
   }
+  // Et Futurum's IMCSenderGTNH registers this dynamically, outside catalysts.csv.
+  if (ids.has("etfuturum:blast_furnace")) {
+    const machines = mappings.get("Blasting") ?? new Map<string, number>();
+    machines.set("etfuturum:blast_furnace", 0);
+    mappings.set("Blasting", machines);
+  }
   let count = 0;
+  const blastFurnaces =
+    mappings.get("Blast Furnace") ?? new Map<string, number>();
+  blastFurnaces.delete("IC2:blockMachine3:1");
+  for (const id of [
+    "gregtech:gt.blockmachines:1000",
+    "gregtech:gt.blockmachines:15412",
+  ])
+    if (ids.has(id)) blastFurnaces.set(id, id.endsWith(":1000") ? 1 : 0);
+  mappings.set("Blast Furnace", blastFurnaces);
+  // GregTech subcategories share their parent recipe map's catalysts.
+  // "Alloy Smelter" also combines Ender IO's unrelated handler in the UI.
+  for (const [category, parent] of [
+    ["Alloy Smelter Molding", "Alloy Smelter"],
+    ["Alloy Smelter Recycling", "Alloy Smelter"],
+    ["Fluid Extractor Recycling", "Fluid Extractor"],
+    ["Arc Furnace Recycling", "Arc Furnace"],
+  ]) {
+    const machines = mappings.get(category) ?? new Map<string, number>();
+    for (const [id, priority] of mappings.get(parent) ?? [])
+      if (id.startsWith("gregtech:")) machines.set(id, priority);
+    mappings.set(category, machines);
+  }
   for (const [handler, machines] of mappings) {
     const fallback = icons[handler]?.itemId;
     if (!machines.size && fallback && ids.has(fallback))

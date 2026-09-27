@@ -1,0 +1,6 @@
+tconstruct-casting.png is the original, unmodified GUI sprite sheet extracted from
+TConstruct-1.13.57-GTNH.jar:
+assets/tinker/textures/gui/nei/casting.png
+
+CastingTableLayout displays the top 112 x 55 region at 2x scale.
+Positions follow RecipeHandlerCastingTable and RecipeHandlerCastingBase.

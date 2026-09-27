@@ -101,6 +101,16 @@ async function main() {
   // Explicit preferences, including the lowest available Dehydrator (MV).
   const machineIcons = [
     {
+      name: "Blast Furnace",
+      itemId: "gregtech:gt.blockmachines:1000",
+      handlerId: "gt.recipe.blastfurnace",
+    },
+    {
+      name: "Blasting",
+      itemId: "etfuturum:blast_furnace",
+      handlerId: "ganymedes01.etfuturum.compat.nei.BlastFurnaceRecipeHandler",
+    },
+    {
       name: "Mixer",
       itemId: "gregtech:gt.blockmachines:581",
       handlerId: "gt.recipe.mixer",
@@ -122,6 +132,14 @@ async function main() {
     await access("data/game-assets" + item.image.replace(/^\/assets/, ""));
     icons[name] = { image: item.image, itemId, handlerId };
   }
+  // This hidden Witching Gadgets block is absent from the item catalog.
+  // Its game-rendered icon is bundled with the UI instead.
+  await access("public/ui/infernal-blast-bricks.png");
+  icons["Infernal Blast Furnace"] = {
+    image: "/ui/infernal-blast-bricks.png",
+    itemId: "WitchingGadgets:WG_StoneDevice:2",
+    handlerId: "witchinggadgets.client.nei.NEIInfernalBlastfurnaceHandler",
+  };
   await catalog.$transaction(
     Object.entries(icons).map(
       ([handler, icon]) =>

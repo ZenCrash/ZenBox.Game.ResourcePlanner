@@ -1,7 +1,47 @@
-import type { Edge } from "@xyflow/react";
+import {
+  applyNodeChanges,
+  type Edge,
+  type Node,
+  type NodeChange,
+} from "@xyflow/react";
+import type { Graph } from "./editor-history";
 import type { Point } from "./diagram-geometry";
 
 export type Area = { left: number; top: number; right: number; bottom: number };
+export function applyGraphNodeChanges<N extends Node, E extends Edge>(
+  graph: Graph<N, E>,
+  changes: NodeChange<N>[],
+): Graph<N, E> {
+  const nodes = applyNodeChanges(changes, graph.nodes);
+  const previous = new Map(graph.nodes.map((node) => [node.id, node.position]));
+  const movements = new Map<string, Point>();
+  for (const node of nodes) {
+    const before = previous.get(node.id);
+    if (
+      before &&
+      (before.x !== node.position.x || before.y !== node.position.y)
+    ) {
+      movements.set(node.id, {
+        x: node.position.x - before.x,
+        y: node.position.y - before.y,
+      });
+    }
+  }
+  const removed = new Set(
+    changes
+      .filter((change) => change.type === "remove")
+      .map((change) => change.id),
+  );
+  const edges = removed.size
+    ? graph.edges.filter(
+        (edge) => !removed.has(edge.source) && !removed.has(edge.target),
+      )
+    : graph.edges;
+  return {
+    nodes,
+    edges: movements.size ? moveConnectedEdges(edges, movements) : edges,
+  };
+}
 export function selectionArea(a: Point, b: Point): Area {
   return {
     left: Math.min(a.x, b.x),
@@ -63,11 +103,21 @@ export function moveConnectedEdges<E extends Edge>(
           ...(edge.data?.labelPosition
             ? { labelPosition: translate(edge.data.labelPosition as Point) }
             : {}),
+          ...(edge.data?.imagePosition
+            ? { imagePosition: translate(edge.data.imagePosition as Point) }
+            : {}),
         },
       };
     }
-    return edge.data?.labelPosition
-      ? { ...edge, data: { ...edge.data, labelPosition: undefined } }
+    return edge.data?.labelPosition || edge.data?.imagePosition
+      ? {
+          ...edge,
+          data: {
+            ...edge.data,
+            labelPosition: undefined,
+            imagePosition: undefined,
+          },
+        }
       : edge;
   });
 }

@@ -79,7 +79,12 @@ for (const handler of handlers) {
     const ingredients = [];
     let incomplete = false;
     for (const direction of ["input", "output"]) {
-      for (const ingredient of raw[direction + "s"] ?? []) {
+      const slots = [...(raw[direction + "s"] ?? [])];
+      // Witching Gadgets uses NEI's other stacks for the bonus output.
+      // Without Arcane Bellows the furnace rolls a one-in-four bonus.
+      if (handler.name === "Infernal Blast Furnace" && direction === "output")
+        slots.push(...(raw.other ?? []).map((i) => ({ ...i, chance: 2500 })));
+      for (const ingredient of slots) {
         if (!items.has(ingredient.id)) {
           incomplete = true;
           break;
@@ -162,7 +167,7 @@ for (const handler of handlers) {
       details: [
         ...recipePowerDetails(handler, raw),
         ...recipeRequirementDetails(raw.specialValue),
-        ...(raw.other?.length
+        ...(raw.other?.length && handler.name !== "Infernal Blast Furnace"
           ? [
               "Additional handler slots require classification; see extraction report.",
             ]

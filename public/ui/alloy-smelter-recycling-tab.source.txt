@@ -1,0 +1,3 @@
+Edited from user-provided codex-clipboard-6b6d29bf-fa8e-43b4-adbd-f2290b74d91e.png.
+Mode: built-in image_gen, transparent_background=true.
+Prompt: Remove only the flat gray background from this pixel-art icon; preserve the dark recycling arrows, colored smelting symbol, crisp pixel edges, and original composition. Output a tightly framed transparent PNG.

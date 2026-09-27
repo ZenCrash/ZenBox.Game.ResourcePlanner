@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   connectionRoute,
+  routeMidpoint,
   connectionLabelPosition,
   moveRouteCorner,
   draggableRouteSegments,
@@ -10,6 +11,33 @@ import {
   snapPoint,
 } from "../lib/diagram-geometry";
 import { edgeSchema } from "../lib/model";
+test("overview item follows the halfway distance along bent and reversed routes", () => {
+  assert.deepEqual(
+    routeMidpoint([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 300 },
+      { x: 200, y: 300 },
+    ]),
+    { x: 100, y: 150 },
+  );
+  assert.deepEqual(
+    routeMidpoint([
+      { x: 200, y: 300 },
+      { x: 100, y: 300 },
+      { x: 100, y: 0 },
+      { x: 0, y: 0 },
+    ]),
+    { x: 100, y: 150 },
+  );
+  assert.deepEqual(
+    routeMidpoint([
+      { x: 40, y: 20 },
+      { x: 40, y: 20 },
+    ]),
+    { x: 40, y: 20 },
+  );
+});
 test("positions and line bends snap to the invisible grid in both directions", () => {
   assert.deepEqual(snapPoint({ x: 37, y: -33 }), { x: 40, y: -40 });
   assert.deepEqual(snapPoint({ x: 40, y: -40 }), { x: 40, y: -40 });

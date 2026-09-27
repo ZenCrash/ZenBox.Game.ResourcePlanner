@@ -1,4 +1,5 @@
-import type { Node, Edge } from "@xyflow/react";
+import type { Node, Edge, NodeChange } from "@xyflow/react";
+import { applyGraphNodeChanges } from "./canvas-interactions";
 
 export type Graph<N extends Node, E extends Edge> = { nodes: N[]; edges: E[] };
 export type GraphHistory<N extends Node, E extends Edge> = {
@@ -8,6 +9,7 @@ export type GraphHistory<N extends Node, E extends Edge> = {
   group: number | null;
 };
 export type HistoryAction<N extends Node, E extends Edge> =
+  | { type: "nodeChanges"; changes: NodeChange<N>[]; group: number }
   | { type: "nodes"; value: N[] | ((nodes: N[]) => N[]); group: number }
   | { type: "edges"; value: E[] | ((edges: E[]) => E[]); group: number }
   | { type: "undo" | "redo" | "reset" };
@@ -32,6 +34,7 @@ function content<N extends Node, E extends Edge>(graph: Graph<N, E>) {
           targetBendX: data?.targetBendX,
           waypoints: data?.waypoints,
           labelPosition: data?.labelPosition,
+          imagePosition: data?.imagePosition,
         },
       }),
     ),
@@ -66,23 +69,30 @@ export function graphHistoryReducer<N extends Node, E extends Edge>(
         }
       : state;
   }
-  if (action.type !== "nodes" && action.type !== "edges") return state;
+  if (
+    action.type !== "nodes" &&
+    action.type !== "edges" &&
+    action.type !== "nodeChanges"
+  )
+    return state;
   const present =
-    action.type === "nodes"
-      ? {
-          ...state.present,
-          nodes:
-            typeof action.value === "function"
-              ? action.value(state.present.nodes)
-              : action.value,
-        }
-      : {
-          ...state.present,
-          edges:
-            typeof action.value === "function"
-              ? action.value(state.present.edges)
-              : action.value,
-        };
+    action.type === "nodeChanges"
+      ? applyGraphNodeChanges(state.present, action.changes)
+      : action.type === "nodes"
+        ? {
+            ...state.present,
+            nodes:
+              typeof action.value === "function"
+                ? action.value(state.present.nodes)
+                : action.value,
+          }
+        : {
+            ...state.present,
+            edges:
+              typeof action.value === "function"
+                ? action.value(state.present.edges)
+                : action.value,
+          };
   if (content(present) === content(state.present)) return { ...state, present };
   return {
     present,

@@ -20,6 +20,7 @@ public class PlannerExport {
     private boolean fluidsOnly;
     private boolean repairsOnly;
     private boolean blocksOnly;
+    private boolean castingOnly;
     private File output;
     private final Map<String,Object> stacks = new LinkedHashMap<String,Object>();
     private final List<String> errors = new ArrayList<String>();
@@ -54,6 +55,41 @@ public class PlannerExport {
             }
             if (world == null || player == null) return;
             if (phase == 1) {
+                if(new File(game,"planner-export.infernal-only").isFile()) {
+                    status("capturing Infernal Blast Furnace bonus slots");
+                    Object handler=Class.forName("witchinggadgets.client.nei.NEIInfernalBlastfurnaceHandler").newInstance();
+                    call(handler,"loadCraftingRecipes",call(handler,"getOverlayIdentifier"),new Object[0]);
+                    List<Object> rows=new ArrayList<Object>();
+                    int count=((Number)call(handler,"numRecipes")).intValue();
+                    for(int i=0;i<count;i++) {
+                        Map<String,Object> row=new LinkedHashMap<String,Object>();
+                        row.put("inputs",positioned(call(handler,"getIngredientStacks",i)));
+                        row.put("outputs",positioned(call(handler,"getResultStack",i)));
+                        row.put("bonus",positioned(call(handler,"getOtherStacks",i)));rows.add(row);
+                    }
+                    write("infernal-recipes.json",rows);status("Infernal Blast Furnace capture complete");
+                    disabled=true;call(mc,"func_71400_g|shutdown");return;
+                }
+                if(new File(game,"planner-export.casting-only").isFile()) {
+                    castingOnly=true;
+                    status("capturing Tinkers Construct casting table registry");
+                    List<Object> rows=new ArrayList<Object>();
+                    Object casting=call(Class.forName("tconstruct.library.TConstructRegistry"),"getTableCasting");
+                    for(Object recipe:(Iterable<?>)call(casting,"getCastingRecipes")) {
+                        Map<String,Object> row=new LinkedHashMap<String,Object>();
+                        row.put("output",castingItem(field(recipe,"output")));
+                        row.put("cast",castingItem(field(recipe,"cast")));
+                        row.put("consumeCast",field(recipe,"consumeCast"));
+                        row.put("ignoreNBT",field(recipe,"ignoreNBT"));
+                        row.put("durationTicks",field(recipe,"coolTime"));
+                        Object fluid=field(recipe,"castingMetal");
+                        row.put("fluid", "fluid:"+call(call(fluid,"getFluid"),"getName"));
+                        row.put("amount",field(fluid,"amount"));rows.add(row);
+                    }
+                    write("casting-table.json",rows);
+                    status("casting table registry captured: "+rows.size()+" recipes; rendering referenced items");
+                    phase=4;ticks=0;return;
+                }
                 blocksOnly=new File(game,"planner-export.block-images.json").isFile();
                 File repairFile=new File(game,blocksOnly?"planner-export.block-images.json":"planner-export.image-repairs.json");
                 if(repairFile.isFile()) {
@@ -165,7 +201,7 @@ public class PlannerExport {
                     } catch(Throwable error){errors.add("Icon "+entry.getKey()+": "+error);}
                     if(++done%1000==0) { status("rendered "+done+" / "+stacks.size()+" item icons");write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors); }
                 }
-                write(blocksOnly?"block-icons.json":repairsOnly?"repair-icons.json":fluidsOnly?"fluid-icons.json":"icons.json",rendered);ticks=0;return;
+                write(castingOnly?"casting-icons.json":blocksOnly?"block-icons.json":repairsOnly?"repair-icons.json":fluidsOnly?"fluid-icons.json":"icons.json",rendered);ticks=0;return;
             }
             if (phase == 5) {
                 write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("finished; validation required");disabled=true;
@@ -177,6 +213,20 @@ public class PlannerExport {
         }
     }
 
+    private Map<String,Object> castingItem(Object stack) throws Exception {
+        if(stack==null)return null;
+        Map<String,Object> row=new LinkedHashMap<String,Object>();
+        Object registry=field(Class.forName("net.minecraft.item.Item"),"field_150901_e|itemRegistry");
+        row.put("registryId",call(registry,"func_148750_c|getNameForObject",call(stack,"func_77973_b|getItem")));
+        row.put("metadata",call(stack,"func_77960_j|getItemDamage"));
+        row.put("amount",field(stack,"field_77994_a|stackSize"));
+        Object nbt=call(stack,"func_77978_p|getTagCompound");
+        row.put("nbt",nbt==null?"":nbt.toString());
+        row.put("id",addStack(stack));
+        row.put("name",call(stack,"func_82833_r|getDisplayName"));
+        row.put("tooltip",call(Class.forName("com.iouter.gtnhdumper.common.utils.Utils"),"getTooltip",stack));
+        return row;
+    }
     private String addStack(Object stack) throws Exception {
         if(stack==null)return null;
         String key=String.valueOf(call(Class.forName("com.iouter.gtnhdumper.common.utils.Utils"),"getItemStackShortKey",stack));
@@ -241,7 +291,7 @@ public class PlannerExport {
         write("recipes.json",handlers);
     }
     private void status(String message) throws Exception {System.out.println("[PLANNER EXPORT] "+message);Files.write(new File(output,"status.txt").toPath(),(new Date()+" "+message).getBytes(StandardCharsets.UTF_8));}
-    private void write(String name,Object value) throws Exception {if(output==null)return;Object gson=field(Class.forName("com.iouter.gtnhdumper.GTNHDumper"),"GSON");try(Writer writer=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(output,name)),StandardCharsets.UTF_8))){call(gson,"toJson",value,writer);}}
+    private void write(String name,Object value) throws Exception {if(output==null)return;Object gson=Class.forName("com.google.gson.Gson").newInstance();try(Writer writer=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(output,name)),StandardCharsets.UTF_8))){call(gson,"toJson",value,writer);}}
     private static Object field(Object target,String aliases) throws Exception {
         Class<?> type=target instanceof Class ? (Class<?>)target : target.getClass();
         for(Class<?> c=type;c!=null;c=c.getSuperclass())for(String name:aliases.split("\\|")){try{Field f=c.getDeclaredField(name);f.setAccessible(true);return f.get(target instanceof Class ? null:target);}catch(NoSuchFieldException ignored){}}

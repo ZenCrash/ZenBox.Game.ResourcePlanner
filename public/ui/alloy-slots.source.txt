@@ -1,0 +1,4 @@
+Original, unmodified GregTech 5.09.51.482 slot overlays:
+alloy-furnace-slot.png: assets/gregtech/textures/gui/overlay_slot/furnace.png
+alloy-mold-slot.png: assets/gregtech/textures/gui/overlay_slot/mold.png
+Extracted from gregtech-5.09.51.482.jar; displayed behind item artwork and counts.

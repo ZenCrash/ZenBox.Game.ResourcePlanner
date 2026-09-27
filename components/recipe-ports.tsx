@@ -3,10 +3,12 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Unlink } from "lucide-react";
 import {
   Handle,
+  EdgeLabelRenderer,
   Position,
   useInternalNode,
   useReactFlow,
   useUpdateNodeInternals,
+  useStore,
 } from "@xyflow/react";
 import {
   hasRecipeTiming,
@@ -43,6 +45,7 @@ export function RecipePorts({
   commit: (id: string, rows: PortRows) => void;
 }) {
   const node = useInternalNode(id);
+  const overview = useStore((state) => state.transform[2] < 0.5);
   const flow = useReactFlow();
   const update = useUpdateNodeInternals();
   const [preview, setPreview] = useState<PortRows | null>(null);
@@ -171,29 +174,34 @@ export function RecipePorts({
                 />
                 {(selectedConnections.get(`${id}/${handle}`) ?? []).map(
                   (edgeId, index) => (
-                    <button
-                      key={edgeId}
-                      className="port-disconnect nodrag nopan"
-                      style={
-                        direction === "input"
-                          ? { right: 22 + index * 28 }
-                          : { left: 22 + index * 28 }
-                      }
-                      aria-label={`Disconnect ${ingredient.item.name.replace(/§[0-9a-fk-or]/gi, "")}`}
-                      title="Disconnect line"
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        disconnect(edgeId);
-                      }}
-                    >
-                      <Unlink size={16} />
-                    </button>
+                    <EdgeLabelRenderer key={edgeId}>
+                      <button
+                        className={`port-disconnect nodrag nopan${overview ? " overview-hidden" : ""}`}
+                        style={{
+                          left:
+                            (node?.internals.positionAbsolute.x ?? 0) +
+                            (direction === "input"
+                              ? -46 - index * 28
+                              : (node?.measured.width ?? 0) + 22 + index * 28),
+                          top: origin + row * GRID_SIZE,
+                          zIndex: 2003,
+                        }}
+                        aria-label={`Disconnect ${ingredient.item.name.replace(/§[0-9a-fk-or]/gi, "")}`}
+                        title="Disconnect line"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          disconnect(edgeId);
+                        }}
+                      >
+                        <Unlink size={16} />
+                      </button>
+                    </EdgeLabelRenderer>
                   ),
                 )}
                 {!recipe.sourceItemId && (
                   <span
-                    className="port-name"
+                    className={`port-name${overview ? " overview-hidden" : ""}`}
                     hidden={connected.has(`${id}/${handle}`)}
                   >
                     {ingredient.item.name}

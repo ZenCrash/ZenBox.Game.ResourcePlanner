@@ -11,11 +11,12 @@ const forge = path.join(
   "libraries/net/minecraftforge/forge/1.7.10-10.13.4.1614-1.7.10/forge-1.7.10-10.13.4.1614-1.7.10-universal.jar",
 );
 const compilation = spawnSync(
-  path.join(launcher, "java/jre-legacy/bin/java.exe"),
+  process.env.PLANNER_JAVAC ||
+    path.join(launcher, "java/jre-legacy/bin/java.exe"),
   [
-    "-jar",
-    "data/extraction/ecj.jar",
-    "-1.8",
+    ...(process.env.PLANNER_JAVAC
+      ? ["--release", "8"]
+      : ["-jar", "data/extraction/ecj.jar", "-1.8"]),
     "-proc:none",
     "-cp",
     forge,

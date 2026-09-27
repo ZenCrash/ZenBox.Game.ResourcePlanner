@@ -6,7 +6,7 @@ import {
   useRef,
   type SetStateAction,
 } from "react";
-import type { Node, Edge } from "@xyflow/react";
+import type { Node, Edge, NodeChange } from "@xyflow/react";
 import { graphHistoryReducer, type GraphHistory } from "@/lib/editor-history";
 
 export function useGraphHistory<N extends Node, E extends Edge>() {
@@ -43,12 +43,18 @@ export function useGraphHistory<N extends Node, E extends Edge>() {
     [],
   );
   const undo = useCallback(() => dispatch({ type: "undo" }), []);
+  const changeNodes = useCallback(
+    (changes: NodeChange<N>[]) =>
+      dispatch({ type: "nodeChanges", changes, group: group.current }),
+    [],
+  );
   const redo = useCallback(() => dispatch({ type: "redo" }), []);
   const resetHistory = useCallback(() => dispatch({ type: "reset" }), []);
   return {
     ...state.present,
     setNodes,
     setEdges,
+    changeNodes,
     undo,
     redo,
     resetHistory,

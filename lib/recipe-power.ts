@@ -18,7 +18,10 @@ const tiers = [
   "MAX",
 ];
 
-export function recipePowerInfo(recipe: Pick<Recipe, "euPerTick" | "details">) {
+export function recipePowerInfo(
+  recipe: Pick<Recipe, "euPerTick" | "details"> &
+    Partial<Pick<Recipe, "handler">>,
+) {
   let details: string[] = [];
   try {
     const parsed: unknown = JSON.parse(recipe.details);
@@ -27,6 +30,10 @@ export function recipePowerInfo(recipe: Pick<Recipe, "euPerTick" | "details">) {
         (line): line is string => typeof line === "string",
       );
   } catch {}
+  if (recipe.handler?.startsWith("Magic Energy Absorber Fu"))
+    details = details.map((line) =>
+      line.replace(/^Special value:\s*(.+)$/i, "Fuel Value: $1 EU"),
+    );
   const amperage = details.find((line) => /^Amperage:/i.test(line));
   const recordedVoltage = details.find((line) => /^Voltage:/i.test(line));
   const amps =

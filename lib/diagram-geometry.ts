@@ -1,5 +1,26 @@
 export const GRID_SIZE = 20;
 export type Point = { x: number; y: number };
+
+export function routeMidpoint(points: Point[]): Point {
+  const lengths = points
+    .slice(1)
+    .map((point, index) =>
+      Math.hypot(point.x - points[index].x, point.y - points[index].y),
+    );
+  let remaining = lengths.reduce((sum, length) => sum + length, 0) / 2;
+  for (let index = 0; index < lengths.length; index++) {
+    const length = lengths[index];
+    if (length > 0 && remaining <= length) {
+      const fraction = remaining / length;
+      return {
+        x: points[index].x + (points[index + 1].x - points[index].x) * fraction,
+        y: points[index].y + (points[index + 1].y - points[index].y) * fraction,
+      };
+    }
+    remaining -= length;
+  }
+  return points[0] ?? { x: 0, y: 0 };
+}
 export function snapPoint(point: Point): Point {
   return {
     x: Math.round(point.x / GRID_SIZE) * GRID_SIZE,
@@ -91,25 +112,19 @@ export function moveRouteCorner(
   };
 }
 
-// Adjacent corners can collapse their connecting segment; corners sharing an
-// intermediate corner can collapse that detour as well.
-// Keep the endpoint corners so recipe-connected sections cannot be removed.
+// Collapse a dropped pair only when its outside legs become one straight line.
 export function mergeRouteCorner(
   route: ReturnType<typeof connectionRoute>,
   index: number,
   point: Point,
 ): Point[] | null {
   const vertex = index + 1;
-  if (vertex <= 1 || vertex >= route.points.length - 2) return null;
-  // Older routes and short inserted detours can contain fractional coordinates.
-  // Hit-test the actual drop against the nearby corner, before grid rounding.
+  if (vertex < 1 || vertex >= route.points.length - 1) return null;
   const tolerance = GRID_SIZE / 2;
-  const target = route.corners
+  const candidates = route.corners
     .filter(
       (corner) =>
         [1, 2].includes(Math.abs(corner.index - index)) &&
-        corner.index + 1 > 1 &&
-        corner.index + 1 < route.points.length - 2 &&
         Math.abs(corner.point.x - point.x) <= tolerance &&
         Math.abs(corner.point.y - point.y) <= tolerance,
     )
@@ -117,21 +132,54 @@ export function mergeRouteCorner(
       (a, b) =>
         Math.hypot(a.point.x - point.x, a.point.y - point.y) -
         Math.hypot(b.point.x - point.x, b.point.y - point.y),
-    )[0];
-  if (!target) return null;
-  const moved = moveRouteCorner(
-    { ...route, custom: true },
-    index,
-    target.point,
-    false,
-  ).waypoints!;
-  const points = [route.points[0], ...moved, route.points.at(-1)!];
-  const lower = Math.min(vertex, target.index + 1);
-  // Adjacent corners coincide after the move. Their outside segments are now
-  // collinear, so remove both redundant waypoints instead of retaining an
-  // invisible duplicate that can turn back into two corners on the next drag.
-  points.splice(lower + (Math.abs(target.index - index) === 1 ? 0 : 1), 2);
-  return points.slice(1, -1);
+    );
+  for (const target of candidates) {
+    const moved = moveRouteCorner(
+      { ...route, custom: true },
+      index,
+      target.point,
+      false,
+    ).waypoints!;
+    const points = [route.points[0], ...moved, route.points.at(-1)!];
+    const lower = Math.min(vertex, target.index + 1),
+      upper = Math.max(vertex, target.index + 1);
+    const joint = points[lower];
+    if (Math.abs(target.index - index) === 2) {
+      // Retain the existing shared-neighbor detour collapse. It leaves one
+      // corner because the two outside legs are perpendicular in this case.
+      if (lower <= 1 || upper >= points.length - 2) continue;
+      points.splice(lower + 1, 2);
+      return points.slice(1, -1);
+    }
+    if (
+      !points
+        .slice(lower, upper + 1)
+        .every((p) => p.x === joint.x && p.y === joint.y)
+    )
+      continue;
+    const before = points[lower - 1],
+      after = points[upper + 1];
+    const horizontal = before.y === joint.y && after.y === joint.y;
+    const vertical = before.x === joint.x && after.x === joint.x;
+    if (!horizontal && !vertical) continue;
+    points.splice(lower, upper - lower + 1);
+    const simplified: Point[] = [];
+    for (const p of points) {
+      while (simplified.length > 1) {
+        const a = simplified.at(-2)!,
+          b = simplified.at(-1)!;
+        if ((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))
+          simplified.pop();
+        else break;
+      }
+      simplified.push(p);
+    }
+    const waypoints = simplified.slice(1, -1);
+    return waypoints.length >= 2
+      ? waypoints
+      : [{ ...points[0] }, { ...points.at(-1)! }];
+  }
+  return null;
 }
 
 export function draggableRouteSegments(

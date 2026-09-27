@@ -1,0 +1,5 @@
+extrude-progress.png is the original, unmodified sprite sheet extracted from
+gregtech-5.09.51.482.jar:
+assets/gregtech/textures/gui/progressbar/extrude.png
+
+TiC Part Extruding displays the upper 20 x 18 (inactive) frame at 2x scale.

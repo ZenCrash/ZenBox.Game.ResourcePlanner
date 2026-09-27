@@ -1,0 +1,3 @@
+Original unmodified WitchingGadgets-1.7.25-GTNH.jar asset:
+assets/witchinggadgets/textures/gui/nei/blastfurnace.png
+The furnace artwork is the 48 x 48 region at (64,19), displayed at 2x.

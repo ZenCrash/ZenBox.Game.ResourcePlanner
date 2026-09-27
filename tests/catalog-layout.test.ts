@@ -1,6 +1,38 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { catalogTiles } from "../lib/catalog-layout";
+import { shapedCraftingSlots } from "../lib/recipe-slots";
+import type { Ingredient } from "../lib/model";
+
+test("shaped crafting preserves spatial gaps rather than packing ingredient order", () => {
+  const input = (slot: number, x: number | null, y: number | null) =>
+    ({ slot, x, y, direction: "input" }) as Ingredient;
+  const topLeft = input(0, 25, 6);
+  const middleLeft = input(1, 25, 24);
+  const bottomRight = input(2, 61, 42);
+  const output = { slot: 0, direction: "output" } as Ingredient;
+  const result = shapedCraftingSlots([
+    bottomRight,
+    output,
+    topLeft,
+    middleLeft,
+  ]);
+  assert.deepEqual(result.inputs, [
+    topLeft,
+    null,
+    null,
+    middleLeft,
+    null,
+    null,
+    null,
+    null,
+    bottomRight,
+  ]);
+  assert.equal(result.output, output);
+  assert.equal(shapedCraftingSlots([]).inputs.length, 9);
+  assert.equal(shapedCraftingSlots([]).output, null);
+  assert.equal(shapedCraftingSlots([input(4, null, null)]).inputs[4]?.slot, 4);
+});
 const items = [
   { id: "a", collapsibleGroupId: "wood" },
   { id: "stone", collapsibleGroupId: null },

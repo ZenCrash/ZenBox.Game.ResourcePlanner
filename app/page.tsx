@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, GitBranch, Blocks } from "lucide-react";
+import { ArrowUpRight, GitBranch } from "lucide-react";
+import { GameLogo } from "@/components/game-logo";
 export default function Home() {
   return (
     <main className="landing">
@@ -22,7 +23,7 @@ export default function Home() {
           <span>CHOOSE YOUR GAME</span>
         </div>
         <Link className="edition-row game-choice" href="/games/minecraft">
-          <Blocks size={42} />
+          <GameLogo game="minecraft" />
           <div>
             <h2>Minecraft</h2>
             <p>Choose Vanilla Minecraft or a modpack.</p>

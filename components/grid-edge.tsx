@@ -8,8 +8,11 @@ import {
   type EdgeProps,
 } from "@xyflow/react";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import type { Item } from "@/lib/model";
+import { ItemTooltip } from "./item-tooltip";
 import {
   connectionRoute,
+  routeMidpoint,
   connectionLabelPosition,
   moveRouteCorner,
   draggableRouteSegments,
@@ -21,11 +24,13 @@ import {
   type Point,
 } from "@/lib/diagram-geometry";
 export type DiagramEdge = Edge<{
+  item?: Item;
   bend?: Point;
   targetBendX?: number;
   waypoints?: Point[];
   labelPosition?: Point;
-  moveLabel?: (id: string, position: Point) => void;
+  imagePosition?: Point;
+  moveLabel?: (id: string, position: Point, image?: boolean) => void;
   select?: (additive: boolean, toggle?: boolean) => void;
   movePoints?: (id: string, waypoints: Point[]) => void;
   moveBend?: (id: string, point: Point, targetBendX: number) => void;
@@ -42,6 +47,7 @@ export function GridEdge({
   selected,
 }: EdgeProps<DiagramEdge>) {
   const flow = useReactFlow();
+  const overview = useStore((state) => state.transform[2] < 0.5);
   const edges = useStore((state) => state.edges);
   useStore((state) => state.nodes);
   const dragging = useRef<number | null>(null);
@@ -58,6 +64,7 @@ export function GridEdge({
   const [activeCorner, setActiveCorner] = useState<number | null>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const labelDrag = useRef<{
+    image: boolean;
     pointer: Point;
     position: Point;
     moved: boolean;
@@ -124,23 +131,28 @@ export function GridEdge({
       ).points,
     ];
   });
+  const midpoint = data?.imagePosition ?? routeMidpoint(route.points);
   const position =
     data?.labelPosition ??
     connectionLabelPosition(route, size.width, size.height, [
       route.points,
       ...routes,
     ]);
-  const startLabelDrag = (event: PointerEvent<HTMLDivElement>) => {
+  const startLabelDrag = (
+    event: PointerEvent<HTMLDivElement>,
+    image = false,
+  ) => {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     skipLabelClick.current = false;
     labelDrag.current = {
+      image,
       pointer: flow.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       }),
-      position,
+      position: image ? midpoint : position,
       moved: false,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -168,6 +180,7 @@ export function GridEdge({
         x: active.position.x + pointer.x - active.pointer.x,
         y: active.position.y + pointer.y - active.pointer.y,
       }),
+      active.image,
     );
   };
   const stopLabelDrag = (event: PointerEvent<HTMLDivElement>) => {
@@ -187,6 +200,18 @@ export function GridEdge({
     event: PointerEvent<HTMLButtonElement>,
     index: number,
   ) => {
+    if (event.button === 1) {
+      event.preventDefault();
+      event.stopPropagation();
+      data?.movePoints?.(
+        id,
+        insertRouteBend(
+          route,
+          flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+        ),
+      );
+      return;
+    }
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
@@ -322,7 +347,7 @@ export function GridEdge({
       <EdgeLabelRenderer>
         {label != null && (
           <div
-            className={`connection-label nodrag nopan${selected ? " selected" : ""}`}
+            className={`connection-label nodrag nopan${selected ? " selected" : ""}${overview ? " overview-hidden" : ""}`}
             onPointerDown={startLabelDrag}
             onPointerMove={moveLabel}
             onPointerUp={stopLabelDrag}
@@ -360,30 +385,66 @@ export function GridEdge({
             {label}
           </div>
         )}
+        {data?.item && (
+          <div
+            className={`connection-overview-item nodrag nopan${overview ? " visible" : ""}`}
+            onPointerDown={(event) => startLabelDrag(event, true)}
+            onPointerMove={moveLabel}
+            onPointerUp={stopLabelDrag}
+            onPointerCancel={stopLabelDrag}
+            onLostPointerCapture={() => {
+              labelDrag.current = null;
+            }}
+            style={{
+              left: midpoint.x,
+              top: midpoint.y,
+              zIndex: selected ? 2001 : 1,
+            }}
+            aria-hidden={!overview}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (skipLabelClick.current) {
+                skipLabelClick.current = false;
+                return;
+              }
+              data.select?.(
+                event.ctrlKey || event.metaKey,
+                event.ctrlKey || event.metaKey,
+              );
+            }}
+          >
+            {data.item.image ? (
+              <img
+                src={data.item.image}
+                alt={data.item.name}
+                draggable={false}
+              />
+            ) : (
+              <span>?</span>
+            )}
+            {overview && (
+              <ItemTooltip compact followPointer placement="top-right">
+                <strong>{data.item.name.replace(/§./g, "")}</strong>
+              </ItemTooltip>
+            )}
+          </div>
+        )}
         {selected &&
           corners.map(({ point, index }) => (
             <button
               key={index}
               className="connection-bend nodrag nopan"
               aria-label={`Move connection corner ${index + 1}`}
-              title="Drag to route this connection · Arrow keys move one grid step"
-              onContextMenu={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                data?.movePoints?.(
-                  id,
-                  insertRouteBend(
-                    route,
-                    flow.screenToFlowPosition({
-                      x: event.clientX,
-                      y: event.clientY,
-                    }),
-                  ),
-                );
-              }}
+              title="Drag to route this connection · Middle-click to add a bend · Arrow keys move one grid step"
               style={{
                 transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
                 zIndex: 2002,
+              }}
+              onAuxClick={(event) => {
+                if (event.button === 1) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
               }}
               onPointerDown={(event) => beginCornerDrag(event, index)}
               onPointerMove={(event) => {
