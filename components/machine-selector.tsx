@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { X } from "lucide-react";
 import type { Item, Recipe } from "@/lib/model";
 import { ItemTooltip } from "./item-tooltip";
 import { MinecraftText } from "./minecraft-text";
@@ -11,7 +12,7 @@ import {
   tierColors,
 } from "@/lib/machine-selection";
 
-function MachineItemTooltip({ item }: { item: Item }) {
+export function MachineItemTooltip({ item }: { item: Item }) {
   let lines: string[] = [];
   try {
     const parsed: unknown = JSON.parse(item.tooltip);
@@ -46,11 +47,13 @@ export function MachineSelector({
   recipe,
   machineId,
   amount,
+  onAmountChange,
   onSelect,
 }: {
   recipe: Recipe;
   machineId?: string;
   amount?: number;
+  onAmountChange: (amount: number) => void;
   onSelect: (id: string) => void;
 }) {
   const { options, defaultMachine } = machineOptions(recipe);
@@ -58,6 +61,8 @@ export function MachineSelector({
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [amountEmpty, setAmountEmpty] = useState(false);
+  const amountInputId = useId();
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
@@ -98,7 +103,10 @@ export function MachineSelector({
         }
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setAmountEmpty(false);
+          setOpen((value) => !value);
+        }}
       >
         <span className="item-art">
           {selected?.image ? (
@@ -119,6 +127,7 @@ export function MachineSelector({
           aria-label="Crafting machine"
           className="machine-selector-menu nodrag nopan nowheel"
           onKeyDown={(event) => {
+            if (event.target instanceof HTMLInputElement) return;
             if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
               return;
             event.preventDefault();
@@ -140,6 +149,47 @@ export function MachineSelector({
             buttons[next]?.focus();
           }}
         >
+          <div className="machine-selector-amount">
+            <label htmlFor={amountInputId}>Machine amount</label>
+            <span className="machine-selector-amount-field">
+            <input
+              id={amountInputId}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={1e9}
+              step={1}
+              value={amountEmpty ? "" : (amount ?? 1)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if ([".", ",", "e", "E", "+", "-"].includes(event.key))
+                  event.preventDefault();
+              }}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (value === "") {
+                  setAmountEmpty(true);
+                  return;
+                }
+                if (!/^\d+$/.test(value)) return;
+                setAmountEmpty(false);
+                onAmountChange(Math.max(1, Math.min(1e9, Number(value))));
+              }}
+              onBlur={() => setAmountEmpty(false)}
+            />
+            {(amount ?? 1) !== 1 && (
+              <button type="button" className="machine-selector-amount-reset"
+                aria-label="Reset machine amount" title="Reset machine amount"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setAmountEmpty(false);
+                  onAmountChange(1);
+                }}>
+                <X size={12} aria-hidden="true" />
+              </button>
+            )}
+            </span>
+          </div>
           {options.map((item) => {
             const tier = machineTier(item);
             const voltage = machineVoltage(item);

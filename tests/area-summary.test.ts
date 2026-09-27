@@ -69,6 +69,25 @@ const card = (recipe: Recipe, machines = 1): SummaryRecipe => ({
 });
 const area = { position: { x: 0, y: 0 }, width: 500, height: 500 };
 
+test("disabled ports omit only their own ingredient flows and retain machine totals", () => {
+  const node = card(recipe("disabled", [
+    ingredient("ore", "input", 3),
+    { ...ingredient("ore", "input", 7), slot: 1 },
+    ingredient("dust", "output", 5),
+  ]), 2);
+  const summary = summarizeArea(area, [{ ...node, disabledPorts: ["input:0", "output:0"] }]);
+  assert.deepEqual(summary.inputs.map((flow) => [flow.item.id, flow.rate]), [["ore", 14]]);
+  assert.deepEqual(summary.outputs, []);
+  assert.equal(summary.machineCount, 2);
+  assert.equal(summary.euPerTick, 60);
+  assert.equal(summary.totalEu, 1200);
+  assert.deepEqual(summary.disabled.map(flow => [flow.item.id, flow.rate]), [["dust", 10], ["ore", 6]]);
+  const enabled = summarizeArea(area, [{ ...node, disabledPorts: [] }]);
+  assert.equal(enabled.inputs[0].rate, 20);
+  assert.equal(enabled.outputs[0].rate, 10);
+  assert.deepEqual(enabled.disabled, []);
+});
+
 test("summary calculator converts both directions and handles invalid rates", () => {
   assert.equal(convertSummaryRate(1000, 250, 100), 400);
   assert.equal(convertSummaryRate(400, 100, 250), 1000);
@@ -223,4 +242,37 @@ test("area dimensions persist in diagrams and resize undo is one operation", () 
   assert.equal(history.past.length, 1);
   history = graphHistoryReducer(history, { type: "undo" });
   assert.equal(history.present.nodes[0].width, 640);
+});
+
+test("diagram labels preserve text, position and font size without becoming recipes", () => {
+  const labels = [{ id: "f027ac35-2fa9-4b54-9044-4ff5bec99875", position: { x: -120, y: 80 }, text: "Oil processing\nStage 1", fontSize: 48, textColor: "#ff8800", backgroundColor: "transparent" }];
+  const parsed = diagramSchema.parse(JSON.parse(JSON.stringify({ ...blankDiagram(), labels })));
+  assert.deepEqual(parsed.labels, labels);
+  assert.equal(parsed.nodes.length, 0);
+  assert.equal(diagramSchema.parse(blankDiagram()).labels, undefined);
+  assert.equal(diagramSchema.safeParse({ ...blankDiagram(), labels: [{ ...labels[0], fontSize: 0 }] }).success, false);
+});
+
+test("disabling a circle retains the same item on other machines and the opposite side", () => {
+  const first = card(recipe("first", [
+    ingredient("fluid", "input", 10),
+    { ...ingredient("fluid", "input", 3), slot: 1 },
+    ingredient("fluid", "output", 2),
+  ]));
+  const second = card(recipe("second", [ingredient("fluid", "input", 8)]));
+  const disabledInput = summarizeArea(area, [{ ...first, disabledPorts: ["input:0"] }, second]);
+  assert.deepEqual(disabledInput.inputs.map(flow => [flow.item.id, flow.rate]), [["fluid", 9]]);
+  assert.deepEqual(disabledInput.recursiveInputIds, ["fluid"]);
+  assert.deepEqual(disabledInput.disabled.map(flow => [flow.item.id, flow.rate]), [["fluid", 10]]);
+  const disabledOutput = summarizeArea(area, [{ ...first, disabledPorts: ["output:0"] }, second]);
+  assert.deepEqual(disabledOutput.inputs.map(flow => [flow.item.id, flow.rate]), [["fluid", 21]]);
+  const reenabled = summarizeArea(area, [first, second]);
+  assert.deepEqual(reenabled.inputs.map(flow => [flow.item.id, flow.rate]), [["fluid", 19]]);
+});
+
+
+test("label background colors persist and invalid colors are rejected", () => {
+  const label = { id: "f027ac35-2fa9-4b54-9044-4ff5bec99875", position: { x: 0, y: 0 }, text: "Label", fontSize: 30, textColor: "#123456", backgroundColor: "#abcdef" };
+  assert.deepEqual(diagramSchema.parse({ ...blankDiagram(), labels: [label] }).labels, [label]);
+  assert.equal(diagramSchema.safeParse({ ...blankDiagram(), labels: [{ ...label, textColor: "invalid" }] }).success, false);
 });

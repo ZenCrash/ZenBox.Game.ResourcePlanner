@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { overclockRecipe } from "../lib/recipe-overclock";
+import {
+  overclockRecipe,
+  recipeMachineBaseline,
+  recipeComparison,
+} from "../lib/recipe-overclock";
 import { recipePowerInfo } from "../lib/recipe-power";
+import { isMachineUpgrade } from "../lib/machine-selection";
 import { rate, type Recipe, type Item, type Ingredient } from "../lib/model";
 import { connectionSummary } from "../lib/connection-summary";
 import { summarizeArea } from "../lib/area-summary";
@@ -43,6 +48,99 @@ const base: Recipe = {
   ingredients: [ingredient],
   craftingMachines: [lv, mv, hv],
 };
+const furnace = {
+  ...lv,
+  id: "minecraft:furnace",
+  name: "Furnace",
+  tooltip: "[]",
+};
+const electricLV = { ...lv, id: "gregtech:gt.blockmachines:261" };
+const electricMV = { ...mv, id: "gregtech:gt.blockmachines:262" };
+const smelting = {
+  ...base,
+  handler: "Smelting",
+  euPerTick: 0,
+  durationTicks: 0,
+  details: "[]",
+  craftingMachines: [furnace, electricLV, electricMV],
+};
+test("smelting has fuel-furnace time and machine-specific electric energy and rates", () => {
+  assert.equal(isMachineUpgrade(smelting, furnace.id), false);
+  assert.equal(isMachineUpgrade(smelting, electricLV.id), false);
+  assert.equal(isMachineUpgrade(smelting, electricMV.id), true);
+  const mvMinimum = { ...base, euPerTick: 120, details: "[]" };
+  assert.equal(isMachineUpgrade(mvMinimum, "MV"), false);
+  assert.equal(isMachineUpgrade(mvMinimum, "HV"), true);
+  const comparison = recipeComparison(smelting, electricMV.id);
+  assert.equal(comparison.referenceRecipe.euPerTick, 4);
+  assert.equal(comparison.referenceRecipe.durationTicks, 128);
+  assert.equal(comparison.isDefaultMachine, false);
+  assert.equal(recipeComparison(smelting, electricLV.id).isDefaultMachine, true);
+  assert.equal(recipeComparison(smelting, furnace.id).referenceRecipe.euPerTick, 0);
+  assert.equal(overclockRecipe(smelting).durationTicks, 200);
+  assert.equal(overclockRecipe(smelting).euPerTick, 0);
+  const electric = overclockRecipe(smelting, electricLV.id);
+  assert.equal(electric.durationTicks, 128);
+  assert.equal(electric.euPerTick, 4);
+  assert.equal(electric.durationTicks * electric.euPerTick, 512);
+  const upgraded = overclockRecipe(smelting, electricMV.id);
+  assert.equal(upgraded.durationTicks, 64);
+  assert.equal(upgraded.euPerTick, 16);
+  assert.equal(rate(ingredient, upgraded), rate(ingredient, electric) * 2);
+  assert.equal(
+    recipeMachineBaseline(smelting, electricMV.id).durationTicks,
+    128,
+  );
+  assert.equal(smelting.durationTicks, 0);
+});
+test("steam and iron furnaces use verified time without displaying electric power", () => {
+  for (const [id, ticks] of [
+    ["IC2:blockMachine:1", 160],
+    ["gregtech:gt.blockmachines:103", 256],
+    ["gregtech:gt.blockmachines:104", 128],
+    ["Natura:NetherFurnace", 200],
+  ] as const) {
+    const recipe = overclockRecipe({
+      ...smelting,
+      craftingMachines: [{ ...furnace, id }],
+    });
+    assert.equal(recipe.durationTicks, ticks);
+    assert.equal(recipe.euPerTick, 0);
+  }
+});
+test("unconfigured smelting multiblocks do not inherit vanilla furnace timing", () => {
+  const recipe = overclockRecipe({
+    ...smelting,
+    craftingMachines: [{ ...furnace, id: "gregtech:gt.blockmachines:1003" }],
+  });
+  assert.equal(recipe.durationTicks, 0);
+  assert.doesNotMatch(recipe.details, /Machine-specific timing/);
+});
+test("Steam Oven models nine parallel smelts, upfront steam, and batch restart time", () => {
+  const recipe = overclockRecipe({ ...smelting, craftingMachines: [{ ...furnace, id: "Railcraft:machine.alpha:3" }] });
+  assert.equal(recipe.durationTicks, 256);
+  assert.equal(recipe.cycleDurationTicks, 272);
+  assert.equal(recipe.parallel, 9);
+  assert.equal(recipe.steamPerBatch, 8000);
+  assert.equal(recipe.steamPerTick, 8000 / 272);
+  assert.equal(rate(ingredient, recipe), ingredient.amount * 20 / 272 * 9);
+  assert.equal(rate(ingredient, recipe, 2), ingredient.amount * 20 / 272 * 2 * 9);
+});
+test("steam furnaces and ordinary steam machines expose liters rather than EU", () => {
+  for (const [id, steam, ticks] of [["gregtech:gt.blockmachines:103", 8, 256], ["gregtech:gt.blockmachines:104", 16, 128]] as const) {
+    const recipe = overclockRecipe({ ...smelting, craftingMachines: [{ ...furnace, id }] });
+    assert.equal(recipe.steamPerTick, steam);
+    assert.equal(recipe.steamPerTick! * recipe.durationTicks, 2048);
+    assert.equal(recipe.durationTicks, ticks);
+  }
+  for (const [id, steam, ticks] of [["gregtech:gt.blockmachines:106", 60, 400], ["gregtech:gt.blockmachines:107", 120, 200]] as const) {
+    const recipe = overclockRecipe({ ...base, handler: "Macerator", craftingMachines: [{ ...furnace, id }] });
+    assert.equal(recipe.steamPerTick, steam);
+    assert.equal(recipe.durationTicks, ticks);
+    assert.equal(recipe.euPerTick, 0);
+    assert.equal(recipePowerInfo(recipe).voltage, undefined);
+  }
+});
 test("higher tiers change time, power, totals and rates without mutating the baseline", () => {
   const before = JSON.stringify(base);
   const recipe = overclockRecipe(base, "MV");

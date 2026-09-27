@@ -88,11 +88,11 @@ export function CanvasSelection<N extends Node, E extends Edge>({
           id: edge.id,
           points: connectionRoute(
             {
-              x: source.internals.positionAbsolute.x + a.x + a.width,
+              x: source.internals.positionAbsolute.x + a.x + a.width / 2,
               y: source.internals.positionAbsolute.y + a.y + a.height / 2,
             },
             {
-              x: target.internals.positionAbsolute.x + b.x,
+              x: target.internals.positionAbsolute.x + b.x + b.width / 2,
               y: target.internals.positionAbsolute.y + b.y + b.height / 2,
             },
             edge.data?.bend as Point | undefined,

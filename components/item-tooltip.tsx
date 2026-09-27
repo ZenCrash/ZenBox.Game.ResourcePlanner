@@ -18,7 +18,7 @@ export function ItemTooltip({
   children: ReactNode;
   followPointer?: boolean;
   compact?: boolean;
-  placement?: "left" | "top-right";
+  placement?: "left" | "top-right" | "side-left" | "side-right";
 }) {
   const anchor = useRef<HTMLSpanElement>(null);
   const tooltip = useRef<HTMLSpanElement>(null);
@@ -29,7 +29,14 @@ export function ItemTooltip({
     if (!button) return;
     const showAtItem = () => {
       const bounds = button.getBoundingClientRect();
-      setPoint({ x: bounds.right - 20, y: bounds.top - 8 });
+      setPoint(
+        placement === "side-left" || placement === "side-right"
+          ? {
+              x: placement === "side-left" ? bounds.left : bounds.right,
+              y: bounds.top + bounds.height / 2,
+            }
+          : { x: bounds.right - 20, y: bounds.top - 8 },
+      );
     };
     const move = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
@@ -58,18 +65,20 @@ export function ItemTooltip({
       button.removeEventListener("click", hide);
       window.removeEventListener("scroll", hide, true);
     };
-  }, [followPointer]);
+  }, [followPointer, placement]);
 
   useLayoutEffect(() => {
     if (!point || !tooltip.current) return;
     const element = tooltip.current;
     const bounds = element.getBoundingClientRect();
     const left =
-      placement === "top-right"
+      placement === "top-right" || placement === "side-right"
         ? point.x + 14
-        : point.x - bounds.width - (followPointer ? 14 : 0);
+        : point.x - bounds.width - (followPointer || placement === "side-left" ? 14 : 0);
     const top =
-      placement === "top-right"
+      placement === "side-left" || placement === "side-right"
+        ? point.y - bounds.height / 2
+        : placement === "top-right"
         ? point.y - bounds.height - 14
         : point.y - (followPointer ? 16 : bounds.height);
     element.style.left = `${Math.max(8, Math.min(left, window.innerWidth - bounds.width - 8))}px`;

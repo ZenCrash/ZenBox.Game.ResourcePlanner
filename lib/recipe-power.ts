@@ -1,4 +1,5 @@
 import type { Recipe } from "./model";
+import { isCombustionFuelHandler } from "./recipe-handlers";
 
 const tiers = [
   "ULV",
@@ -30,6 +31,12 @@ export function recipePowerInfo(
         (line): line is string => typeof line === "string",
       );
   } catch {}
+  if (isCombustionFuelHandler(recipe.handler ?? ""))
+    details = details.map((line) =>
+      line.replace(/^Special value:\s*([\d,]+(?:\.\d+)?)$/i, (_, value: string) =>
+        `Fuel Value: ${(Number(value.replaceAll(",", "")) * 1000).toLocaleString("en-US")} EU`,
+      ),
+    );
   if (recipe.handler?.startsWith("Magic Energy Absorber Fu"))
     details = details.map((line) =>
       line.replace(/^Special value:\s*(.+)$/i, "Fuel Value: $1 EU"),

@@ -55,7 +55,9 @@ test("committed port rows survive serialization while old diagrams remain valid"
     machines: 1,
     variants: {},
   };
-  const node = { ...base, portRows: { "input:0": 5, "input:1": 6 } };
+  const node = { ...base, portRows: { "input:0": 5, "input:1": 6 }, disabledPorts: ["input:0", "output:1"] };
   assert.deepEqual(nodeSchema.parse(JSON.parse(JSON.stringify(node))), node);
   assert.equal(nodeSchema.parse(base).portRows, undefined);
+  assert.equal(nodeSchema.parse(base).disabledPorts, undefined);
+  assert.equal(nodeSchema.safeParse({ ...base, disabledPorts: ["invalid"] }).success, false);
 });

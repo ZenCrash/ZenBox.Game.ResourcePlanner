@@ -4,7 +4,17 @@ import { GET } from "../app/api/recipes/route";
 import { catalog } from "../lib/db";
 import { recipeTabIcon, type Recipe } from "../lib/model";
 import { hydrateRecipeVariants } from "../lib/recipe-data";
-import { containedFluids, fluidContents } from "../lib/fluid-containers";
+import { containedFluids, fluidContents, fluidLookupItems, hydrateFluidContents } from "../lib/fluid-containers";
+
+test("oil-cell reference metadata comes from the real fill/drain recipes", async () => {
+  const recipe = await catalog.recipe.findFirstOrThrow({
+    where: { enabled: true, ingredients: { some: { itemId: "gregtech:gt.metaitem.01:30707" } } },
+    include: { ingredients: { include: { item: true } } },
+  });
+  const [hydrated] = await hydrateFluidContents([recipe]);
+  assert(hydrated.ingredients.find((ingredient) => ingredient.itemId === "gregtech:gt.metaitem.01:30707")?.item.containedFluidIds?.includes("fluid:oil"));
+  assert.equal(hydrated.ingredients.find((ingredient) => ingredient.itemId === "gregtech:gt.metaitem.01:30707")?.item.fluidContents?.find((content) => content.fluidId === "fluid:oil")?.liters, 1000);
+});
 
 after(() => catalog.$disconnect());
 for (const handler of [
@@ -125,6 +135,7 @@ test("Blasting exposes Et Futurum's Blast Furnace as machine and tab icon", asyn
 for (const [cell, fluid] of [
   ["gregtech:gt.metaitem.01:30013", "fluid:oxygen"],
   ["IC2:itemCellEmpty:1", "fluid:water"],
+  ["gregtech:gt.metaitem.01:30707", "fluid:oil"],
 ]) {
   for (const mode of ["recipes", "uses"]) {
     test(`${mode} for ${cell} include both the cell and its fluid without duplicates`, async () => {
@@ -144,7 +155,7 @@ for (const [cell, fluid] of [
       ]);
       const ids = new Set(cellRecipes.map((recipe) => recipe.id));
       assert(fluidRecipes.length > 0);
-      assert(fluidRecipes.every((recipe) => ids.has(recipe.id)));
+      assert.deepEqual(new Set(fluidRecipes.map((recipe) => recipe.id)), ids);
       assert.equal(ids.size, cellRecipes.length);
       assert(
         cellRecipes.some((recipe) =>
@@ -162,6 +173,8 @@ for (const [cell, fluid] of [
 test("empty cells and multiple-fluid conversions do not broaden lookups", async () => {
   assert.deepEqual(await fluidContents("IC2:itemCellEmpty"), []);
   assert.deepEqual(await fluidContents("missing-test-item"), []);
+  assert.deepEqual(await fluidLookupItems("IC2:itemCellEmpty"), ["IC2:itemCellEmpty"]);
+  assert.deepEqual(await fluidLookupItems("missing-test-item"), ["missing-test-item"]);
   const ingredient = (itemId: string, direction: string, kind = "item") => ({
     itemId,
     direction,

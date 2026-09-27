@@ -73,6 +73,8 @@ Minecraft and modpack images belong to Mojang, the GTNH team and their respectiv
 
 ## Checks
 
+The wand button beside **Add item card** opens **Auto Recipe Planner**. Choose a target and optional input, a maximum machine tier, whether multiblocks are allowed, and limits of 1–100 recipe steps and suggestions (both default to 10). With an input selected, the planner searches conversion routes and ingredient branches, preferring fewer distinct external inputs before comparing expected EU per target or output yield. Without an input, it compares direct target recipes. Remaining supplies are listed separately; non-EU power and fuel costs are not included in the EU score. Search is bounded and reports when its limits are reached, so suggestions are not a global optimality guarantee. Disregard individual recipes or whole suggestions for the current popup session, page through results, inspect the zoomable preview, and add the route to the diagram in one undoable operation.
+
 ```sh
 npm run lint
 npm test

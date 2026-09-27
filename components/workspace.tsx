@@ -1,13 +1,18 @@
 "use client";
 import Link from "next/link";
+import { ResizableSidebar } from "./resizable-sidebar";
+import { DisplaySettingsProvider, DisplaySettingsPanel, useDisplaySettings } from "./display-settings";
+
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  createContext,
-  useContext,
+
+
+  type CSSProperties,
 } from "react";
 import {
   ReactFlow,
@@ -17,10 +22,10 @@ import {
   MiniMap,
   ConnectionMode,
   applyEdgeChanges,
-  useStore,
-  type Node,
+
+
   type Edge,
-  type NodeProps,
+
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
@@ -37,12 +42,21 @@ import {
   Redo2,
   PackagePlus,
   SquareDashed,
+  Settings,
+  PanelLeftClose,
+  Copy,
+  Scissors,
+  ClipboardPaste,
+  RotateCcw,
+  WandSparkles,
+  Type,
 } from "lucide-react";
 import {
   blankDiagram,
-  itemColor,
+
   createPortColorResolver,
   portsCompatible,
+  fluidReferenceCompatible,
   port,
   connectionColors,
   hasRecipeTiming,
@@ -64,7 +78,7 @@ import { DiagramActions } from "./diagram-actions";
 import {
   CyclingRecipe,
   ItemSlot,
-  RecipeView,
+
   type Browse,
 } from "./recipe-view";
 import { GridEdge, type DiagramEdge } from "./grid-edge";
@@ -72,7 +86,9 @@ import { GRID_SIZE, snapPoint } from "@/lib/diagram-geometry";
 import { initialRoute } from "@/lib/initial-route";
 import { exportDiagram, download } from "@/lib/export";
 import { connectionSummary } from "@/lib/connection-summary";
-import { RecipePorts } from "./recipe-ports";
+import { fluidReferenceFlow, fluidReferenceInputRates } from "@/lib/fluid-reference";
+import { perfectMachineCounts, stepMachineRatio, catchupMachineCounts, availableCatchup } from "@/lib/perfect-ratio";
+
 import type { PortRows } from "@/lib/port-layout";
 import { useGraphHistory } from "./use-graph-history";
 import { copySelection, pasteSelection } from "@/lib/editor-clipboard";
@@ -80,195 +96,29 @@ import { CanvasSelection } from "./canvas-selection";
 import { GridBackground } from "./grid-background";
 import { RecipeChevron } from "./recipe-chevron";
 import { SummaryArea } from "./summary-area";
-import { MachineSelector } from "./machine-selector";
+import { AutoRecipePlanner, type PlannedGraph } from "./auto-recipe-planner";
+
 import { overclockRecipe } from "@/lib/recipe-overclock";
-import { selectedMachine } from "@/lib/machine-selection";
+import { selectedMachine, machineOptions } from "@/lib/machine-selection";
 import { ItemTooltip } from "./item-tooltip";
 import { summarizeArea, summaryRecipe } from "@/lib/area-summary";
 import type { SummaryCalculation } from "@/lib/summary-rate";
-type RecipeNode = Node<
-  {
-    recipe: Recipe;
-    machines: number;
-    machineId?: string;
-    variants: VariantSelection;
-    portRows?: PortRows;
-    calculators?: SummaryCalculation[];
-  },
-  "recipe" | "summary"
->;
-const EditorContext = createContext<{
-  browse: Browse;
-  count: (id: string, value: number) => void;
-  selectMachine: (id: string, machineId: string) => void;
-  color: (itemId: string) => string;
-  connected: Set<string>;
-  selectedConnections: Map<string, string[]>;
-  disconnect: (id: string) => void;
-  movePorts: (id: string, rows: PortRows) => void;
-  remove: (id: string) => void;
-}>({
-  browse: () => {},
-  count: () => {},
-  selectMachine: () => {},
-  color: itemColor,
-  connected: new Set(),
-  selectedConnections: new Map(),
-  disconnect: () => {},
-  movePorts: () => {},
-  remove: () => {},
-});
-function MachineCard({ id, data, selected }: NodeProps<RecipeNode>) {
-  const overview = useStore((state) => state.transform[2] < 0.5);
-  const {
-      browse,
-      count,
-      selectMachine,
-      color,
-      connected,
-      movePorts,
-      remove,
-      selectedConnections,
-      disconnect,
-    } = useContext(EditorContext),
-    baseRecipe = applyVariants(data.recipe, data.variants),
-    recipe = overclockRecipe(baseRecipe, data.machineId);
-  const ports = (
-    <RecipePorts
-      id={id}
-      recipe={recipe}
-      machines={data.machines}
-      saved={data.portRows}
-      color={color}
-      connected={connected}
-      selectedConnections={selectedConnections}
-      disconnect={disconnect}
-      commit={movePorts}
-    />
-  );
-  const deleteButton = (
-    <button
-      className="recipe-delete nodrag nopan"
-      aria-label="Delete recipe"
-      title="Delete recipe"
-      onClick={(event) => {
-        event.stopPropagation();
-        remove(id);
-      }}
-    >
-      <X size={15} />
-    </button>
-  );
-  if (recipe.sourceItemId) {
-    const item = recipe.ingredients[0].item;
-    return (
-      <div className={`machine-card ${selected ? "selected" : ""}`}>
-        <div className="recipe-view item-source-card">
-          <div className="recipe-title">Item source</div>
-          {deleteButton}
-          <div className="item-source-content">
-            <ItemSlot item={item} onBrowse={browse} />
-            <span>{item.name}</span>
-          </div>
-        </div>
-        {ports}
-      </div>
-    );
-  }
-  const machine = selectedMachine(baseRecipe, data.machineId);
-  const overviewImage = machine?.image ?? recipeTabIcon(baseRecipe);
-  return (
-    <div
-      className={`machine-card ${selected ? "selected" : ""}${overview ? " machine-card-overview" : ""}`}
-    >
-      <RecipeView
-        recipe={recipe}
-        referenceRecipe={baseRecipe}
-        onBrowse={browse}
-        footerControl={
-          <div
-            className="machine-amount-control nodrag nopan"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
-            onDoubleClick={(event) => event.stopPropagation()}
-          >
-            <div className="machine-count-controls">
-              <MachineSelector
-                recipe={baseRecipe}
-                machineId={data.machineId}
-                amount={data.machines}
-                onSelect={(machineId) => selectMachine(id, machineId)}
-              />
-              <div className="machine-count-stepper nopan">
-                <button
-                  type="button"
-                  className="recipe-nav-button"
-                  aria-label="Increase machine amount"
-                  title="Increase machine amount"
-                  disabled={data.machines >= 1e9}
-                  onClick={() => count(id, Math.min(1e9, data.machines + 1))}
-                >
-                  <RecipeChevron direction="up" />
-                </button>
-                <button
-                  type="button"
-                  className="recipe-nav-button"
-                  aria-label="Decrease machine amount"
-                  title="Decrease machine amount"
-                  onClick={() => {
-                    if (data.machines > 1)
-                      count(id, Math.max(1, data.machines - 1));
-                  }}
-                >
-                  <RecipeChevron direction="down" />
-                </button>
-              </div>
-            </div>
-          </div>
-        }
-        minHeight={
-          Math.max(
-            ...["input", "output"].map(
-              (direction) =>
-                recipe.ingredients.filter((i) => i.direction === direction)
-                  .length,
-            ),
-          ) *
-            42 +
-          64
-        }
-      >
-        {deleteButton}
-      </RecipeView>
-      <div className="machine-overview-image" aria-hidden={!overview}>
-        {overviewImage ? (
-          <img src={overviewImage} alt={machine?.name ?? recipe.handler} />
-        ) : (
-          <span>{recipe.handler}</span>
-        )}
-      </div>
-      {overview && (
-        <ItemTooltip compact followPointer placement="top-right">
-          <strong>
-            {(machine?.name ?? recipe.handler).replace(/§./g, "")}
-          </strong>
-        </ItemTooltip>
-      )}
-      {ports}
-    </div>
-  );
-}
-const nodeTypes = { recipe: MachineCard, summary: SummaryArea };
+import { MachineCard, EditorContext, type RecipeNode } from "./machine-card";
+import { DiagramLabel } from "./diagram-label";
+const nodeTypes = { recipe: MachineCard, summary: SummaryArea, label: DiagramLabel };
 const edgeTypes = { grid: GridEdge };
 export function Workspace({ project }: { project: Project }) {
   return (
-    <ReactFlowProvider>
+    <DisplaySettingsProvider><ReactFlowProvider>
       <Editor project={project} />
-    </ReactFlowProvider>
+    </ReactFlowProvider></DisplaySettingsProvider>
   );
 }
 function Editor({ project }: { project: Project }) {
+  const { settings } = useDisplaySettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [itemPicker, setItemPicker] = useState(false);
+  const [autoPlanner, setAutoPlanner] = useState(false);
   const {
     nodes,
     edges,
@@ -294,6 +144,13 @@ function Editor({ project }: { project: Project }) {
     onSelection: boolean;
   } | null>(null);
   const contextStart = useRef<{ x: number; y: number } | null>(null);
+  const selectionMenuElement = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = selectionMenuElement.current;
+    if (!selectionMenu || !element) return;
+    element.style.left = `${Math.max(8, Math.min(selectionMenu.x, window.innerWidth - element.offsetWidth - 8))}px`;
+    element.style.top = `${Math.max(8, Math.min(selectionMenu.y, window.innerHeight - element.offsetHeight - 8))}px`;
+  }, [selectionMenu]);
   const recipeContent = useRef<HTMLDivElement>(null);
   const recipeTabBar = useRef<HTMLDivElement>(null);
   const [tabsOverflow, setTabsOverflow] = useState(false);
@@ -340,11 +197,13 @@ function Editor({ project }: { project: Project }) {
     if (!content || !card) return;
     const measure = () => {
       const bounds = card.getBoundingClientRect();
+      // Screen rectangles include CSS zoom; the strip uses local CSS pixels.
+      const cardHeight = bounds.height / settings.guiScale;
       content.style.setProperty(
         "--machine-strip-top",
-        `${bounds.top - content.getBoundingClientRect().top}px`,
+        `${(bounds.top - content.getBoundingClientRect().top) / settings.guiScale}px`,
       );
-      content.style.setProperty("--machine-strip-height", `${bounds.height}px`);
+      content.style.setProperty("--machine-strip-height", `${cardHeight}px`);
       const machines = content.querySelector<HTMLElement>(
         ".recipe-machine-slots",
       );
@@ -361,7 +220,7 @@ function Editor({ project }: { project: Project }) {
         const visibleRows = Math.max(
           1,
           Math.floor(
-            (bounds.height - verticalInset + gap) / (slotHeight + gap),
+            (cardHeight - verticalInset + gap) / (slotHeight + gap),
           ),
         );
         const count = machines.children.length;
@@ -379,7 +238,7 @@ function Editor({ project }: { project: Project }) {
     observer.observe(content);
     measure();
     return () => observer.disconnect();
-  }, [browser, recipes, handler, recipePage]);
+  }, [browser, recipes, handler, recipePage, settings.guiScale]);
   const revision = useRef(0),
     flow = useRef<ReactFlowInstance<RecipeNode, DiagramEdge> | null>(null),
     epoch = useRef(0),
@@ -407,7 +266,7 @@ function Editor({ project }: { project: Project }) {
       ...blankDiagram(),
       revision: revision.current,
       nodes: nodes
-        .filter((n) => n.type !== "summary")
+        .filter((n) => n.type === "recipe")
         .map((n) => ({
           id: n.id,
           recipeId: n.data.recipe.id,
@@ -422,7 +281,9 @@ function Editor({ project }: { project: Project }) {
           position: n.position,
           variants: n.data.variants,
           ...(n.data.portRows ? { portRows: n.data.portRows } : {}),
+          ...(n.data.disabledPorts?.length ? { disabledPorts: n.data.disabledPorts } : {}),
         })),
+      labels: nodes.filter(n => n.type === "label").map(n => ({ id: n.id, position: n.position, text: n.data.text ?? "Label", fontSize: n.data.fontSize ?? 30, textColor: n.data.textColor, backgroundColor: n.data.backgroundColor })),
       areas: nodes
         .filter((n) => n.type === "summary")
         .map((n) => ({
@@ -431,6 +292,7 @@ function Editor({ project }: { project: Project }) {
           width: n.width ?? 640,
           height: n.height ?? 480,
           calculators: n.data.calculators,
+          title: n.data.title,
         })),
       edges: edges.map((e) => ({
         id: e.id,
@@ -438,6 +300,9 @@ function Editor({ project }: { project: Project }) {
         target: e.target,
         sourceHandle: e.sourceHandle!,
         targetHandle: e.targetHandle!,
+        showLineCard: e.data?.showLineCard,
+        showOverviewCard: e.data?.showOverviewCard,
+        ...(e.data?.reference ? { reference: true } : {}),
         ...(e.data?.bend ? { bend: e.data.bend } : {}),
         ...(e.data?.targetBendX !== undefined
           ? { targetBendX: e.data.targetBendX }
@@ -521,8 +386,10 @@ function Editor({ project }: { project: Project }) {
               machineId: n.machineId,
               variants: n.variants,
               portRows: n.portRows,
+              disabledPorts: n.disabledPorts,
             },
           })),
+          ...(doc.labels ?? []).map((label): RecipeNode => ({ id: label.id, type: "label", position: label.position, zIndex: 3500, data: { recipe: summaryRecipe, machines: 0, variants: {}, text: label.text, fontSize: label.fontSize, textColor: label.textColor, backgroundColor: label.backgroundColor } })),
           ...(doc.areas ?? []).map((area): RecipeNode => ({
             id: area.id,
             type: "summary",
@@ -536,6 +403,7 @@ function Editor({ project }: { project: Project }) {
               machines: 0,
               variants: {},
               calculators: area.calculators,
+              title: area.title,
             },
           })),
         ]);
@@ -543,6 +411,9 @@ function Editor({ project }: { project: Project }) {
           doc.edges.map((edge) => ({
             ...edge,
             data: {
+              reference: edge.reference,
+              showLineCard: edge.showLineCard,
+              showOverviewCard: edge.showOverviewCard,
               bend: edge.bend,
               targetBendX: edge.targetBendX,
               waypoints: edge.waypoints,
@@ -589,8 +460,10 @@ function Editor({ project }: { project: Project }) {
         void save();
       }
       if (e.key === "Escape") {
+        browserEpoch.current++;
         setSelectionMenu(null);
         setItemPicker(false);
+        setAutoPlanner(false);
         setBrowser(null);
         setDialog(null);
       }
@@ -602,7 +475,7 @@ function Editor({ project }: { project: Project }) {
         !ready ||
         browser ||
         dialog ||
-        itemPicker ||
+        itemPicker || autoPlanner ||
         editing ||
         !(e.ctrlKey || e.metaKey)
       )
@@ -625,7 +498,7 @@ function Editor({ project }: { project: Project }) {
         !ready ||
         browser ||
         dialog ||
-        itemPicker ||
+        itemPicker || autoPlanner ||
         editing ||
         !e.clipboardData
       )
@@ -688,6 +561,7 @@ function Editor({ project }: { project: Project }) {
     browser,
     dialog,
     itemPicker,
+    autoPlanner,
     nodes,
     edges,
     canUndo,
@@ -700,28 +574,32 @@ function Editor({ project }: { project: Project }) {
     setEdges,
   ]);
   const [recentItems, setRecentItems] = useState<Item[]>([]);
-  const browse: Browse = useCallback(
-    async (item, mode, selectedRecipeId) => {
-      if (mode !== "category") {
-        setRecentItems((items) =>
-          [item, ...items.filter((recent) => recent.id !== item.id)].slice(
-            0,
-            64,
-          ),
-        );
-      }
-      if (browser) setHistory((h) => [...h, browser]);
+  const [availableModes, setAvailableModes] = useState({ recipes: false, uses: false });
+  useEffect(() => {
+    if (!browser || browser.mode === "category") return;
+    let active = true;
+    const otherMode = browser.mode === "recipes" ? "uses" : "recipes";
+    void api<{ exists: boolean }>(`/api/recipes?item=${encodeURIComponent(browser.item.id)}&mode=${otherMode}&availability=1`)
+      .then(({ exists }) => {
+        if (active) setAvailableModes((modes) => ({ ...modes, [otherMode]: exists }));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [browser]);
+  const browse = useCallback(
+    async (item: Item, mode: Parameters<Browse>[1], selectedRecipeId?: string, back = false) => {
       const token = ++browserEpoch.current;
-      setBrowser({ item, mode });
-      setRecipeLoading(true);
-      setRecipes([]);
-      setRecipePage(0);
-      setHandler("");
       try {
         const list = await api<Recipe[]>(
           `/api/recipes?item=${encodeURIComponent(item.id)}&mode=${mode}`,
         );
-        if (token === browserEpoch.current) {
+        if (token === browserEpoch.current && list.length) {
+          if (mode !== "category") {
+            setRecentItems((items) => [item, ...items.filter((recent) => recent.id !== item.id)].slice(0, 64));
+          }
+          setHistory((h) => back ? h.slice(0, -1) : browser ? [...h, browser] : h);
+          setBrowser({ item, mode });
+          setAvailableModes({ recipes: mode === "recipes", uses: mode === "uses" });
           setRecipes(list);
           const selected = list.find(
             (recipe) => recipe.id === selectedRecipeId,
@@ -738,7 +616,7 @@ function Editor({ project }: { project: Project }) {
           );
         }
       } catch (e) {
-        setError((e as Error).message);
+        if (token === browserEpoch.current) setError((e as Error).message);
       } finally {
         if (token === browserEpoch.current) setRecipeLoading(false);
       }
@@ -753,6 +631,19 @@ function Editor({ project }: { project: Project }) {
     () => ({
       browse,
       color: portColor,
+      togglePort: (id: string, handle: string) => {
+        if (edges.some((edge) =>
+          (edge.source === id && edge.sourceHandle === handle) ||
+          (edge.target === id && edge.targetHandle === handle))) return;
+        setNodes((values) => values.map((node) => {
+          if (node.id !== id) return node;
+          const disabled = node.data.disabledPorts ?? [];
+          return { ...node, data: { ...node.data, disabledPorts: disabled.includes(handle)
+            ? disabled.filter((value) => value !== handle)
+            : [...disabled, handle] } };
+        }));
+        markDirty();
+      },
       remove: (id: string) => {
         setNodes((values) => values.filter((node) => node.id !== id));
         setEdges((values) =>
@@ -842,8 +733,10 @@ function Editor({ project }: { project: Project }) {
       a = nodes.find((n) => n.id === c.source),
       b = nodes.find((n) => n.id === c.target);
     if (!a || !b || a.id === b.id) return false;
-    const output = port(a.data.recipe, c.sourceHandle),
-      input = port(b.data.recipe, c.targetHandle);
+    if (a.data.disabledPorts?.includes(c.sourceHandle ?? "") ||
+        b.data.disabledPorts?.includes(c.targetHandle ?? "")) return false;
+    const output = port(applyVariants(a.data.recipe, a.data.variants), c.sourceHandle),
+      input = port(applyVariants(b.data.recipe, b.data.variants), c.targetHandle);
     return (
       !!output &&
       !!input &&
@@ -851,11 +744,12 @@ function Editor({ project }: { project: Project }) {
       hasIngredientPort(input) &&
       output.direction === "output" &&
       input.direction === "input" &&
-      portsCompatible(output, input) &&
+      (portsCompatible(output, input) || fluidReferenceCompatible(output, input)) &&
       !edges.some(
         (edge) =>
           edge.target === c.target &&
           edge.targetHandle === c.targetHandle &&
+          !edge.data?.reference && !fluidReferenceCompatible(output, input) &&
           port(
             nodes.find((node) => node.id === edge.source)!.data.recipe,
             edge.sourceHandle,
@@ -908,18 +802,62 @@ function Editor({ project }: { project: Project }) {
     ]),
   );
   const inputSupply = new Map<string, number>();
+  const baseRatioCounts = (edge: Edge, allInputs: boolean, includeReferences = false) => {
+    if (edge.data?.reference && !includeReferences) return null;
+    const connections = allInputs ? edges.filter((value) => value.target === edge.target && (includeReferences || !value.data?.reference)) : [edge];
+    const flows = connections.map((value) => {
+      const producer = runtimeRecipes.get(value.source);
+      const consumer = runtimeRecipes.get(value.target);
+      const output = producer && port(producer, value.sourceHandle);
+      const input = consumer && port(consumer, value.targetHandle);
+      const referenceRates = value.data?.reference && producer && consumer && output && input
+        ? fluidReferenceInputRates(output, producer, input, consumer) : undefined;
+      return {
+        source: value.source, input: value.targetHandle ?? "",
+        supply: referenceRates ? referenceRates.supply : producer && output ? rate(output, producer) : NaN,
+        demand: referenceRates ? referenceRates.demand : consumer && input ? rate(input, consumer) : NaN,
+      };
+    });
+    return perfectMachineCounts(edge.target, flows);
+  };
+  const applyRatio = (edge: Edge, allInputs: boolean, includeReferences = false) => {
+    const counts = baseRatioCounts(edge, allInputs, includeReferences);
+    if (!counts) return;
+    setNodes((values) => values.map((node) => counts[node.id] === undefined ? node : {
+      ...node, data: { ...node.data, machines: counts[node.id] },
+    }));
+    markDirty();
+  };
+  const stepRatio = (edge: Edge, allInputs: boolean, step: -1 | 1, includeReferences = false) => {
+    const base = baseRatioCounts(edge, allInputs, includeReferences);
+    if (!base) return;
+    setNodes((values) => {
+      const counts = stepMachineRatio(base, Object.fromEntries(values.map((node) => [node.id, node.data.machines])), step);
+      if (!counts) return values;
+      return values.map((node) => counts[node.id] === undefined || counts[node.id] === node.data.machines ? node : {
+        ...node, data: { ...node.data, machines: counts[node.id] },
+      });
+    });
+    markDirty();
+  };
   for (const edge of edges) {
+    if (edge.data?.reference) continue;
     const source = nodes.find((node) => node.id === edge.source);
     const output =
       source && port(runtimeRecipes.get(source.id)!, edge.sourceHandle);
     const key = `${edge.target}/${edge.targetHandle}`;
     const supplied =
-      source && output && hasRecipeTiming(source.data.recipe)
+      source && output && hasRecipeTiming(runtimeRecipes.get(source.id)!)
         ? rate(output, runtimeRecipes.get(source.id)!, source.data.machines)
         : NaN;
     inputSupply.set(key, (inputSupply.get(key) ?? 0) + supplied);
   }
-  const renderedEdges = edges.map((edge) => {
+  const renderedEdges = edges.map((savedEdge) => {
+    // Info lines stay above production lines, including selected ones.
+    // Cards and port circles remain above both line layers.
+    const edge = { ...savedEdge, zIndex: savedEdge.data?.reference
+      ? savedEdge.selected ? 2200 : 2100
+      : savedEdge.selected ? 2000 : 0 };
     const source = nodes.find((n) => n.id === edge.source),
       target = nodes.find((n) => n.id === edge.target);
     if (!source || !target) return edge;
@@ -928,6 +866,14 @@ function Editor({ project }: { project: Project }) {
     const output = port(sourceRecipe, edge.sourceHandle),
       input = port(targetRecipe, edge.targetHandle);
     if (!output || !input) return edge;
+    const referenceFlow = edge.data?.reference ? fluidReferenceFlow(output, sourceRecipe, source.data.machines, input, targetRecipe, target.data.machines) : undefined;
+    const lineColor = referenceFlow ? referenceFlow.color : hasRecipeTiming(targetRecipe)
+          ? supplyColor(
+              inputSupply.get(`${edge.target}/${edge.targetHandle}`) ?? NaN,
+              rate(input, targetRecipe, target.data.machines),
+            )
+          : connectionColors.unrated;
+    const catchup = edge.data?.reference ? null : availableCatchup(catchupMachineCounts(rate(output, sourceRecipe), rate(input, targetRecipe), source.data.machines, target.data.machines), lineColor);
     const summary = connectionSummary(
       output,
       sourceRecipe,
@@ -939,12 +885,36 @@ function Editor({ project }: { project: Project }) {
     return {
       ...edge,
       type: "grid",
-      zIndex: edge.selected ? 2000 : 0,
       data: {
         ...edge.data,
         item: output.item,
+        catchup,
+        applyCatchup: (side: "a" | "b") => {
+          const count = catchup?.[side];
+          if (count == null) return;
+          const nodeId = side === "a" ? source.id : target.id;
+          setNodes((values) => values.map((node) => node.id === nodeId ? {
+            ...node, data: { ...node.data, machines: count },
+          } : node));
+          markDirty();
+        },
+        perfectRatio: () => applyRatio(edge, false),
+        stepRatio: (allInputs: boolean, step: -1 | 1, includeReferences = false) => stepRatio(edge, allInputs, step, includeReferences),
+        hasInfoConnections: edges.some((value) => value.target === edge.target && value.data?.reference),
+        infoBaseRatio: () => applyRatio(edge, false, true),
+        canInfoBaseRatio: !!baseRatioCounts(edge, false, true),
+        canInfoInputRatio: !!baseRatioCounts(edge, true, true),
+        canStepConnectedRatio: !!baseRatioCounts(edge, true),
+        baseInputRatio: () => applyRatio(edge, true),
+        canPerfectRatio: !!baseRatioCounts(edge, false),
+        canBaseInputRatio: !!baseRatioCounts(edge, true),
+        hasOtherSuppliers: !edge.data?.reference && edges.some((value) => value.target === edge.target && value.source !== edge.source && !value.data?.reference),
         select: (additive: boolean, toggle?: boolean) =>
           selectEdge(edge.id, additive, toggle, true),
+        setCardVisible: (overview: boolean, visible: boolean) => {
+          setEdges(values => values.map(value => value.id === edge.id ? { ...value, data: { ...value.data, [overview ? "showOverviewCard" : "showLineCard"]: visible } } : value));
+          markDirty();
+        },
         moveLabel: (
           id: string,
           labelPosition: { x: number; y: number },
@@ -1011,23 +981,40 @@ function Editor({ project }: { project: Project }) {
         },
       },
       style: {
-        stroke: hasRecipeTiming(target.data.recipe)
-          ? supplyColor(
-              inputSupply.get(`${edge.target}/${edge.targetHandle}`) ?? NaN,
-              rate(input, targetRecipe, target.data.machines),
-            )
-          : connectionColors.unrated,
-        strokeWidth: 4,
+        stroke: lineColor,
+        strokeWidth: settings.lineThickness,
       },
       label: (
         <>
-          <strong className="connection-item">{summary.item}</strong>
-          <div className="connection-ratio">{summary.ratio}</div>
-          <div className="connection-rates">
+          <div className="connection-card-heading">
+            <span
+              className={`connection-card-image${output.item.kind === "fluid" ? " fluid" : ""}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerUp={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+              onContextMenu={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <ItemSlot item={output.item} onBrowse={browse} tooltipAtPointer />
+            </span>
+            <div className="connection-card-heading-text">
+              <strong className="connection-item">{summary.item}</strong>
+              <div className="connection-ratio">{edge.data?.reference ? referenceFlow?.liters
+                ? `1 container = ${referenceFlow.liters.toLocaleString("en-US")} L` : "Fluid / container reference" : summary.ratio}</div>
+            </div>
+          </div>
+          {edge.data?.reference ? <>
+            <div className="connection-rates">
+              <strong>{referenceFlow?.supplied === undefined ? "Unspecified" : `${referenceFlow.supplied.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
+              <span aria-label="to">→</span>
+              <strong>{referenceFlow?.needed === undefined ? "Unspecified" : `${referenceFlow.needed.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
+            </div>
+            <div className="connection-reference-note">{input.item.name.replace(/§./g, "")} · excluded from flow calculations</div>
+          </> : <div className="connection-rates">
             <strong>{summary.from}</strong>
             <span aria-label="to">→</span>
             <strong>{summary.target}</strong>
-          </div>
+          </div>}
         </>
       ),
       labelStyle: { fill: "#e7e7e5", fontSize: 11 },
@@ -1039,14 +1026,8 @@ function Editor({ project }: { project: Project }) {
     filtered = recipes.filter((r) => r.handler === handler),
     selectedRecipe = filtered[recipePage];
   const recipeHandlers = [...new Set(recipes.map((recipe) => recipe.handler))];
-  const changeHandler = (step: number) => {
-    const index = recipeHandlers.indexOf(handler);
-    setHandler(
-      recipeHandlers[
-        (index + step + recipeHandlers.length) % recipeHandlers.length
-      ],
-    );
-    setRecipePage(0);
+  const changeRecipePage = (step: number) => {
+    if (filtered.length) setRecipePage((page) => (page + step + filtered.length) % filtered.length);
   };
   function addCard(
     recipe: Recipe,
@@ -1083,10 +1064,15 @@ function Editor({ project }: { project: Project }) {
     });
     setEdges((values) => values.map((edge) => ({ ...edge, selected: false })));
     markDirty();
-    if (!keepOpen) setBrowser(null);
+    if (!keepOpen) { browserEpoch.current++; setBrowser(null); }
   }
   function addRecipe(variants: VariantSelection, keepOpen: boolean) {
     if (selectedRecipe) addCard(selectedRecipe, variants, keepOpen);
+  }
+  function addLabel() {
+    if (!ready) return;
+    setNodes(values => [...values.map(node => ({ ...node, selected: false })), { id: crypto.randomUUID(), type: "label", position: insertionPoint(), selected: true, zIndex: 3500, data: { recipe: summaryRecipe, machines: 0, variants: {}, text: "Label", fontSize: 30, textColor: "#ffffff", backgroundColor: "transparent" } }]);
+    markDirty();
   }
   function addArea() {
     if (!ready) return;
@@ -1106,8 +1092,20 @@ function Editor({ project }: { project: Project }) {
     ]);
     markDirty();
   }
+  function addPlannedGraph(graph: PlannedGraph) {
+    if (!ready) return;
+    const origin = insertionPoint();
+    // Insert below existing cards so a complete route never lands on a recipe.
+    if (nodes.length) origin.y = Math.max(origin.y, ...nodes.map((node) => node.position.y + (node.measured?.height ?? node.height ?? 480) + 160));
+    const pasted = pasteSelection(graph, origin, () => crypto.randomUUID());
+    setNodes((values) => [...values.map((node) => ({ ...node, selected: false })), ...pasted.nodes]);
+    setEdges((values) => [...values.map((edge) => ({ ...edge, selected: false })), ...pasted.edges as DiagramEdge[]]);
+    markDirty();
+    setAutoPlanner(false);
+    requestAnimationFrame(() => void flow.current?.fitView({ nodes: pasted.nodes.map(({ id }) => ({ id })), padding: 0.15, duration: 300 }));
+  }
   const recipeBounds = nodes
-    .filter((node) => node.type !== "summary")
+    .filter((node) => node.type === "recipe")
     .map((node) => ({
       position: node.position,
       width: node.measured?.width ?? 340,
@@ -1115,6 +1113,7 @@ function Editor({ project }: { project: Project }) {
       ...node.data,
     }));
   const renderedNodes = nodes.map((node) =>
+    node.type === "label" ? { ...node, data: { ...node.data, removeLabel: () => context.remove(node.id), updateLabel: (patch: { text?: string; fontSize?: number; textColor?: string; backgroundColor?: string }) => { setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, ...patch } } : value)); markDirty(); } } } :
     node.type === "summary"
       ? {
           ...node,
@@ -1128,7 +1127,50 @@ function Editor({ project }: { project: Project }) {
               },
               recipeBounds,
             ),
+            itemPortState: (itemId: string) => {
+              let hasEnabled = false;
+              let hasDisabled = false;
+              for (const value of recipeBounds) {
+                if (value.recipe.sourceItemId ||
+                    value.position.x < node.position.x || value.position.y < node.position.y ||
+                    value.position.x + value.width > node.position.x + (node.width ?? 640) ||
+                    value.position.y + value.height > node.position.y + (node.height ?? 480)) continue;
+                for (const ingredient of applyVariants(value.recipe, value.variants).ingredients) {
+                  if (ingredient.itemId !== itemId || !hasIngredientPort(ingredient)) continue;
+                  if (value.disabledPorts?.includes(`${ingredient.direction}:${ingredient.slot}`)) hasDisabled = true;
+                  else hasEnabled = true;
+                }
+              }
+              return { hasEnabled, hasDisabled };
+            },
+            setItemDisabled: (itemId: string, disabled: boolean) => {
+              const affected = new Map<string, Set<string>>();
+              const updated = nodes.map(value => {
+                if (value.type !== "recipe" || value.data.recipe.sourceItemId ||
+                    value.position.x < node.position.x || value.position.y < node.position.y ||
+                    value.position.x + (value.measured?.width ?? 340) > node.position.x + (node.width ?? 640) ||
+                    value.position.y + (value.measured?.height ?? 240) > node.position.y + (node.height ?? 480)) return value;
+                const handles = new Set(applyVariants(value.data.recipe, value.data.variants).ingredients
+                  .filter(i => i.itemId === itemId && hasIngredientPort(i)).map(i => `${i.direction}:${i.slot}`));
+                if (!handles.size) return value;
+                affected.set(value.id, handles);
+                const ports = new Set(value.data.disabledPorts ?? []);
+                handles.forEach(handle => disabled ? ports.add(handle) : ports.delete(handle));
+                return { ...value, data: { ...value.data, disabledPorts: [...ports] } };
+              });
+              setNodes(updated);
+              if (disabled) setEdges(values => values.filter(edge => !affected.get(edge.source)?.has(edge.sourceHandle ?? "") && !affected.get(edge.target)?.has(edge.targetHandle ?? "")));
+              markDirty();
+            },
             removeArea: context.remove,
+            updateTitle: (title: string) => {
+              setNodes((values) => values.map((value) =>
+                value.id === node.id
+                  ? { ...value, data: { ...value.data, title } }
+                  : value,
+              ));
+              markDirty();
+            },
             updateCalculators: (calculators: SummaryCalculation[]) => {
               setNodes((values) =>
                 values.map((value) =>
@@ -1141,7 +1183,7 @@ function Editor({ project }: { project: Project }) {
             },
           },
         }
-      : node,
+      : { ...node, zIndex: 2500 },
   );
   const menuAction = (action: "copy" | "cut" | "paste") => {
     setSelectionMenu(null);
@@ -1191,10 +1233,16 @@ function Editor({ project }: { project: Project }) {
     }
     markDirty();
   };
+  const selectedRecipeNodes = nodes.filter((node) => node.selected && node.type === "recipe");
+  const canResetAmount = selectedRecipeNodes.some((node) => node.data.machines !== 1);
+  const canResetTier = selectedRecipeNodes.some((node) =>
+    selectedMachine(node.data.recipe, node.data.machineId)?.id !== machineOptions(node.data.recipe).defaultMachine?.id,
+  );
   return (
     <EditorContext.Provider value={context}>
       <main
         className="workspace"
+        style={{ "--gui-scale": settings.guiScale } as CSSProperties}
         onPointerDownCapture={(event) => {
           if (event.button === 2)
             contextStart.current = { x: event.clientX, y: event.clientY };
@@ -1208,7 +1256,7 @@ function Editor({ project }: { project: Project }) {
           if (
             !(event.target instanceof Element) ||
             event.target.closest(
-              "input,textarea,select,.react-flow__handle,button",
+              "input,textarea,select,.react-flow__handle,button,.summary-flow-item",
             )
           )
             return;
@@ -1221,28 +1269,34 @@ function Editor({ project }: { project: Project }) {
             ) > 5
           )
             return;
-          const onSelection = !!event.target.closest(
+          const recipeNodeId = event.target.closest(".react-flow__node")?.getAttribute("data-id");
+          const clickedRecipe = nodes.find((node) => node.id === recipeNodeId && node.type === "recipe");
+          const onSelection = !!clickedRecipe || !!event.target.closest(
             ".react-flow__node.selected,.react-flow__edge.selected,.connection-label.selected",
           );
-          // Keep right-click bend insertion available on unselected lines.
+          // Lines have their own context menu, including when selected.
           if (
-            !onSelection &&
-            event.target.closest(".react-flow__edge,.connection-label")
+            event.target.closest(".react-flow__edge,.connection-label,.connection-overview-item")
           )
             return;
           event.preventDefault();
           event.stopPropagation();
+          if (clickedRecipe && !clickedRecipe.selected) {
+            setNodes((values) => values.map((node) => ({ ...node, selected: node.id === clickedRecipe.id })));
+            setEdges((values) => values.map((edge) => ({ ...edge, selected: false })));
+          }
           setSelectionMenu({
             canPaste: !!clipboard.current?.nodes.length,
             onSelection,
-            x: Math.max(0, Math.min(event.clientX, window.innerWidth - 180)),
-            y: Math.max(0, Math.min(event.clientY, window.innerHeight - 230)),
+            x: event.clientX,
+            y: event.clientY,
           });
         }}
       >
         {selectionMenu && (
           <div
-            className="diagram-selection-menu"
+            ref={selectionMenuElement}
+            className="diagram-selection-menu recipe-selection-menu"
             role="menu"
             style={{ left: selectionMenu.x, top: selectionMenu.y }}
           >
@@ -1254,7 +1308,7 @@ function Editor({ project }: { project: Project }) {
                 setItemPicker(true);
               }}
             >
-              Add item card
+              <PackagePlus size={16} aria-hidden="true" /> Add item card
             </button>
             <button
               role="menuitem"
@@ -1264,7 +1318,7 @@ function Editor({ project }: { project: Project }) {
                 addArea();
               }}
             >
-              Add summary area
+              <SquareDashed size={16} aria-hidden="true" /> Add grouping
             </button>
             <div role="separator" className="diagram-menu-divider" />
             <button
@@ -1272,26 +1326,54 @@ function Editor({ project }: { project: Project }) {
               disabled={!selectionMenu.onSelection}
               onClick={() => menuAction("copy")}
             >
-              Copy
+              <Copy size={16} aria-hidden="true" /> Copy
             </button>
             <button
               role="menuitem"
               disabled={!selectionMenu.onSelection}
               onClick={() => menuAction("cut")}
             >
-              Cut
+              <Scissors size={16} aria-hidden="true" /> Cut
             </button>
             <button
               role="menuitem"
               disabled={!selectionMenu.canPaste}
               onClick={() => menuAction("paste")}
             >
-              Paste
+              <ClipboardPaste size={16} aria-hidden="true" /> Paste
             </button>
+            {selectionMenu.onSelection && selectedRecipeNodes.length > 0 && <>
+              <div role="separator" className="diagram-menu-divider" />
+              <button role="menuitem" type="button" disabled={!canResetAmount} onClick={() => {
+                setNodes((values) => values.map((node) => node.selected && node.type === "recipe" && node.data.machines !== 1
+                  ? { ...node, data: { ...node.data, machines: 1 } } : node));
+                markDirty();
+                setSelectionMenu(null);
+              }}>
+                <RotateCcw size={16} aria-hidden="true" /> Reset machine amount
+                <ItemTooltip compact followPointer placement="top-right">
+                  <strong>Reset machine amount</strong>
+                  <span>Sets every selected recipe to one machine.</span>
+                </ItemTooltip>
+              </button>
+              <button role="menuitem" type="button" disabled={!canResetTier} onClick={() => {
+                setNodes((values) => values.map((node) => node.selected && node.type === "recipe" && node.data.machineId !== undefined
+                  ? { ...node, data: { ...node.data, machineId: undefined } } : node));
+                markDirty();
+                setSelectionMenu(null);
+              }}>
+                <RotateCcw size={16} aria-hidden="true" /> Reset machine tier
+                <ItemTooltip compact followPointer placement="top-right">
+                  <strong>Reset machine tier</strong>
+                  <span>Restores the default machine for every selected recipe.</span>
+                </ItemTooltip>
+              </button>
+            </>}
           </div>
         )}
         <div className="workspace-body">
-          <aside className="diagram-sidebar">
+          <ResizableSidebar side="left" defaultWidth={225}>{(collapse) => <aside className="diagram-sidebar">
+            <div className="sidebar-projects-header">
             <Link
               href="/games/gtnh"
               className="back"
@@ -1305,6 +1387,12 @@ function Editor({ project }: { project: Project }) {
             >
               <ArrowLeft size={14} /> Projects
             </Link>
+              <div className="sidebar-header-actions">
+                <button type="button" aria-label="Settings" title="Settings" aria-pressed={settingsOpen} onClick={() => setSettingsOpen((open) => !open)}><Settings size={18} /></button>
+                <button type="button" aria-label="Collapse left sidebar" title="Collapse left sidebar" onClick={collapse}><PanelLeftClose size={18} /></button>
+              </div>
+            </div>
+            {settingsOpen ? <DisplaySettingsPanel /> : <>
             <div className="sidebar-project">
               <img src="/assets/gtnh-2.8.4/logo.png" alt="GTNH" />
               <div>
@@ -1350,6 +1438,7 @@ function Editor({ project }: { project: Project }) {
             >
               <Plus size={15} /> New diagram
             </button>
+            </>}
             <div className="sidebar-bottom">
               <div className="sidebar-save">
                 <span className="save-state" role="status">
@@ -1373,7 +1462,7 @@ function Editor({ project }: { project: Project }) {
                 averages.
               </small>
             </div>
-          </aside>
+          </aside>}</ResizableSidebar>
           <section className="editor">
             <DiagramActions
               ready={ready}
@@ -1423,6 +1512,7 @@ function Editor({ project }: { project: Project }) {
                 edges={renderedEdges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
+                zIndexMode="manual"
                 elevateEdgesOnSelect={false}
                 elevateNodesOnSelect={false}
                 multiSelectionKeyCode={["Control", "Meta"]}
@@ -1468,7 +1558,9 @@ function Editor({ project }: { project: Project }) {
                       nodes.find((node) => node.id === c.source)!.data.recipe,
                       c.sourceHandle,
                     )!;
-                    setNodes((ns) =>
+                    const targetRecipe = nodes.find((node) => node.id === c.target)!.data.recipe;
+                    const reference = fluidReferenceCompatible(output, port(applyVariants(targetRecipe, nodes.find((node) => node.id === c.target)!.data.variants), c.targetHandle)!);
+                    if (!reference) setNodes((ns) =>
                       ns.map((node) =>
                         node.id === c.target
                           ? {
@@ -1505,7 +1597,7 @@ function Editor({ project }: { project: Project }) {
                         x:
                           sourceNode.internals.positionAbsolute.x +
                           sourceHandle.x +
-                          sourceHandle.width,
+                          sourceHandle.width / 2,
                         y:
                           sourceNode.internals.positionAbsolute.y +
                           sourceHandle.y +
@@ -1514,7 +1606,7 @@ function Editor({ project }: { project: Project }) {
                       const end = {
                         x:
                           targetNode.internals.positionAbsolute.x +
-                          targetHandle.x,
+                          targetHandle.x + targetHandle.width / 2,
                         y:
                           targetNode.internals.positionAbsolute.y +
                           targetHandle.y +
@@ -1543,7 +1635,7 @@ function Editor({ project }: { project: Project }) {
                     }
                     setEdges((es) => [
                       ...es,
-                      { ...c, id: crypto.randomUUID(), data: { waypoints } },
+                      { ...c, id: crypto.randomUUID(), data: { waypoints, reference } },
                     ]);
                     markDirty();
                   }
@@ -1556,7 +1648,7 @@ function Editor({ project }: { project: Project }) {
                 minZoom={0.05}
                 maxZoom={3}
                 deleteKeyCode={
-                  browser || dialog || itemPicker
+                  browser || dialog || itemPicker || autoPlanner
                     ? null
                     : ["Backspace", "Delete"]
                 }
@@ -1572,9 +1664,13 @@ function Editor({ project }: { project: Project }) {
                   >
                     <PackagePlus size={20} />
                   </button>
+                  <button aria-label="Auto Recipe Planner" title="Auto Recipe Planner — Find and compare routes from an input item to a target item." disabled={!ready} onClick={() => setAutoPlanner(true)}>
+                    <WandSparkles size={20} />
+                  </button>
+                  <button aria-label="Add label" title="Add label — Editable text with a font-size dropdown." disabled={!ready} onClick={addLabel}><Type size={20} /></button>
                   <button
-                    aria-label="Add summary area"
-                    title="Add summary area — Place and resize an area around recipes to see their combined energy use, machine counts, needed and produced resources, and add ratio calculators."
+                    aria-label="Add grouping"
+                    title="Add grouping — Place and resize an area around recipes to see their combined energy use, machine counts, needed and produced resources, and add ratio calculators."
                     disabled={!ready}
                     onClick={addArea}
                   >
@@ -1639,12 +1735,31 @@ function Editor({ project }: { project: Project }) {
               <span>20 ticks / second · Producer : consumer</span>
             </footer>
           </section>
-          <Inventory
+          <ResizableSidebar side="right" defaultWidth={318}>{(collapse) => <Inventory
+            onCollapse={collapse}
+            areaSummaries={
+              <>
+                {renderedNodes.filter((node) => node.type === "summary").map((node, index) => {
+                  const summary = "summary" in node.data ? node.data.summary : undefined;
+                  return (
+                    <button key={node.id} className="sidebar-area-summary" onClick={() => {
+                      setNodes((values) => values.map((value) => ({ ...value, selected: value.id === node.id })));
+                      void flow.current?.fitView({ nodes: [{ id: node.id }], padding: 0.2, duration: 300 });
+                    }}>
+                      <strong>{node.data.title?.trim() || `Grouping ${index + 1}`}</strong>
+                      {summary && <><span>{summary.recipeCount} recipes · {summary.machineCount.toLocaleString()} machines</span><span>{summary.euPerTick.toLocaleString()} EU/t</span></>}
+                    </button>
+                  );
+                })}
+                {!renderedNodes.some((node) => node.type === "summary") && <p>No groupings in this diagram yet.</p>}
+              </>
+            }
             recentItems={recentItems}
             onBrowse={browse}
             onAddItem={(item) => addCard(itemSourceRecipe(item))}
-          />
+          />}</ResizableSidebar>
         </div>
+        {autoPlanner && <AutoRecipePlanner onClose={() => setAutoPlanner(false)} onAdd={addPlannedGraph} />}
         {itemPicker && (
           <div className="modal-backdrop" onClick={() => setItemPicker(false)}>
             <div
@@ -1654,13 +1769,21 @@ function Editor({ project }: { project: Project }) {
               aria-label="Choose an item card"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="dialog-heading">
-                <h2>Add item card</h2>
+              <div className="recipe-browser-heading item-picker-heading">
+                <button type="button" aria-label="Previous item" disabled>
+                  <ArrowLeft size={17} />
+                </button>
+                <div className="recipe-view">
+                  <h2 className="recipe-title">
+                    <span className="item-slot" aria-hidden="true"><PackagePlus size={24} /></span>
+                    <span>Add item card</span>
+                  </h2>
+                </div>
                 <button
                   aria-label="Close item picker"
                   onClick={() => setItemPicker(false)}
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
               <Inventory
@@ -1778,7 +1901,7 @@ function Editor({ project }: { project: Project }) {
           </div>
         )}
         {browser && (
-          <div className="modal-backdrop" onClick={() => setBrowser(null)}>
+          <div className="modal-backdrop" onClick={() => { browserEpoch.current++; setBrowser(null); }}>
             <div
               className="recipe-dialog"
               role="dialog"
@@ -1793,26 +1916,21 @@ function Editor({ project }: { project: Project }) {
                   onClick={() => {
                     const previous = history[history.length - 1];
                     if (previous) {
-                      void browse(previous.item, previous.mode);
-                      setHistory(history.slice(0, -1));
+                      void browse(previous.item, previous.mode, undefined, true);
                     }
                   }}
                 >
                   <ArrowLeft size={17} />
                 </button>
-                <div>
-                  <small>
-                    {browser.mode === "category"
-                      ? "MACHINE CATEGORY"
-                      : browser.mode === "recipes"
-                        ? "RECIPES FOR"
-                        : "USED IN"}
-                  </small>
-                  <h2>{browser.item.name}</h2>
+                <div className="recipe-view">
+                  <h2 className="recipe-title">
+                    <ItemSlot item={browser.item} tooltipAtPointer />
+                    <span>{browser.item.name}</span>
+                  </h2>
                 </div>
                 <button
                   aria-label="Close recipes"
-                  onClick={() => setBrowser(null)}
+                  onClick={() => { browserEpoch.current++; setBrowser(null); }}
                 >
                   <X size={20} />
                 </button>
@@ -1822,16 +1940,18 @@ function Editor({ project }: { project: Project }) {
                 hidden={browser.mode === "category"}
               >
                 <button
-                  className={browser.mode === "recipes" ? "active" : ""}
+                  className="recipe-nav-button"
+                  disabled={browser.mode === "recipes" || !availableModes.recipes}
                   onClick={() => browse(browser.item, "recipes")}
                 >
                   Recipes
                 </button>
                 <button
-                  className={browser.mode === "uses" ? "active" : ""}
+                  className="recipe-nav-button"
+                  disabled={browser.mode === "uses" || !availableModes.uses}
                   onClick={() => browse(browser.item, "uses")}
                 >
-                  Uses
+                  Ussage
                 </button>
               </div>
               <div
@@ -1948,9 +2068,9 @@ function Editor({ project }: { project: Project }) {
                         previous: (
                           <button
                             className="recipe-nav-button"
-                            aria-label="Previous recipe type"
-                            disabled={recipeHandlers.length < 2}
-                            onClick={() => changeHandler(-1)}
+                            aria-label="Previous recipe page"
+                            disabled={!filtered.length}
+                            onClick={() => changeRecipePage(-1)}
                           >
                             <RecipeChevron direction="left" />
                           </button>
@@ -1958,9 +2078,9 @@ function Editor({ project }: { project: Project }) {
                         next: (
                           <button
                             className="recipe-nav-button"
-                            aria-label="Next recipe type"
-                            disabled={recipeHandlers.length < 2}
-                            onClick={() => changeHandler(1)}
+                            aria-label="Next recipe page"
+                            disabled={!filtered.length}
+                            onClick={() => changeRecipePage(1)}
                           >
                             <RecipeChevron direction="right" />
                           </button>
@@ -1970,9 +2090,9 @@ function Editor({ project }: { project: Project }) {
                         <div className="recipe-pager">
                           <button
                             className="recipe-nav-button"
-                            disabled={!recipePage}
+                            disabled={!filtered.length}
                             aria-label="Previous recipe"
-                            onClick={() => setRecipePage(recipePage - 1)}
+                            onClick={() => changeRecipePage(-1)}
                           >
                             <RecipeChevron direction="left" />
                           </button>
@@ -1982,9 +2102,9 @@ function Editor({ project }: { project: Project }) {
                           </span>
                           <button
                             className="recipe-nav-button"
-                            disabled={recipePage >= filtered.length - 1}
+                            disabled={!filtered.length}
                             aria-label="Next recipe"
-                            onClick={() => setRecipePage(recipePage + 1)}
+                            onClick={() => changeRecipePage(1)}
                           >
                             <RecipeChevron direction="right" />
                           </button>

@@ -1,5 +1,6 @@
 import { isGtnhInstalled } from "@/lib/game-packs";
 import { catalog, db } from "@/lib/db";
+import { hydrateFluidContents } from "@/lib/fluid-containers";
 import {
   diagramSchema,
   resolveDiagramVariants,
@@ -71,7 +72,8 @@ export async function PUT(request: Request, context: Context) {
         { status: 400 },
       );
     try {
-      document = resolveDiagramVariants(document, allRecipes);
+      document = resolveDiagramVariants(document, document.edges.some((edge) => edge.reference)
+        ? await hydrateFluidContents(allRecipes) : allRecipes);
     } catch (error) {
       return Response.json(
         { error: (error as Error).message },

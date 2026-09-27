@@ -20,6 +20,7 @@ export type SummaryRecipe = SummaryBounds & {
   recipe: Recipe;
   machines: number;
   machineId?: string;
+  disabledPorts?: string[];
   variants: VariantSelection;
 };
 export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
@@ -39,6 +40,7 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     string,
     { item: Item; input: number; output: number }
   >();
+  const disabled = new Map<string, { item: Item; rate: number }>();
   let euPerTick = 0,
     totalEu = 0,
     machineCount = 0,
@@ -77,6 +79,13 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     totalEu +=
       Math.max(0, recipe.euPerTick) * recipe.durationTicks * node.machines;
     for (const ingredient of recipe.ingredients) {
+      if (node.disabledPorts?.includes(`${ingredient.direction}:${ingredient.slot}`)) {
+        const amount = rate(ingredient, recipe, node.machines);
+        const entry = disabled.get(ingredient.itemId) ?? { item: ingredient.item, rate: 0 };
+        if (ingredient.consumed && Number.isFinite(amount)) entry.rate += amount;
+        disabled.set(ingredient.itemId, entry);
+        continue;
+      }
       if (!ingredient.consumed) continue;
       const amount = rate(ingredient, recipe, node.machines);
       if (!Number.isFinite(amount)) continue;
@@ -117,14 +126,15 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     inputs,
     recursiveInputIds,
     outputs,
+    disabled: [...disabled.values()].sort((a, b) => a.item.name.localeCompare(b.item.name)),
     untimed,
   };
 }
 export type AreaSummary = ReturnType<typeof summarizeArea>;
 export const summaryRecipe: Recipe = {
   id: "summary-area",
-  name: "Area summary",
-  handler: "Area summary",
+  name: "Grouping",
+  handler: "Grouping",
   durationTicks: 0,
   euPerTick: 0,
   layout: "{}",

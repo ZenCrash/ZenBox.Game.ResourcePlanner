@@ -318,6 +318,7 @@ export function connectionLabelPosition(
   width: number,
   height: number,
   routes: Point[][] = [route.points],
+  obstacles: { x: number; y: number; width: number; height: number }[] = [],
 ) {
   const gap = 16;
   const extent = (values: number[]) =>
@@ -361,6 +362,11 @@ export function connectionLabelPosition(
         };
       }),
     )
+    .concat(obstacles.map((obstacle) => {
+      const start = project(obstacle);
+      const end = project({ x: obstacle.x + obstacle.width, y: obstacle.y + obstacle.height });
+      return { left: start.x, right: end.x, top: start.y, bottom: end.y };
+    }))
     .filter(
       (segment) =>
         segment.right >= x - gap && segment.left <= x + alongSize + gap,

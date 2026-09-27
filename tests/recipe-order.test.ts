@@ -2,7 +2,36 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { compareRecipeHandlers } from "../lib/recipe-order";
 
+test("truncated combustion category retains its fuel tab order", () => {
+  const sequence = ["Large Boiler", "Combustion Generator Fue...", "Semifluid Generator Fuels", "Fluid Canner"];
+  assert.deepEqual([...sequence].reverse().sort(compareRecipeHandlers), sequence);
+});
+
 for (const sequence of [
+  [
+    "Large Chemical Reactor",
+    "Assembler",
+    "Mixer",
+    "Distillery",
+    "Multiblock Mixer",
+    "Fluid Extractor",
+    "Large Boiler",
+    "Combustion Generator Fuels",
+    "Fluid Canner",
+  ],
+  [
+    "Bacterial Vat",
+    "Assembler",
+    "Distillation Tower",
+    "Distillery",
+    "Brewery",
+    "Fluid Extractor",
+    "Large Boiler",
+    "Combustion Generator Fuels",
+    "Semifluid Generator Fuels",
+    "Fluid Canner",
+  ],
+  ["Smelting", "Carpenter", "Rock Breaker", "Compressor"],
   [
     "Electromagnetic Separator",
     "Smelting",
@@ -46,7 +75,7 @@ for (const sequence of [
     );
   });
 }
-test("keeps unranked multiblock variants after their base machine", () => {
+test("keeps multiblock variants after their base machine", () => {
   assert.deepEqual(
     [
       "Large Chemical Reactor",
@@ -55,9 +84,9 @@ test("keeps unranked multiblock variants after their base machine", () => {
       "Unknown Machine",
     ].sort(compareRecipeHandlers),
     [
+      "Compressor",
       "Chemical Reactor",
       "Large Chemical Reactor",
-      "Compressor",
       "Unknown Machine",
     ],
   );

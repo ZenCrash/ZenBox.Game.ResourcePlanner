@@ -11,9 +11,11 @@ import {
   type Recipe,
 } from "./model";
 import { connectionRoute, connectionLabelPosition } from "./diagram-geometry";
+import { lineDirectionColor, lineDirectionMarkers } from "./line-direction";
 import { recipePowerInfo } from "./recipe-power";
 import { overclockRecipe } from "./recipe-overclock";
 import { connectionSummary } from "./connection-summary";
+import { fluidReferenceFlow } from "./fluid-reference";
 import { initialPortRows } from "./port-layout";
 import { GRID_SIZE } from "./diagram-geometry";
 import { summarizeArea } from "./area-summary";
@@ -86,6 +88,7 @@ export async function exportDiagram(
         machineId: node.machineId,
         machines: node.machines,
         variants: node.variants,
+        disabledPorts: node.disabledPorts,
       })),
     ),
   }));
@@ -110,18 +113,21 @@ export async function exportDiagram(
   const minX = Math.min(
       0,
       ...doc.nodes.map((n) => n.position.x - 205),
+      ...(doc.labels ?? []).map(label => label.position.x - 10),
       ...bends.map((point) => point.x - 50),
       ...(doc.areas ?? []).map((area) => area.position.x - 10),
     ),
     minY = Math.min(
       0,
       ...doc.nodes.map((n) => n.position.y - 45),
+      ...(doc.labels ?? []).map(label => label.position.y - 10),
       ...bends.map((point) => point.y - 50),
       ...(doc.areas ?? []).map((area) => area.position.y - 10),
     );
   const width = Math.max(
       900,
       ...doc.nodes.map((n) => n.position.x + 560 - minX),
+      ...(doc.labels ?? []).map(label => label.position.x + Math.max(...label.text.split("\n").map(line => line.length), 1) * label.fontSize * .7 + 24 - minX),
       ...bends.map((point) => point.x + 50 - minX),
       ...(doc.areas ?? []).map(
         (area) => area.position.x + area.width + 10 - minX,
@@ -130,6 +136,7 @@ export async function exportDiagram(
     height = Math.max(
       550,
       ...doc.nodes.map((n) => n.position.y + 460 - minY),
+      ...(doc.labels ?? []).map(label => label.position.y + label.text.split("\n").length * label.fontSize * 1.3 + 24 - minY),
       ...bends.map((point) => point.y + 50 - minY),
       ...(doc.areas ?? []).map(
         (area) => area.position.y + area.height + 10 - minY,
@@ -177,7 +184,7 @@ export async function exportDiagram(
       value.toLocaleString("en-US", { maximumFractionDigits: 3 });
     body += `<rect x="${x}" y="${y}" width="${area.width}" height="${area.height}" rx="8" fill="#173c64" fill-opacity="0.6" stroke="#488bc3" stroke-width="2"/>`;
     body += `<path d="M ${x + 8} ${y} H ${x + area.width - 8} Q ${x + area.width} ${y} ${x + area.width} ${y + 8} V ${y + 44} H ${x} V ${y + 8} Q ${x} ${y} ${x + 8} ${y} Z" fill="#153959"/>`;
-    body += text(x + 12, y + 27, "Area summary", "#e8f4ff", 14);
+    body += text(x + 12, y + 35, area.title?.trim() || "Grouping", "#e8f4ff", 30);
     if (!summary.recipeCount) continue;
     body += text(
       x + 12,
@@ -195,6 +202,7 @@ export async function exportDiagram(
     );
     summary.machines.forEach((machine, index) => {
       const my = y + 98 + index * 24;
+      body += `<rect x="${x + 10}" y="${my - 1}" width="${area.width - 20}" height="22" rx="3" fill="none" stroke="#488bc3"/>`;
       const icon = machine.image && images.get(machine.image);
       if (icon)
         body += `<image href="${icon}" x="${x + 12}" y="${my}" width="20" height="20"/>`;
@@ -211,13 +219,15 @@ export async function exportDiagram(
       [
         ["Needed", summary.inputs],
         ["Produced", summary.outputs],
+        ["Disabled", summary.disabled],
       ] as const
     ).forEach(([title, items], column) => {
-      const left = x + 12 + (column * area.width) / 2;
+      const left = x + 12 + (column * area.width) / 3;
       body += text(left, top, title, "#9bd3ff", 12);
       if (!items.length) body += text(left, top + 20, "None", "#b2cbe1", 11);
       items.forEach(({ item, rate }, index) => {
         const iy = top + 8 + index * 24;
+        body += `<rect x="${left - 2}" y="${iy - 1}" width="${area.width / 3 - 16}" height="22" rx="3" fill="none" stroke="#488bc3"/>`;
         const icon = item.image && images.get(item.image);
         if (icon)
           body += `<image href="${icon}" x="${left}" y="${iy}" width="20" height="20"/>`;
@@ -225,7 +235,7 @@ export async function exportDiagram(
           left + 24,
           iy + 15,
           `${item.name.replace(/§[0-9a-fk-or]/gi, "")}: ${number(rate)} ${item.kind === "fluid" ? "mB" : "items"}/s`,
-          "#e8f4ff",
+          title === "Disabled" ? "#78838d" : "#e8f4ff",
           10,
         );
       });
@@ -234,10 +244,12 @@ export async function exportDiagram(
   const labels: {
     route: ReturnType<typeof connectionRoute>;
     summary: ReturnType<typeof connectionSummary>;
+    reference?: boolean;
     labelPosition?: { x: number; y: number };
   }[] = [];
   const inputSupply = new Map<string, number>();
   for (const edge of doc.edges) {
+    if (edge.reference) continue;
     const node = doc.nodes.find((n) => n.id === edge.source);
     const recipe = node && map.get(node.id);
     const output = recipe && port(recipe, edge.sourceHandle);
@@ -274,13 +286,18 @@ export async function exportDiagram(
       edge.targetBendX,
       edge.waypoints,
     );
-    const color = hasRecipeTiming(br)
+    const referenceFlow = edge.reference ? fluidReferenceFlow(output, ar, a.machines, input, br, b.machines) : undefined;
+    const color = referenceFlow ? referenceFlow.color : hasRecipeTiming(br)
       ? supplyColor(
           inputSupply.get(`${edge.target}/${edge.targetHandle}`) ?? NaN,
           rate(input, br, b.machines),
         )
       : connectionColors.unrated;
-    body += `<path d="${route.path}" fill="none" stroke="${color}" stroke-width="4"/>`;
+    if (edge.reference) body += `<defs><pattern id="reference-${edge.id}" patternUnits="userSpaceOnUse" width="16" height="16" patternTransform="rotate(45)"><rect width="8" height="16" fill="${color}"/></pattern></defs>`;
+    body += `<path d="${route.path}" fill="none" stroke="${edge.reference ? `url(#reference-${edge.id})` : color}" stroke-width="6"/>`;
+    for (const marker of edge.reference ? [] : lineDirectionMarkers(route.points)) {
+      body += `<path d="M8,0 L-6,-9 L-6,9 Z" transform="translate(${marker.x},${marker.y}) rotate(${marker.angle})" fill="${lineDirectionColor(color)}" stroke="#242424" stroke-width="1" stroke-linejoin="round"/>`;
+    }
     const summary = connectionSummary(
       output,
       ar,
@@ -289,9 +306,14 @@ export async function exportDiagram(
       br,
       b.machines,
     );
-    labels.push({ route, summary, labelPosition: edge.labelPosition });
+    if (edge.reference) {
+      summary.ratio = referenceFlow?.liters ? `1 container = ${referenceFlow.liters.toLocaleString("en-US")} L (reference)` : "Fluid / container reference";
+      summary.from = referenceFlow?.supplied === undefined ? "Unspecified" : `${referenceFlow.supplied.toLocaleString("en-US")} L/s`;
+      summary.target = referenceFlow?.needed === undefined ? "Unspecified" : `${referenceFlow.needed.toLocaleString("en-US")} L/s`;
+    }
+    if (edge.showLineCard !== false) labels.push({ route, summary, labelPosition: edge.labelPosition, reference: edge.reference });
   }
-  for (const { route, summary, labelPosition } of labels) {
+  for (const { route, summary, labelPosition, reference } of labels) {
     const labelWidth = Math.max(
       220,
       summary.item.length * 7 + 20,
@@ -307,7 +329,7 @@ export async function exportDiagram(
       );
     const lx = position.x + labelWidth / 2,
       ly = position.y;
-    body += `<rect x="${position.x}" y="${ly}" width="${labelWidth}" height="64" rx="3" fill="#242927"/>`;
+    body += `<rect x="${position.x}" y="${ly}" width="${labelWidth}" height="64" rx="3" fill="${reference ? "#301020" : "#242927"}"${reference ? ' stroke="#db579c" stroke-width="2"' : ""}/>`;
     body += text(lx, ly + 16, summary.item, "#e7e7e5", 12, "middle");
     body += text(lx, ly + 32, summary.ratio, "#e7e7e5", 11, "middle");
     body += text(
@@ -335,7 +357,8 @@ export async function exportDiagram(
     if (r.sourceItemId) {
       const item = r.ingredients[0].item;
       const image = item.image && images.get(item.image);
-      body += `<g transform="translate(${x},${y})"><rect width="340" height="110" rx="3" fill="#c6c6c6" stroke="#555" stroke-width="3"/>${text(170, 24, "Item source", "#373737", 15, "middle")}${image ? `<image href="${image}" x="22" y="47" width="32" height="32"/>` : ""}${text(65, 67, item.name, "#373737", 12)}<circle cx="340" cy="${portY(node, "output:0") - y}" r="6" fill="#171c19" stroke="${itemColor(item.id)}" stroke-width="2"/></g>`;
+      const disabled = node.disabledPorts?.includes("output:0");
+      body += `<g transform="translate(${x},${y})"><rect width="340" height="110" rx="3" fill="#c6c6c6" stroke="#555" stroke-width="3"/>${text(170, 24, "Item source", "#373737", 15, "middle")}${image ? `<image href="${image}" x="22" y="47" width="32" height="32"/>` : ""}${text(65, 67, item.name, "#373737", 12)}<circle cx="340" cy="${portY(node, "output:0") - y}" r="6" fill="${disabled ? "#555" : "#171c19"}" stroke="${disabled ? "#555" : itemColor(item.id)}" stroke-width="2"/></g>`;
       continue;
     }
     body += `<g transform="translate(${x},${y})"><rect width="340" height="240" rx="3" fill="#c6c6c6" stroke="#555" stroke-width="3"/><path d="M0,240 V0 H340" fill="none" stroke="#fff" stroke-width="3"/>${text(170, 24, r.handler, "#373737", 15, "middle")}`;
@@ -367,7 +390,8 @@ export async function exportDiagram(
               : edge.source === node.id &&
                 edge.sourceHandle === `${direction}:${i.slot}`,
           );
-          body += `<circle cx="${px}" cy="${py}" r="6" fill="#171c19" stroke="${itemColor(i.itemId)}" stroke-width="2"/>`;
+          const disabled = node.disabledPorts?.includes(`${direction}:${i.slot}`);
+          body += `<circle cx="${px}" cy="${py}" r="6" fill="${disabled ? "#555" : "#171c19"}" stroke="${disabled ? "#555" : itemColor(i.itemId)}" stroke-width="2"/>`;
           if (!connected)
             body += text(
               px + (direction === "input" ? -12 : 12),
@@ -390,6 +414,16 @@ export async function exportDiagram(
     }
     const power = recipePowerInfo(r);
     body += `${text(155, 97, "→", "#666", 26)}${text(20, 158, `Time: ${r.durationTicks / 20}s`, "#373737", 12)}${power.voltage ? text(20, 174, power.voltage, "#373737", 12) : ""}${power.amperage ? text(20, 190, power.amperage, "#373737", 12) : ""}${text(14, 218, "Machines", "#373737")}<rect x="240" y="199" width="86" height="28" fill="#555" stroke="#373737"/>${text(250, 218, node.machines, "#fff")}</g>`;
+  }
+  for (const label of doc.labels ?? []) {
+    if (label.backgroundColor && label.backgroundColor !== "transparent") {
+      const labelWidth = Math.max(...label.text.split("\n").map(line => line.length), 1) * label.fontSize * .7 + 16;
+      const labelHeight = label.text.split("\n").length * label.fontSize * 1.2 + 16;
+      body += `<rect x="${label.position.x}" y="${label.position.y}" width="${labelWidth}" height="${labelHeight}" fill="${escape(label.backgroundColor)}"/>`;
+    }
+    label.text.split("\n").forEach((line, index) => {
+      body += text(label.position.x + 8, label.position.y + 8 + label.fontSize + index * label.fontSize * 1.2, line, label.textColor ?? "#ffffff", label.fontSize).replace("<text ", '<text font-weight="bold" ');
+    });
   }
   body += "</g>";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + 50}" viewBox="0 0 ${width} ${height + 50}">${body}</svg>`;

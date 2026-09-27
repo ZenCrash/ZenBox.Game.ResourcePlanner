@@ -9,6 +9,8 @@ export type Item = {
   tooltip: string;
   image: string | null;
   kind: string;
+  containedFluidIds?: string[];
+  fluidContents?: { fluidId: string; liters: number }[];
 };
 export type Ingredient = {
   itemId: string;
@@ -30,6 +32,10 @@ export type Recipe = {
   handler: string;
   durationTicks: number;
   euPerTick: number;
+  steamPerTick?: number;
+  steamPerBatch?: number;
+  parallel?: number;
+  cycleDurationTicks?: number;
   layout: string;
   details: string;
   ingredients: Ingredient[];
@@ -44,6 +50,7 @@ export const nodeSchema = z.object({
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
   machines: z.number().finite().min(0).max(1e9),
   machineId: z.string().min(1).optional(),
+  disabledPorts: z.array(z.string().regex(/^(input|output):\d+$/)).max(1000).optional(),
   size: z
     .object({
       width: z.number().finite().positive(),
@@ -66,6 +73,9 @@ export const edgeSchema = z.object({
   target: z.string().uuid(),
   sourceHandle: z.string(),
   targetHandle: z.string(),
+  reference: z.boolean().optional(),
+  showLineCard: z.boolean().optional(),
+  showOverviewCard: z.boolean().optional(),
   bend: z.object({ x: z.number().finite(), y: z.number().finite() }).optional(),
   targetBendX: z.number().finite().optional(),
   labelPosition: z
@@ -87,6 +97,14 @@ export const diagramSchema = z.object({
   revision: z.number().int().min(0),
   nodes: z.array(nodeSchema).max(2000),
   edges: z.array(edgeSchema).max(10000),
+  labels: z.array(z.object({
+    id: z.string().uuid(),
+    position: z.object({ x: z.number().finite(), y: z.number().finite() }),
+    text: z.string().max(5000),
+    fontSize: z.number().int().min(8).max(144),
+    textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    backgroundColor: z.union([z.literal("transparent"), z.string().regex(/^#[0-9a-fA-F]{6}$/)]).optional(),
+  })).max(1000).optional(),
   areas: z
     .array(
       z.object({
@@ -94,6 +112,7 @@ export const diagramSchema = z.object({
         position: z.object({ x: z.number().finite(), y: z.number().finite() }),
         width: z.number().finite().min(380).max(100000),
         height: z.number().finite().min(260).max(100000),
+        title: z.string().max(120).optional(),
         calculators: z
           .array(
             z.object({
@@ -219,6 +238,15 @@ export function portsCompatible(output: PortIdentity, input: PortIdentity) {
   );
 }
 
+export function fluidReferenceCompatible(output: Ingredient, input: Ingredient) {
+  if (output.direction !== "output" || input.direction !== "input") return false;
+  if (output.item.kind === "fluid" && input.item.kind !== "fluid")
+    return input.item.containedFluidIds?.includes(output.itemId) ?? false;
+  if (input.item.kind === "fluid" && output.item.kind !== "fluid")
+    return output.item.containedFluidIds?.includes(input.itemId) ?? false;
+  return false;
+}
+
 export type VariantSelection = Record<string, string>;
 export function ingredientVariants(ingredient: Ingredient): Item[] {
   const items = new Map(
@@ -297,16 +325,17 @@ export function resolveDiagramVariants(
     const output =
       source && port(recipeMap.get(source.recipeId)!, edge.sourceHandle);
     const input =
-      target && port(recipeMap.get(target.recipeId)!, edge.targetHandle);
+      target && port(edge.reference ? applyVariants(recipeMap.get(target.recipeId)!, target.variants) : recipeMap.get(target.recipeId)!, edge.targetHandle);
     if (
       !source ||
       !target ||
       source === target ||
       !output ||
       !input ||
-      !portsCompatible(output, input)
+      !(edge.reference ? fluidReferenceCompatible(output, input) : portsCompatible(output, input))
     )
       throw new Error("Connections must join compatible outputs and inputs");
+    if (edge.reference) continue;
     const key = `${target.id}/${edge.targetHandle}`;
     if (supplied.has(key) && supplied.get(key) !== output.itemId)
       throw new Error(
@@ -352,13 +381,14 @@ export function rate(ingredient: Ingredient, recipe: Recipe, machines = 1) {
     ? ((ingredient.amount *
         (ingredient.direction === "output" ? ingredient.chance : 1) *
         20) /
-        recipe.durationTicks) *
-        machines
+        (recipe.cycleDurationTicks ?? recipe.durationTicks)) *
+        machines * (recipe.parallel ?? 1)
     : 0;
 }
 export const connectionColors = {
+  reference: "#f472b6",
   unrated: "#9ca3af",
-  shortage: "#ef4444",
+  shortage: "#facc15",
   balanced: "#22c55e",
   surplus: "#3b82f6",
 };

@@ -1,8 +1,9 @@
 import { catalog } from "./db";
 import { acceptedItemIds, type Recipe } from "./model";
-import { bottlerFluids } from "./fluid-containers";
+import { bottlerFluids, hydrateFluidContents } from "./fluid-containers";
+import { smeltingRuntime } from "./smelting-runtime";
 
-function machineIds(recipe: Recipe): string[] {
+export function machineIds(recipe: Recipe): string[] {
   // Et Futurum registers this catalyst through IMC rather than NEI's CSV.
   const extra =
     recipe.handler === "Blasting"
@@ -60,8 +61,8 @@ export async function hydrateRecipeVariants(
     });
     for (const item of items) known.set(item.id, item);
   }
-  return recipes.map((recipe) => ({
-    ...recipe,
+  return hydrateFluidContents(recipes.map((recipe) => ({
+    ...smeltingRuntime(recipe),
     ...(recipe.handler === "Smelting"
       ? { smeltingFuel: known.get("minecraft:coal") }
       : {}),
@@ -77,5 +78,5 @@ export async function hydrateRecipeVariants(
         known.has(id) ? [known.get(id)!] : [],
       ),
     })),
-  }));
+  })));
 }

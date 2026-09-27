@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Plus } from "lucide-react";
 import {
   applyVariants,
   cycleVariants,
@@ -8,7 +9,9 @@ import {
 import type { Item, Recipe } from "@/lib/model";
 import { MinecraftText } from "./minecraft-text";
 import { ItemTooltip } from "./item-tooltip";
+import { PortItemOutline, usePortItemHighlight } from "./port-item-highlight";
 import { recipePowerInfo } from "@/lib/recipe-power";
+import { isCombustionFuelHandler } from "@/lib/recipe-handlers";
 import { machineTiers, tierColors } from "@/lib/machine-selection";
 import {
   recipeSlotGroups,
@@ -47,6 +50,26 @@ function TierText({ text }: { text: string }) {
       );
     });
 }
+function fluidSlotAmount(amount: number) {
+  if (amount < 10_000) return `${amount}L`;
+  const units = [
+    [1e12, "T"],
+    [1e9, "G"],
+    [1e6, "M"],
+    [1e3, "k"],
+  ] as const;
+  const [scale, prefix] = units.find(([scale]) => amount >= scale)!;
+  return `${(amount / scale).toLocaleString("en-US", { maximumFractionDigits: 2 })}${prefix}L`;
+}
+
+function FluidTooltipAmount({ amount }: { amount: number }) {
+  return (
+    <span className="fluid-tooltip-amount">
+      Amount: {amount.toLocaleString("en-US")} L
+    </span>
+  );
+}
+
 export function ItemSlot({
   item,
   amount,
@@ -72,10 +95,13 @@ export function ItemSlot({
   nativeTooltip?: boolean;
   tooltipAtPointer?: boolean;
 }) {
+  const highlight = usePortItemHighlight();
   const amountLabel =
     amount === undefined
       ? undefined
-      : `${amount}${item.kind === "fluid" ? "L" : ""}`;
+      : item.kind === "fluid"
+        ? fluidSlotAmount(amount)
+        : `${amount}`;
   let lines: string[] = [];
   try {
     lines = JSON.parse(item.tooltip);
@@ -83,6 +109,8 @@ export function ItemSlot({
   return (
     <button
       className="item-slot nodrag"
+      data-item-id={item.id}
+      data-port-highlighted={highlight.itemId === item.id || undefined}
       onClick={(event) => {
         if (event.ctrlKey && onAddItem) {
           event.preventDefault();
@@ -104,6 +132,7 @@ export function ItemSlot({
       }
       aria-expanded={groupExpanded}
     >
+      {highlight.itemId === item.id && <PortItemOutline />}
       {backgroundItem?.image && (
         <img
           className="group-background-item"
@@ -129,6 +158,9 @@ export function ItemSlot({
         <strong>
           <MinecraftText text={groupTitle || item.name} />
         </strong>
+        {item.kind === "fluid" && amount !== undefined && (
+          <FluidTooltipAmount amount={amount} />
+        )}
         {!groupTitle &&
           lines
             .filter(
@@ -212,24 +244,35 @@ export function CyclingRecipe({
         <br />
         Adding a recipe locks the displayed items
       </p>
+      <div className="recipe-add-actions">
       <button
+        type="button"
         className="primary select-recipe"
         disabled={disabled}
         onClick={() => onSelect(variants, false)}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          if (!disabled) onSelect(variants, true);
-        }}
-        title="Right-click to add and keep the recipe selector open"
       >
         Add recipe to diagram
       </button>
+      <button
+        type="button"
+        className="primary recipe-add-keep-open"
+        disabled={disabled}
+        onClick={() => onSelect(variants, true)}
+        aria-label="Add recipe and keep selector open"
+        title="Add recipe and keep selector open"
+      >
+        <Plus size={20} aria-hidden="true" />
+      </button>
+      </div>
     </div>
   );
 }
 export function RecipeView({
   recipe,
   referenceRecipe,
+  referenceTimeTicks,
+  machineCount = 1,
+  isDefaultMachine = false,
   onBrowse,
   children,
   footerControl,
@@ -239,6 +282,9 @@ export function RecipeView({
 }: {
   recipe: Recipe;
   referenceRecipe?: Recipe;
+  referenceTimeTicks?: number;
+  machineCount?: number;
+  isDefaultMachine?: boolean;
   onBrowse?: Browse;
   children?: ReactNode;
   footerControl?: ReactNode;
@@ -247,12 +293,22 @@ export function RecipeView({
   navigation?: { previous: ReactNode; next: ReactNode };
 }) {
   const power = recipePowerInfo(recipe);
+  const count = Number.isFinite(machineCount)
+    ? Math.max(1, Math.trunc(machineCount))
+    : 1;
+  const countPrefix = count > 1 ? `(x${count}) ` : "";
+  const comparisonColor = isDefaultMachine ? "#ffffff" : tierColors.MV;
   const reference =
     referenceRecipe &&
-    (referenceRecipe.euPerTick !== recipe.euPerTick ||
+    (count > 1 ||
+      referenceRecipe.euPerTick !== recipe.euPerTick ||
       referenceRecipe.durationTicks !== recipe.durationTicks)
       ? referenceRecipe
       : undefined;
+  const baseStats = reference ?? recipe;
+  const basePower = recipePowerInfo(baseStats);
+  const timeReference = !isDefaultMachine && recipe.durationTicks > 0 &&
+    (referenceTimeTicks ?? 0) > 0 ? referenceTimeTicks : undefined;
   const isCrafting =
     recipe.handler === "Shaped Crafting" ||
     recipe.handler === "Shapeless Crafting";
@@ -351,6 +407,8 @@ export function RecipeView({
         recipe.handler === "Alloy Smelter Recycling" ? (
         <TwoInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Fluid Solidifier" ||
+        recipe.handler === "Large Boiler" ||
+        isCombustionFuelHandler(recipe.handler) ||
         recipe.handler.startsWith("Magic Energy Absorber Fu") ? (
         <SingleInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Blast Furnace" ||
@@ -375,9 +433,12 @@ export function RecipeView({
         recipe.handler === "Bacterial Vat" ||
         recipe.handler === "Multiblock Mixer" ||
         recipe.handler === "Fermenter" ||
+        recipe.handler === "Semifluid Generator Fuels" ||
+        recipe.handler === "Brewery" ||
         recipe.handler === "Fluid Extractor" ||
         recipe.handler === "Fluid Extractor Recycling" ||
         recipe.handler === "Electrolyzer" ||
+        recipe.handler === "Autoclave" ||
         recipe.handler === "Fluid Canner" ||
         recipe.handler === "Compressor" ||
         recipe.handler === "Rock Breaker" ? (
@@ -475,26 +536,58 @@ export function RecipeView({
       )}
       <div className="recipe-footer">
         <div className="recipe-stats">
+          {recipe.steamPerTick !== undefined && (
+            <>
+              <div className="recipe-stat-row">
+                <strong>Total steam:</strong>
+                <span className={count > 1 ? "recipe-struck-stat" : undefined}>
+                  {(recipe.steamPerBatch ?? recipe.steamPerTick * recipe.durationTicks).toLocaleString("en-US", { maximumFractionDigits: 3 })} L
+                </span>
+                {count > 1 && (
+                  <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: tierColors.MV }}>
+                    {countPrefix}{((recipe.steamPerBatch ?? recipe.steamPerTick * recipe.durationTicks) * count).toLocaleString("en-US", { maximumFractionDigits: 3 })} L
+                  </span>
+                )}
+              </div>
+              <div className="recipe-stat-row" title={recipe.steamPerBatch ? "Steam is consumed upfront per batch. This is the average supply needed for continuous operation." : undefined}>
+                <strong>{recipe.steamPerBatch ? "Steam (avg.):" : "Steam:"}</strong>
+                <span className={count > 1 ? "recipe-struck-stat" : undefined}>
+                  {recipe.steamPerTick.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/t
+                </span>
+                {count > 1 && (
+                  <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: tierColors.MV }}>
+                    {countPrefix}{(recipe.steamPerTick * count).toLocaleString("en-US", { maximumFractionDigits: 3 })} L/t
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+          {recipe.cycleDurationTicks && recipe.cycleDurationTicks !== recipe.durationTicks && <div className="recipe-stat-row"><strong>Batch interval:</strong><span>{recipe.cycleDurationTicks / 20} secs</span></div>}
           {recipe.euPerTick > 0 && (
             <>
               {recipe.durationTicks > 0 && (
                 <div className="recipe-stat-row">
                   <strong>Total:</strong>{" "}
                   <span
-                    className={reference ? "recipe-updated-stat" : undefined}
-                    style={reference ? { color: tierColors.MV } : undefined}
+                    className={reference ? "recipe-struck-stat" : undefined}
                   >
-                    {(recipe.euPerTick * recipe.durationTicks).toLocaleString()}{" "}
+                    {(
+                      baseStats.euPerTick * baseStats.durationTicks
+                    ).toLocaleString()}{" "}
                     EU
                   </span>
                   {reference && (
-                    <span className="recipe-default-stat">
-                      {" "}
-                      (
+                    <span
+                      className="recipe-comparison-stat recipe-updated-stat"
+                      style={{ color: comparisonColor }}
+                    >
+                      {countPrefix}
                       {(
-                        reference.euPerTick * reference.durationTicks
+                        recipe.euPerTick *
+                        recipe.durationTicks *
+                        count
                       ).toLocaleString()}{" "}
-                      EU)
+                      EU
                     </span>
                   )}
                 </div>
@@ -504,28 +597,25 @@ export function RecipeView({
                   <>
                     <strong>Voltage:</strong>{" "}
                     <span
-                      className={reference ? "recipe-updated-stat" : undefined}
-                      style={reference ? { color: tierColors.MV } : undefined}
+                      className={reference && !isDefaultMachine ? "recipe-struck-stat" : undefined}
                     >
                       <TierText
-                        text={power.voltage.replace(/^Voltage: /, "")}
+                        text={
+                          basePower.voltage?.replace(/^Voltage: /, "") ?? ""
+                        }
                       />
                     </span>
                   </>
                 )}
-                {reference && (
-                  <span className="recipe-default-stat">
-                    {" "}
-                    (
+                {reference && !isDefaultMachine && (
+                  <span
+                    className="recipe-comparison-stat recipe-updated-stat"
+                    style={{ color: comparisonColor }}
+                  >
+                    {countPrefix}
                     <TierText
-                      text={
-                        recipePowerInfo(reference).voltage?.replace(
-                          /^Voltage: /,
-                          "",
-                        ) ?? ""
-                      }
+                      text={power.voltage?.replace(/^Voltage: /, "") ?? ""}
                     />
-                    )
                   </span>
                 )}
               </div>
@@ -535,18 +625,14 @@ export function RecipeView({
           {recipe.durationTicks !== 0 && (
             <div className="recipe-stat-row">
               <strong>Time:</strong>{" "}
-              <span
-                className={reference ? "recipe-updated-stat" : undefined}
-                style={reference ? { color: tierColors.MV } : undefined}
-              >
+              <span className={timeReference !== undefined ? "recipe-struck-stat" : undefined}>
                 {recipe.durationTicks > 0
-                  ? `${recipe.durationTicks / 20} secs`
+                  ? `${(timeReference ?? recipe.durationTicks) / 20} secs`
                   : "Invalid runtime duration"}
               </span>
-              {reference && (
-                <span className="recipe-default-stat">
-                  {" "}
-                  ({reference.durationTicks / 20} secs)
+              {timeReference !== undefined && (
+                <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: comparisonColor }}>
+                  {recipe.durationTicks / 20} secs
                 </span>
               )}
             </div>
@@ -657,7 +743,11 @@ function SingleInputMachineLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        <span aria-hidden="true" />
+        {recipe.handler === "Large Boiler" || isCombustionFuelHandler(recipe.handler) ? (
+          <PlainRecipeArrow />
+        ) : (
+          <span aria-hidden="true" />
+        )}
       </CategorySymbol>
       {fluids.length > 0 && (
         <div
@@ -834,6 +924,7 @@ function CastingTableLayout({
   recipe: Recipe;
   onBrowse?: Browse;
 }) {
+  const highlight = usePortItemHighlight();
   const cast = recipe.ingredients.find(
     (i) => i.direction === "input" && i.item.kind !== "fluid",
   );
@@ -847,6 +938,7 @@ function CastingTableLayout({
       {fluid && (
         <button
           className={`casting-table-flow nodrag${cast ? "" : " without-cast"}`}
+          data-port-highlighted={highlight.itemId === fluid.item.id || undefined}
           aria-label={`${fluid.item.name}: ${fluid.amount} L`}
           style={{
             backgroundImage: fluid.item.image
@@ -859,9 +951,10 @@ function CastingTableLayout({
             onBrowse?.(fluid.item, "uses");
           }}
         >
+          {highlight.itemId === fluid.item.id && <PortItemOutline />}
           <ItemTooltip>
             <strong>{fluid.item.name}</strong>
-            <span>{fluid.amount} L</span>
+            <FluidTooltipAmount amount={fluid.amount} />
           </ItemTooltip>
         </button>
       )}
@@ -1230,6 +1323,7 @@ function MachineRecipeLayout({
   onBrowse?: Browse;
 }) {
   const circuit = recipe.handler === "Circuit Assembler";
+  const autoclave = recipe.handler === "Autoclave";
   const press = recipe.handler === "Forming Press";
   const distillery = recipe.handler === "Distillery";
   const chemical = recipe.handler === "Chemical Reactor";
@@ -1239,6 +1333,8 @@ function MachineRecipeLayout({
   const vat = recipe.handler === "Bacterial Vat";
   const multiblockMixer = recipe.handler === "Multiblock Mixer";
   const fermenter = recipe.handler === "Fermenter";
+  const semifluidFuel = recipe.handler === "Semifluid Generator Fuels";
+  const brewery = recipe.handler === "Brewery";
   const canner = recipe.handler === "Fluid Canner";
   const compressor = recipe.handler === "Compressor";
   const rockBreaker = recipe.handler === "Rock Breaker";
@@ -1258,24 +1354,24 @@ function MachineRecipeLayout({
     ),
   );
   const counts = {
-    itemInputs: fermenter
+    itemInputs: fermenter || semifluidFuel
       ? 0
       : plant
         ? 4
         : largeChemical
           ? 6
-          : chemical || rockBreaker || electrolyzer
+          : chemical || rockBreaker || electrolyzer || autoclave
             ? 2
-            : distillery || fluidExtractor || canner || compressor
+            : distillery || fluidExtractor || canner || compressor || brewery
               ? 1
               : circuit || press || vat
                 ? 6
                 : 9,
-    itemOutputs: fermenter
+    itemOutputs: fermenter || brewery || semifluidFuel
       ? 0
       : multiblockMixer
         ? 9
-        : mixer
+        : mixer || autoclave
           ? 4
           : largeChemical || plant || electrolyzer
             ? 6
@@ -1299,15 +1395,18 @@ function MachineRecipeLayout({
             mixer ||
             vat ||
             fermenter ||
+            brewery ||
             fluidExtractor ||
             electrolyzer ||
+            autoclave ||
             canner
           ? 1
           : 0,
   };
   return (
     <div
-      className={`assembler-layout${circuit || press ? " circuit-assembler-layout" : ""}${press ? " forming-press-layout" : ""}${distillery ? " distillery-layout" : ""}${chemical ? " chemical-reactor-layout" : ""}${largeChemical || multiblockMixer ? " large-chemical-reactor-layout" : ""}${multiblockMixer ? " multiblock-mixer-layout" : ""}${plant ? " chemical-plant-layout" : ""}${mixer ? " mixer-layout" : ""}${vat ? " bacterial-vat-layout" : ""}${fermenter ? " fermenter-layout" : ""}${fluidExtractor ? " fluid-extractor-layout" : ""}${canner ? " fluid-canner-layout" : ""}${compressor ? " compressor-layout" : ""}${rockBreaker ? " rock-breaker-layout" : ""}${electrolyzer ? " electrolyzer-layout" : ""}`}
+      data-autoclave={autoclave || undefined}
+      className={`assembler-layout${circuit || press ? " circuit-assembler-layout" : ""}${press ? " forming-press-layout" : ""}${distillery ? " distillery-layout" : ""}${chemical ? " chemical-reactor-layout" : ""}${largeChemical || multiblockMixer ? " large-chemical-reactor-layout" : ""}${multiblockMixer ? " multiblock-mixer-layout" : ""}${plant ? " chemical-plant-layout" : ""}${mixer ? " mixer-layout" : ""}${vat ? " bacterial-vat-layout" : ""}${fermenter || brewery || semifluidFuel ? " fermenter-layout" : ""}${brewery ? " brewery-layout" : ""}${fluidExtractor ? " fluid-extractor-layout" : ""}${canner ? " fluid-canner-layout" : ""}${compressor ? " compressor-layout" : ""}${rockBreaker ? " rock-breaker-layout" : ""}${electrolyzer ? " electrolyzer-layout" : ""}`}
     >
       {(["input", "output"] as const).map((direction) => (
         <div className={`assembler-${direction}`} key={direction}>
@@ -1340,6 +1439,11 @@ function MachineRecipeLayout({
                           aria-label={`Empty ${recipe.handler} ${kind} ${direction} slot`}
                         />
                       )}
+                      {autoclave && ingredient && direction === "output" && ingredient.chance < 1 && (
+                        <span className="blast-furnace-chance" aria-label={`${ingredient.chance * 100}% chance`}>
+                          {Number((ingredient.chance * 100).toFixed(2))}%
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1359,15 +1463,17 @@ function MachineRecipeLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        <img
+        {autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
           src={
-            canner
+            semifluidFuel
+              ? "/ui/blast-furnace-progress.png"
+              : canner
               ? "/ui/fluid-canner-progress.svg"
               : fluidExtractor || electrolyzer
                 ? "/ui/fluid-extractor-progress.svg"
                 : plant || mixer || multiblockMixer
                   ? "/ui/chemical-plant-progress.svg"
-                  : distillery || chemical || largeChemical || vat || fermenter
+                  : distillery || chemical || largeChemical || vat || fermenter || brewery
                     ? "/ui/distillery-progress.svg"
                     : press
                       ? "/ui/forming-press-progress.svg"
@@ -1377,9 +1483,44 @@ function MachineRecipeLayout({
           }
           alt=""
           aria-hidden="true"
-        />
+        />}
       </CategorySymbol>
     </div>
+  );
+}
+
+function PlainRecipeArrow() {
+  return (
+    <svg width="40" height="36" viewBox="0 0 40 36" aria-hidden="true">
+      <path fill="#373737" d="M25 3 40 18 25 33V21H0v-6h25Z" />
+      <path fill="#fff" d="m40 18-15 15v-1l14-14ZM0 20h26v12h-1V21H0Z" />
+      <path fill="#8b8b8b" d="m26 5 13 13-13 13V20H1v-4h25Z" />
+    </svg>
+  );
+}
+
+function MixerRecipeSymbol() {
+  return (
+    <svg width="36" height="36" viewBox="14 2 76 72" aria-hidden="true">
+      {[0, 90, 180, 270].map((angle) => (
+        <g key={angle} transform={`rotate(${angle} 52 38)`}>
+          <path
+            fill="#8b8b8b"
+            stroke="#555"
+            strokeWidth="2"
+            strokeLinejoin="miter"
+            d="M21 21 33 9H41V5H46L55 14 43 26H39V21H35L27 29H23L21 27Z"
+          />
+          <path
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinejoin="miter"
+            d="M33 9 21 21V27L23 29H27L35 21"
+          />
+        </g>
+      ))}
+    </svg>
   );
 }
 
@@ -1433,12 +1574,14 @@ function FluidTank({
   fluid?: { item: Item; amount: number };
   onBrowse?: Browse;
 }) {
+  const highlight = usePortItemHighlight();
   const fill = fluid
     ? Math.min(100, Math.max(0, (fluid.amount / 10000) * 100))
     : 0;
   return (
     <button
       className="bottler-tank nodrag"
+      data-port-highlighted={!!fluid && highlight.itemId === fluid.item.id || undefined}
       disabled={!fluid}
       aria-label={
         fluid
@@ -1451,6 +1594,7 @@ function FluidTank({
         if (fluid) onBrowse?.(fluid.item, "uses");
       }}
     >
+      {fluid && highlight.itemId === fluid.item.id && <PortItemOutline />}
       <span className="bottler-tank-fill" style={{ height: `${fill}%` }}>
         <span
           className="bottler-tank-texture"
@@ -1472,7 +1616,7 @@ function FluidTank({
       {fluid && (
         <ItemTooltip>
           <strong>{fluid.item.name}</strong>
-          <span>{fluid.amount} L</span>
+          <FluidTooltipAmount amount={fluid.amount} />
         </ItemTooltip>
       )}
     </button>

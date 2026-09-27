@@ -90,6 +90,16 @@ test("all four corners are movable while preserving orthogonal segments and port
   }
 });
 
+test("rate cards avoid recipe rectangles on horizontal and vertical routes", () => {
+  const route = connectionRoute({ x: 0, y: 100 }, { x: 1000, y: 100 }, { x: 300, y: 100 });
+  assert.deepEqual(connectionLabelPosition(route, 200, 60, [route.points], [{ x: 400, y: 0, width: 220, height: 90 }]), { x: 400, y: 116 });
+  const blocked = connectionLabelPosition(route, 200, 60, [route.points], [{ x: 350, y: -100, width: 300, height: 400 }]);
+  assert.ok(blocked.y + 60 <= -116 || blocked.y >= 316);
+  const vertical = connectionRoute({ x: 100, y: 0 }, { x: 100, y: 1000 }, { x: 100, y: 300 });
+  const position = connectionLabelPosition(vertical, 200, 60, [vertical.points], [{ x: -100, y: 350, width: 400, height: 300 }]);
+  assert.ok(position.x + 200 <= -116 || position.x >= 316);
+});
+
 test("rate card prefers above on a tie and switches below when an upper line blocks it", () => {
   const route = connectionRoute(
     { x: 0, y: 100 },

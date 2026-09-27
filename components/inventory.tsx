@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { CatalogGroup, CatalogTile } from "@/lib/catalog-layout";
-import { ChevronLeft, ChevronRight, Info, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Search, PanelRightClose } from "lucide-react";
 import type { Item } from "@/lib/model";
 import { api } from "./project-list";
 import { ItemSlot, type Browse } from "./recipe-view";
@@ -36,12 +36,17 @@ export function Inventory({
   onAddItem,
   picker = false,
   recentItems = [],
+  areaSummaries,
+  onCollapse,
 }: {
   onBrowse: Browse;
   onAddItem?: (item: Item) => void;
   picker?: boolean;
   recentItems?: Item[];
+  areaSummaries?: ReactNode;
+  onCollapse?: () => void;
 }) {
+  const [tab, setTab] = useState<"catalog" | "areas">("catalog");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [columns, setColumns] = useState(8);
   const [pageSize, setPageSize] = useState(104);
@@ -107,8 +112,8 @@ export function Inventory({
     const element = grid.current;
     if (!element) return;
     const measure = () => {
-      const columnCount =
-        getComputedStyle(element).gridTemplateColumns.split(" ").length;
+      if (!element.clientWidth || !body.current?.clientHeight) return;
+      const columnCount = Math.max(1, Math.floor(element.clientWidth / 36));
       const rows = Math.max(
         1,
         Math.floor((body.current?.clientHeight ?? 468) / 36),
@@ -134,10 +139,42 @@ export function Inventory({
   let tileIndex = 0;
   return (
     <aside className={`inventory${picker ? " inventory-picker" : ""}`}>
-      <div className="panel-heading">
-        <span>ITEM CATALOG</span>
-        <div className="catalog-heading-actions">
-          <span className="badge">2.8.4</span>
+      {!picker && onCollapse && (
+        <div className="inventory-sidebar-header">
+          <span>{tab === "catalog" ? "Item Catalog" : "Grouping"}</span>
+          <button type="button" title="Collapse right sidebar" aria-label="Collapse right sidebar" onClick={onCollapse}>
+            <PanelRightClose size={18} />
+          </button>
+        </div>
+      )}
+      {!picker && (
+        <div className="inventory-tabs" role="tablist" aria-label="Sidebar">
+          <button role="tab" aria-selected={tab === "catalog"} onClick={() => setTab("catalog")}>Item Catalog</button>
+          <button role="tab" aria-selected={tab === "areas"} onClick={() => setTab("areas")}>Grouping</button>
+        </div>
+      )}
+      {!picker && tab === "areas" && (
+        <div className="inventory-areas" role="tabpanel" aria-label="Grouping">
+          {areaSummaries ?? <p>No groupings in this diagram yet.</p>}
+        </div>
+      )}
+      <div className="inventory-catalog-panel" hidden={!picker && tab !== "catalog"} role="tabpanel" aria-label="Item Catalog">
+      {picker && <div className="panel-heading"><span>ITEM CATALOG</span></div>}
+      <div className="inventory-top">
+        <div className="catalog-subsets-row">
+          <select
+            aria-label="Item subsets"
+            value={group}
+            onChange={(e) => {
+              setGroup(e.target.value);
+              setPage(0);
+            }}
+          >
+            <option value="">Item Subsets</option>
+            {result.groups.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
+          </select>
           <div
             className="catalog-info"
             onMouseEnter={() => setInfoOpen(true)}
@@ -177,21 +214,6 @@ export function Inventory({
             )}
           </div>
         </div>
-      </div>
-      <div className="inventory-top">
-        <select
-          aria-label="Item subsets"
-          value={group}
-          onChange={(e) => {
-            setGroup(e.target.value);
-            setPage(0);
-          }}
-        >
-          <option value="">Item Subsets</option>
-          {result.groups.map((g) => (
-            <option key={g}>{g}</option>
-          ))}
-        </select>
         <div className="pagination">
           <button
             aria-label="Previous item page"
@@ -373,6 +395,7 @@ export function Inventory({
             </button>
           )}
         </label>
+      </div>
       </div>
     </aside>
   );

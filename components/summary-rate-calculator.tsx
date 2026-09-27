@@ -1,9 +1,10 @@
 "use client";
 import { useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Zap } from "lucide-react";
 import type { AreaSummary } from "@/lib/area-summary";
 import {
   convertSummaryRate,
+  TOTAL_EU_INPUT_ID,
   type SummaryCalculation,
 } from "@/lib/summary-rate";
 
@@ -11,6 +12,9 @@ type Flow = AreaSummary["inputs"][number];
 const name = (flow: Flow) => flow.item.name.replace(/§[0-9a-fk-or]/gi, "");
 const format = (value: number | null) =>
   value === null ? "" : String(Number(value.toPrecision(12)));
+const energyNumberFormat = new Intl.NumberFormat("de-DE", {
+  maximumSignificantDigits: 12,
+});
 
 function ResourcePicker({
   label,
@@ -40,7 +44,9 @@ function ResourcePicker({
           menu.showPopover();
         }}
       >
-        {selected.item.image && <img src={selected.item.image} alt="" />}
+        {selected.item.id === TOTAL_EU_INPUT_ID
+          ? <Zap size={24} style={{ flexShrink: 0 }} aria-hidden="true" />
+          : selected.item.image && <img src={selected.item.image} alt="" />}
         <span>{name(selected)}</span>
         <ChevronDown size={14} />
       </button>
@@ -62,7 +68,9 @@ function ResourcePicker({
               flyout.current?.hidePopover();
             }}
           >
-            {flow.item.image && <img src={flow.item.image} alt="" />}
+            {flow.item.id === TOTAL_EU_INPUT_ID
+              ? <Zap size={24} style={{ flexShrink: 0 }} aria-hidden="true" />
+              : flow.item.image && <img src={flow.item.image} alt="" />}
             <span>{name(flow)}</span>
           </button>
         ))}
@@ -81,25 +89,34 @@ export function SummaryRateCalculator({
   onChange: (value: SummaryCalculation) => void;
 }) {
   const { inputId, outputId } = edit;
-  const setInputId = (inputId: string) => onChange({ ...edit, inputId });
+  const energyInput: Flow = {
+    rate: summary.totalEu,
+    item: { id: TOTAL_EU_INPUT_ID, name: "Total EU", kind: "energy", image: null,
+      registryId: "", metadata: 0, mod: "", group: "", tooltip: "[]" },
+  };
+  const inputs = [energyInput, ...summary.inputs];
+  const isEnergy = inputId === TOTAL_EU_INPUT_ID;
+  const setInputId = (inputId: string) => onChange(inputId === TOTAL_EU_INPUT_ID || isEnergy
+    ? { ...edit, inputId, side: "input", value: String(inputs.find((flow) => flow.item.id === inputId)?.rate ?? 0) }
+    : { ...edit, inputId });
   const setOutputId = (outputId: string) => onChange({ ...edit, outputId });
-  const input = summary.inputs.find((flow) => flow.item.id === inputId);
+  const input = inputs.find((flow) => flow.item.id === inputId);
   const output = summary.outputs.find((flow) => flow.item.id === outputId);
   if (!input || !output)
     return (
       <small>
-        Selected resource is no longer in this area&apos;s inputs or outputs.
+        Selected resource is no longer in this grouping&apos;s inputs or outputs.
       </small>
     );
   const numeric = edit?.value.trim() ? Number(edit.value) : null;
-  const inputValue = !edit
+  const inputValue = isEnergy && edit.side === "input" ? format(summary.totalEu) : !edit
     ? format(input.rate)
     : edit.side === "input"
       ? edit.value
       : numeric === null
         ? ""
         : format(convertSummaryRate(numeric, output.rate, input.rate));
-  const outputValue = !edit
+  const outputValue = isEnergy && edit.side === "input" ? format(output.rate) : !edit
     ? format(output.rate)
     : edit.side === "output"
       ? edit.value
@@ -110,11 +127,11 @@ export function SummaryRateCalculator({
     <div
       className="summary-rate-calculator nodrag nopan"
       aria-label="Resource rate calculator"
-      title="Scales the area's net input/output ratio. Partially supplied resources use the remaining shortage."
+      title={isEnergy ? "Total EU is calculated automatically from the grouping. Changing the produced rate scales the displayed energy proportionally." : "Scales the grouping's net input/output ratio. Partially supplied resources use the remaining shortage."}
     >
       {(
         [
-          ["input", "Needed", input, summary.inputs, inputValue, setInputId],
+          ["input", "Needed", input, inputs, inputValue, setInputId],
           [
             "output",
             "Produced",
@@ -128,16 +145,19 @@ export function SummaryRateCalculator({
         <div className="summary-rate-side" key={side}>
           <label className="summary-rate-field">
             <input
-              type="number"
+              type={side === "input" && isEnergy ? "text" : "number"}
               min="0"
               step="any"
-              aria-label={`${label} resource rate`}
-              value={value}
+              aria-label={side === "input" && isEnergy ? "Total EU" : `${label} resource rate`}
+              disabled={side === "input" && isEnergy}
+              value={side === "input" && isEnergy && value !== ""
+                ? energyNumberFormat.format(Number(value))
+                : value}
               onChange={(event) =>
                 onChange({ ...edit, side, value: event.target.value })
               }
             />
-            <span>{selected.item.kind === "fluid" ? "mB/s" : "items/s"}</span>
+            <span>{selected.item.kind === "energy" ? "EU" : selected.item.kind === "fluid" ? "mB/s" : "items/s"}</span>
           </label>
           <ResourcePicker
             label={label}

@@ -1,3 +1,5 @@
+export const TOTAL_EU_INPUT_ID = "__grouping_total_eu__";
+
 export function convertSummaryRate(
   value: number,
   fromRate: number,

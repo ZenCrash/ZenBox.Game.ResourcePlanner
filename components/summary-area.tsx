@@ -1,8 +1,10 @@
 "use client";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { NodeResizer, type Node, type NodeProps } from "@xyflow/react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Ban, CircleCheck } from "lucide-react";
+import { createPortal } from "react-dom";
 import type { SummaryCalculation } from "@/lib/summary-rate";
+import { TOTAL_EU_INPUT_ID } from "@/lib/summary-rate";
 import type { AreaSummary } from "@/lib/area-summary";
 import { SummaryRateCalculator } from "./summary-rate-calculator";
 
@@ -15,14 +17,34 @@ export function SummaryArea({
 }: NodeProps<
   Node<{
     summary?: AreaSummary;
+    setItemDisabled?: (itemId: string, disabled: boolean) => void;
+    itemPortState?: (itemId: string) => { hasEnabled: boolean; hasDisabled: boolean };
+    title?: string;
+    updateTitle?: (title: string) => void;
     removeArea?: (id: string) => void;
     calculators?: SummaryCalculation[];
     updateCalculators?: (values: SummaryCalculation[]) => void;
   }>
 >) {
   const summary = data.summary;
+  const [menu, setMenu] = useState<{ itemId: string; x: number; y: number }>();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuPortState = menu ? data.itemPortState?.(menu.itemId) : undefined;
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: Event) => { if (!menuRef.current?.contains(event.target as globalThis.Node)) setMenu(undefined); };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") setMenu(undefined); };
+    window.addEventListener("pointerdown", close, true);
+    window.addEventListener("wheel", close, true);
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("pointerdown", close, true); window.removeEventListener("wheel", close, true); window.removeEventListener("keydown", key); };
+  }, [menu]);
   return (
     <div className={`summary-area${selected ? " selected" : ""}`}>
+      {menu && createPortal(<div ref={menuRef} role="menu" className="diagram-selection-menu line-context-menu nodrag nopan" style={{ position: "fixed", left: menu.x, top: menu.y }} onContextMenu={e => e.preventDefault()}>
+        <button role="menuitem" disabled={menuPortState ? !menuPortState.hasEnabled : false} title="Disable every matching input and output inside this grouping. Their connections will be removed; Undo restores them." onClick={() => { data.setItemDisabled?.(menu.itemId, true); setMenu(undefined); }}><Ban size={16} />Disable all</button>
+        <button role="menuitem" disabled={menuPortState ? !menuPortState.hasDisabled : false} onClick={() => { data.setItemDisabled?.(menu.itemId, false); setMenu(undefined); }}><CircleCheck size={16} />Enable all</button>
+      </div>, document.body)}
       <NodeResizer
         isVisible={selected}
         minWidth={380}
@@ -31,10 +53,22 @@ export function SummaryArea({
       />
       <div className="summary-area-header">
         <div className="summary-area-title">
-          <strong>Area summary</strong>
+          <input
+            className="summary-area-name nodrag nopan"
+            aria-label="Grouping name"
+            title="Click to edit grouping name"
+            value={data.title ?? "Grouping"}
+            maxLength={120}
+            onChange={(event) => data.updateTitle?.(event.target.value)}
+            onBlur={(event) => data.updateTitle?.(event.target.value.trim() || "Grouping")}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
           <button
             className="nodrag nopan"
-            aria-label="Delete summary area"
+            aria-label="Delete grouping"
             onClick={() => data.removeArea?.(id)}
           >
             <X size={15} />
@@ -73,6 +107,7 @@ export function SummaryArea({
                     [
                       ["Needed", summary.inputs],
                       ["Produced", summary.outputs],
+                      ["Disabled", summary.disabled],
                     ] as const
                   ).map(([title, items]) => (
                     <section
@@ -96,7 +131,8 @@ export function SummaryArea({
                               )}
                             <div
                               title={item.name}
-                              className="summary-flow-item"
+                              className={`summary-flow-item${title === "Disabled" ? " summary-flow-disabled" : ""}`}
+                              onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenu({ itemId: item.id, x: Math.max(8, Math.min(event.clientX, window.innerWidth - 210)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 105)) }); }}
                             >
                               <b>
                                 {number(rate)}{" "}
@@ -153,7 +189,6 @@ export function SummaryArea({
               <button
                 type="button"
                 disabled={
-                  !summary.inputs.length ||
                   !summary.outputs.length ||
                   (data.calculators?.length ?? 0) >= 100
                 }
@@ -162,10 +197,10 @@ export function SummaryArea({
                     ...(data.calculators ?? []),
                     {
                       id: crypto.randomUUID(),
-                      inputId: summary.inputs[0].item.id,
+                      inputId: summary.inputs[0]?.item.id ?? TOTAL_EU_INPUT_ID,
                       outputId: summary.outputs[0].item.id,
                       side: "input",
-                      value: String(summary.inputs[0].rate),
+                      value: String(summary.inputs[0]?.rate ?? summary.totalEu),
                     },
                   ])
                 }

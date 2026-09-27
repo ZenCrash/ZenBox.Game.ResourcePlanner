@@ -20,7 +20,7 @@ export const machineTiers = [
 ];
 export const tierColors: Record<string, string> = {
   ULV: "#555555",
-  LV: "#aaaaaa",
+  LV: "#555555",
   MV: "#ffaa00",
   HV: "#ffff55",
   EV: "#555555",
@@ -77,4 +77,22 @@ export function machineOptions(recipe: Recipe) {
 export function selectedMachine(recipe: Recipe, machineId?: string) {
   const { options, defaultMachine } = machineOptions(recipe);
   return options.find((item) => item.id === machineId) ?? defaultMachine;
+}
+
+export function isMachineUpgrade(recipe: Recipe, machineId?: string) {
+  const { options, defaultMachine } = machineOptions(recipe);
+  const machine = selectedMachine(recipe, machineId);
+  if (!machine || machine.id === defaultMachine?.id) return false;
+  const tier = machineTier(machine);
+  const electricTiers = options.flatMap((option) => {
+    const value = machineTier(option);
+    return value ? [machineTiers.indexOf(value)] : [];
+  });
+  if (tier && electricTiers.length)
+    return machineTiers.indexOf(tier) > Math.min(...electricTiers);
+  // Fuel/steam defaults do not turn their other non-electric alternatives
+  // into voltage upgrades.
+  if (defaultMachine && !machineTier(defaultMachine) && electricTiers.length)
+    return false;
+  return true;
 }

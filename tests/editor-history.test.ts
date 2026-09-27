@@ -554,3 +554,13 @@ test("endpoint-adjacent angles collapse to one straight line without moving port
       ),
   );
 });
+
+test("line card visibility overrides persist independently and survive paste", () => {
+  const id = "f027ac35-2fa9-4b54-9044-4ff5bec99875";
+  const saved = edgeSchema.parse({ id, source: id, target: id, sourceHandle: "output:0", targetHandle: "input:0", showLineCard: false, showOverviewCard: true });
+  assert.equal(saved.showLineCard, false);
+  assert.equal(saved.showOverviewCard, true);
+  const graph = { nodes: [{ id, position: { x: 0, y: 0 }, data: {} }], edges: [{ ...saved, data: { showLineCard: saved.showLineCard, showOverviewCard: saved.showOverviewCard } }] };
+  const pasted = pasteSelection(graph, { x: 100, y: 100 }, () => id);
+  assert.deepEqual(pasted.edges[0].data, { showLineCard: false, showOverviewCard: true });
+});
