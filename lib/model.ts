@@ -175,6 +175,8 @@ export function hasRecipeTiming(recipe: Pick<Recipe, "durationTicks">) {
   return Number.isFinite(recipe.durationTicks) && recipe.durationTicks > 0;
 }
 export function recipeTabIcon(recipe: Recipe): string | null {
+  if (recipe.handler === "ABS Non-Alloy Recipes")
+    return "/ui/abs-non-alloy-tab.png";
   if (recipe.handler === "Alloy Smelter Recycling")
     return "/ui/alloy-smelter-recycling-tab.png";
   if (recipe.handler === "Infernal Blast Furnace")
@@ -248,6 +250,12 @@ export function fluidReferenceCompatible(output: Ingredient, input: Ingredient) 
 }
 
 export type VariantSelection = Record<string, string>;
+function lifeEssenceCapacity(item: Item): number | undefined {
+  // Forbidden Magic's ItemDivineOrb.getMaxEssence(); its tooltip omits capacity.
+  if (item.registryId === "ForbiddenMagic:EldritchOrb") return 80_000_000;
+  const capacity = item.tooltip?.replace(/§./g, "").match(/Capacity:\s*([\d,]+)\s*LP/i)?.[1];
+  return capacity ? Number(capacity.replaceAll(",", "")) : undefined;
+}
 export function ingredientVariants(ingredient: Ingredient): Item[] {
   const items = new Map(
     [ingredient.item, ...(ingredient.alternativeItems ?? [])].map((item) => [
@@ -255,9 +263,15 @@ export function ingredientVariants(ingredient: Ingredient): Item[] {
       item,
     ]),
   );
+  // Share one stable order between cycling and the accepted-item tooltip grid.
   return acceptedItemIds(ingredient).flatMap((id) =>
     items.has(id) ? [items.get(id)!] : [],
-  );
+  ).sort((a, b) => {
+    const aCapacity = lifeEssenceCapacity(a), bCapacity = lifeEssenceCapacity(b);
+    if (aCapacity !== undefined && bCapacity !== undefined && aCapacity !== bCapacity)
+      return aCapacity - bCapacity;
+    return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  });
 }
 export function cycleVariants(recipe: Recipe, frame: number): VariantSelection {
   return Object.fromEntries(

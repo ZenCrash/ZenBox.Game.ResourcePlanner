@@ -6,6 +6,7 @@ import {
   applyVariants,
   blankDiagram,
   cycleVariants,
+  ingredientVariants,
   diagramSchema,
   resolveDiagramVariants,
   itemSourceRecipe,
@@ -29,6 +30,28 @@ const input = {
   amount: 2,
 } as Ingredient;
 const consumer = { id: "consumer", ingredients: [input] } as Recipe;
+test("blood orbs cycle by LP capacity, including the Eldritch orb", () => {
+  const weak = { ...a, id: "weak", name: "Weak Blood Orb", tooltip: '["Capacity: 5,000 LP"]' };
+  const apprentice = { ...a, id: "apprentice", name: "Apprentice Blood Orb", tooltip: '["Capacity: 25,000 LP"]' };
+  const eldritch = { ...a, id: "eldritch", name: "Eldritch Blood Orb", registryId: "ForbiddenMagic:EldritchOrb", tooltip: "[]" };
+  const armok = { ...a, id: "armok", name: "Blood Orb of Armok", tooltip: '["Capacity: 1,000,000,000 LP"]' };
+  const orbs = [armok, apprentice, eldritch, weak];
+  const recipe = { ...consumer, ingredients: [{ ...input, item: armok, itemId: armok.id, alternatives: JSON.stringify(orbs.map(i => i.id)), alternativeItems: orbs }] };
+  const order = ["weak", "apprentice", "eldritch", "armok"];
+  assert.deepEqual(ingredientVariants(recipe.ingredients[0]).map(i => i.id), order);
+  for (let frame = 0; frame <= order.length; frame++)
+    assert.equal(cycleVariants(recipe, frame)["input:0"], order[frame % order.length]);
+});
+test("cycling follows the fixed accepted-item order and wraps", () => {
+  const reversed = { ...consumer, ingredients: [{ ...input, itemId: b.id, item: b, alternatives: '["b","a"]', alternativeItems: [b, a] }] };
+  const order = ingredientVariants(reversed.ingredients[0]).map(item => item.id);
+  assert.deepEqual(order, ["a", "b"]);
+  for (let frame = 0; frame < 5; frame++) {
+    const displayed = applyVariants(reversed, cycleVariants(reversed, frame)).ingredients[0];
+    assert.equal(displayed.itemId, order[frame % order.length]);
+    assert.deepEqual(ingredientVariants(displayed).map(item => item.id), order);
+  }
+});
 const producer = {
   id: "producer",
   ingredients: [{ ...input, itemId: "b", item: b, direction: "output" }],

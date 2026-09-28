@@ -6,6 +6,7 @@ export const defaultDisplaySettings = {
   crossingBridges: true,
   animatedArrows: false,
   disableArrows: false,
+  showItemIds: false,
   guiScale: 1,
   lineThickness: 6,
 };
@@ -15,7 +16,7 @@ export function parseDisplaySettings(value: unknown): DisplaySettings {
   const result = { ...defaultDisplaySettings };
   if (!value || typeof value !== "object") return result;
   const stored = value as Record<string, unknown>;
-  for (const key of ["overviewLineItems", "detailLineItems", "crossingBridges", "animatedArrows", "disableArrows"] as const) {
+  for (const key of ["overviewLineItems", "detailLineItems", "crossingBridges", "animatedArrows", "disableArrows", "showItemIds"] as const) {
     if (typeof stored[key] === "boolean") result[key] = stored[key];
   }
   for (const [key, min, max] of [["overviewZoom", 0, 1], ["guiScale", 0.8, 1.5], ["lineThickness", 2, 12]] as const) {

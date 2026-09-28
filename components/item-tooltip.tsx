@@ -11,13 +11,15 @@ import { createPortal } from "react-dom";
 
 export function ItemTooltip({
   children,
-  followPointer = false,
+  followPointer = true,
   compact = false,
-  placement = "left",
+  tight = false,
+  placement = "side-right",
 }: {
   children: ReactNode;
   followPointer?: boolean;
   compact?: boolean;
+  tight?: boolean;
   placement?: "left" | "top-right" | "side-left" | "side-right";
 }) {
   const anchor = useRef<HTMLSpanElement>(null);
@@ -33,7 +35,7 @@ export function ItemTooltip({
         placement === "side-left" || placement === "side-right"
           ? {
               x: placement === "side-left" ? bounds.left : bounds.right,
-              y: bounds.top + bounds.height / 2,
+              y: bounds.top,
             }
           : { x: bounds.right - 20, y: bounds.top - 8 },
       );
@@ -46,7 +48,7 @@ export function ItemTooltip({
     const focus = () => {
       if (!followPointer) return showAtItem();
       const bounds = button.getBoundingClientRect();
-      setPoint({ x: bounds.left, y: bounds.top + bounds.height / 2 });
+      setPoint({ x: bounds.right, y: bounds.top });
     };
     const hide = () => setPoint(null);
     button.addEventListener("pointerenter", move);
@@ -55,6 +57,7 @@ export function ItemTooltip({
     button.addEventListener("focus", focus);
     button.addEventListener("blur", hide);
     button.addEventListener("click", hide);
+    button.addEventListener("dragstart", hide);
     window.addEventListener("scroll", hide, true);
     return () => {
       button.removeEventListener("pointerenter", move);
@@ -63,6 +66,7 @@ export function ItemTooltip({
       button.removeEventListener("focus", focus);
       button.removeEventListener("blur", hide);
       button.removeEventListener("click", hide);
+      button.removeEventListener("dragstart", hide);
       window.removeEventListener("scroll", hide, true);
     };
   }, [followPointer, placement]);
@@ -70,19 +74,29 @@ export function ItemTooltip({
   useLayoutEffect(() => {
     if (!point || !tooltip.current) return;
     const element = tooltip.current;
-    const bounds = element.getBoundingClientRect();
-    const left =
-      placement === "top-right" || placement === "side-right"
-        ? point.x + 14
-        : point.x - bounds.width - (followPointer || placement === "side-left" ? 14 : 0);
-    const top =
-      placement === "side-left" || placement === "side-right"
-        ? point.y - bounds.height / 2
-        : placement === "top-right"
-        ? point.y - bounds.height - 14
-        : point.y - (followPointer ? 16 : bounds.height);
-    element.style.left = `${Math.max(8, Math.min(left, window.innerWidth - bounds.width - 8))}px`;
-    element.style.top = `${Math.max(8, Math.min(top, window.innerHeight - bounds.height - 8))}px`;
+    const position = () => {
+      const bounds = element.getBoundingClientRect();
+      const right = point.x + 14;
+      const left = point.x - bounds.width - 14;
+      // Pointer tooltips prefer the right; port hints retain their explicit side.
+      const preferLeft = !followPointer && (placement === "left" || placement === "side-left");
+      const x = preferLeft
+        ? (left >= 8 ? left : right)
+        : (right + bounds.width <= window.innerWidth - 8 ? right : left);
+      // Anchor the first row, so additional rows grow down instead of recentering.
+      // Only shift upward when needed to keep the bottom inside the viewport.
+      const y = point.y - (followPointer ? 16 : 0);
+      element.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
+      element.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
+    };
+    position();
+    const observer = new ResizeObserver(position);
+    observer.observe(element);
+    window.addEventListener("resize", position);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", position);
+    };
   }, [point, children, followPointer, placement]);
   return (
     <>
@@ -92,7 +106,7 @@ export function ItemTooltip({
           <span
             ref={tooltip}
             role="tooltip"
-            className={`item-tooltip foreground-item-tooltip${compact ? " compact-item-tooltip" : ""}`}
+            className={`item-tooltip foreground-item-tooltip${compact ? " compact-item-tooltip" : ""}${tight ? " tight-item-tooltip" : ""}`}
           >
             {children}
           </span>,

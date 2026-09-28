@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type DragEvent } from "react";
 import type { CatalogGroup, CatalogTile } from "@/lib/catalog-layout";
 import { ChevronLeft, ChevronRight, Info, Search, PanelRightClose } from "lucide-react";
 import type { Item } from "@/lib/model";
@@ -17,20 +17,6 @@ type Result = {
   info: { completeness: string } | null;
 };
 const pages = new AsyncCache<Result>(32);
-function preloadImages(result: Result) {
-  const urls = new Set(
-    result.tiles.flatMap((tile) => [
-      tile.item.image,
-      tile.backgroundItem?.image,
-    ]),
-  );
-  for (const url of urls) {
-    if (!url) continue;
-    const image = new window.Image();
-    image.src = url;
-    void image.decode().catch(() => {});
-  }
-}
 export function Inventory({
   onBrowse,
   onAddItem,
@@ -38,6 +24,8 @@ export function Inventory({
   recentItems = [],
   areaSummaries,
   onCollapse,
+  onItemDragStart,
+  onItemDragEnd,
 }: {
   onBrowse: Browse;
   onAddItem?: (item: Item) => void;
@@ -45,11 +33,13 @@ export function Inventory({
   recentItems?: Item[];
   areaSummaries?: ReactNode;
   onCollapse?: () => void;
+  onItemDragStart?: (item: Item, event: DragEvent<HTMLButtonElement>) => void;
+  onItemDragEnd?: () => void;
 }) {
   const [tab, setTab] = useState<"catalog" | "areas">("catalog");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [columns, setColumns] = useState(8);
-  const [pageSize, setPageSize] = useState(104);
+  const [pageSize, setPageSize] = useState(0);
   const body = useRef<HTMLDivElement>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const grid = useRef<HTMLDivElement>(null);
@@ -70,6 +60,7 @@ export function Inventory({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
   useEffect(() => {
+    if (!pageSize) return;
     let active = true;
     const delay = previousQuery.current === query ? 0 : 120;
     previousQuery.current = query;
@@ -85,14 +76,6 @@ export function Inventory({
           setResult(r);
           setPage(r.page);
           setError("");
-          for (const neighbor of [r.page + 1, r.page - 1]) {
-            if (neighbor < 0 || neighbor * pageSize >= r.displayTotal) continue;
-            void load(neighbor)
-              .then((next) => {
-                if (active) preloadImages(next);
-              })
-              .catch(() => {});
-          }
         })
         .catch((e) => {
           if (active) setError(e.message);
@@ -224,7 +207,7 @@ export function Inventory({
           </button>
           <span>
             {page + 1} /{" "}
-            {Math.max(1, Math.ceil(result.displayTotal / pageSize))}
+            {Math.max(1, Math.ceil(result.displayTotal / Math.max(1, pageSize)))}
           </span>
           <button
             aria-label="Next item page"
@@ -299,6 +282,8 @@ export function Inventory({
                         <ItemSlot
                           tooltipAtPointer
                           item={tile.item}
+                          onItemDragStart={!picker ? onItemDragStart : undefined}
+                          onItemDragEnd={onItemDragEnd}
                           onBrowse={onBrowse}
                           onAddItem={onAddItem}
                           backgroundItem={tile.backgroundItem}
@@ -364,6 +349,8 @@ export function Inventory({
               <ItemSlot
                 key={item.id}
                 item={item}
+                onItemDragStart={onItemDragStart}
+                onItemDragEnd={onItemDragEnd}
                 onBrowse={onBrowse}
                 onAddItem={onAddItem}
                 tooltipAtPointer

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import type { Item, Recipe } from "@/lib/model";
 import { ItemTooltip } from "./item-tooltip";
 import { MinecraftText } from "./minecraft-text";
+import { useDisplaySettings } from "./display-settings";
 import {
   machineOptions,
   machineTier,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/machine-selection";
 
 export function MachineItemTooltip({ item }: { item: Item }) {
+  const { settings } = useDisplaySettings();
   let lines: string[] = [];
   try {
     const parsed: unknown = JSON.parse(item.tooltip);
@@ -35,9 +37,9 @@ export function MachineItemTooltip({ item }: { item: Item }) {
             <MinecraftText text={line} />
           </span>
         ))}
-      <small>
+      {settings.showItemIds && <small>
         {item.registryId}:{item.metadata}
-      </small>
+      </small>}
       <em>{item.mod}</em>
     </ItemTooltip>
   );

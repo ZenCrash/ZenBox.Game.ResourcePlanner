@@ -21,14 +21,15 @@ export async function GET(
   try {
     const info = await stat(/* turbopackIgnore: true */ file);
     const etag = `"${info.size}-${Math.floor(info.mtimeMs)}"`;
+    const cacheControl = "public, max-age=300, must-revalidate";
     if (request.headers.get("if-none-match") === etag)
-      return new Response(null, { status: 304, headers: { ETag: etag } });
+      return new Response(null, { status: 304, headers: { ETag: etag, "Cache-Control": cacheControl } });
     return new Response(
       new Uint8Array(await readFile(/* turbopackIgnore: true */ file)),
       {
         headers: {
           "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=0, must-revalidate",
+          "Cache-Control": cacheControl,
           ETag: etag,
           "X-Content-Type-Options": "nosniff",
         },

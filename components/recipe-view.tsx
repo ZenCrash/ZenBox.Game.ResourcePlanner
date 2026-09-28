@@ -1,14 +1,17 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type DragEvent } from "react";
 import { Plus } from "lucide-react";
 import {
   applyVariants,
   cycleVariants,
+  ingredientVariants,
+  type Ingredient,
   type VariantSelection,
 } from "@/lib/model";
 import type { Item, Recipe } from "@/lib/model";
 import { MinecraftText } from "./minecraft-text";
 import { ItemTooltip } from "./item-tooltip";
+import { useDisplaySettings } from "./display-settings";
 import { PortItemOutline, usePortItemHighlight } from "./port-item-highlight";
 import { recipePowerInfo } from "@/lib/recipe-power";
 import { isCombustionFuelHandler } from "@/lib/recipe-handlers";
@@ -82,6 +85,9 @@ export function ItemSlot({
   onAddItem,
   nativeTooltip,
   tooltipAtPointer,
+  ingredient,
+  onItemDragStart,
+  onItemDragEnd,
 }: {
   item: Item;
   amount?: number;
@@ -94,7 +100,14 @@ export function ItemSlot({
   onAddItem?: (item: Item) => void;
   nativeTooltip?: boolean;
   tooltipAtPointer?: boolean;
+  ingredient?: Ingredient;
+  onItemDragStart?: (item: Item, event: DragEvent<HTMLButtonElement>) => void;
+  onItemDragEnd?: () => void;
 }) {
+  const { settings } = useDisplaySettings();
+  const accepted = ingredient?.direction === "input"
+    ? ingredientVariants(ingredient)
+    : [];
   const highlight = usePortItemHighlight();
   const amountLabel =
     amount === undefined
@@ -109,6 +122,9 @@ export function ItemSlot({
   return (
     <button
       className="item-slot nodrag"
+      draggable={!!onItemDragStart}
+      onDragStart={onItemDragStart ? event => onItemDragStart(item, event) : undefined}
+      onDragEnd={onItemDragEnd}
       data-item-id={item.id}
       data-port-highlighted={highlight.itemId === item.id || undefined}
       onClick={(event) => {
@@ -136,6 +152,7 @@ export function ItemSlot({
       {backgroundItem?.image && (
         <img
           className="group-background-item"
+          draggable={false}
           src={backgroundItem.image}
           alt=""
         />
@@ -144,7 +161,7 @@ export function ItemSlot({
         className={`item-art ${backgroundItem ? "group-foreground-item" : ""}`}
       >
         {item.image ? (
-          <img src={item.image} alt="" loading="lazy" />
+          <img src={item.image} alt="" loading="lazy" draggable={false} />
         ) : (
           <span className="missing-item">?</span>
         )}
@@ -173,10 +190,22 @@ export function ItemSlot({
                 <MinecraftText text={line} />
               </span>
             ))}
-        {!groupTitle && (
+        {!groupTitle && settings.showItemIds && (
           <small>
             {item.registryId}:{item.metadata}
           </small>
+        )}
+        {accepted.length > 1 && (
+          <span className="tooltip-accepted">
+            <span>Accepts following:</span>
+            <span className="tooltip-accepted-items">
+              {accepted.map(variant => (
+                <span className="tooltip-accepted-item" key={variant.id} data-current={variant.id === item.id || undefined} aria-label={`${variant.name}${variant.id === item.id ? " (current)" : ""}`}>
+                  {variant.image ? <img src={variant.image} alt={variant.name} /> : <span className="missing-item">?</span>}
+                </span>
+              ))}
+            </span>
+          </span>
         )}
         {!groupTitle && <em>{item.mod}</em>}
         {groupHint && <span className="group-hint">{groupHint}</span>}
@@ -322,10 +351,6 @@ export function RecipeView({
   try {
     layout = JSON.parse(recipe.layout);
   } catch {}
-  const positioned =
-    recipe.ingredients.every((i) => i.x !== null && i.y !== null) &&
-    layout.width &&
-    layout.height;
   return (
     <div
       className={`recipe-view${isCrafting ? " shaped-crafting" : ""}`}
@@ -348,7 +373,7 @@ export function RecipeView({
               ingredient ? (
                 <ItemSlot
                   key={index}
-                  item={ingredient.item}
+                  ingredient={ingredient} item={ingredient.item}
                   amount={ingredient.amount}
                   onBrowse={onBrowse}
                 />
@@ -382,7 +407,7 @@ export function RecipeView({
           >
             {crafting.output ? (
               <ItemSlot
-                item={crafting.output.item}
+                ingredient={crafting.output} item={crafting.output.item}
                 amount={crafting.output.amount}
                 onBrowse={onBrowse}
               />
@@ -395,6 +420,8 @@ export function RecipeView({
             )}
           </div>
         </div>
+      ) : recipe.handler === "Alchemic Chemistry Set" ? (
+        <AlchemicChemistryLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Smelting" ? (
         <SmeltingLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Casting Table" ? (
@@ -422,7 +449,8 @@ export function RecipeView({
         <BottlerLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Distillation Tower" ? (
         <DistillationTowerLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Assembler" ||
+      ) : recipe.handler === "ABS Non-Alloy Recipes" ||
+        recipe.handler === "Assembler" ||
         recipe.handler === "Circuit Assembler" ||
         recipe.handler === "Forming Press" ||
         recipe.handler === "Distillery" ||
@@ -443,50 +471,15 @@ export function RecipeView({
         recipe.handler === "Compressor" ||
         recipe.handler === "Rock Breaker" ? (
         <MachineRecipeLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : positioned ? (
-        <div
-          className="recipe-layout"
-          style={{
-            width: layout.width! * 2,
-            height: layout.height! * 2,
-            backgroundImage: layout.background
-              ? `url("${layout.background}")`
-              : undefined,
-          }}
-        >
-          <CategorySymbol
-            className="positioned-category-symbol"
-            recipe={recipe}
-            onBrowse={onBrowse}
-          >
-            <span aria-hidden="true" />
-          </CategorySymbol>
-          {recipe.ingredients.map((i, index) => (
-            <div
-              key={index}
-              style={{
-                position: "absolute",
-                left: i.x! * 2 - 2,
-                top: i.y! * 2 - 2,
-              }}
-            >
-              <ItemSlot item={i.item} amount={i.amount} onBrowse={onBrowse} />
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="recipe-process">
+        <div className="recipe-process default-recipe-process">
+          <CategorySymbol className="default-recipe-arrow" recipe={recipe} onBrowse={onBrowse}>
+            <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
+              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
+            </svg>
+          </CategorySymbol>
           {(["input", "output"] as const).map((direction) => (
-            <div className="recipe-slot-side" key={direction}>
-              {direction === "output" && (
-                <CategorySymbol
-                  className="recipe-arrow"
-                  recipe={recipe}
-                  onBrowse={onBrowse}
-                >
-                  ⟶
-                </CategorySymbol>
-              )}
+            <div className={`recipe-slot-side recipe-slot-side-${direction}`} key={direction}>
               <div className="recipe-slot-groups">
                 {recipeSlotGroups(
                   recipe.ingredients,
@@ -512,7 +505,7 @@ export function RecipeView({
                           ingredient ? (
                             <ItemSlot
                               key={index}
-                              item={ingredient.item}
+                              ingredient={ingredient} item={ingredient.item}
                               amount={ingredient.amount}
                               onBrowse={onBrowse}
                             />
@@ -534,7 +527,12 @@ export function RecipeView({
           ))}
         </div>
       )}
-      <div className="recipe-footer">
+      <div className="recipe-footer" data-has-info={
+        recipe.steamPerTick !== undefined ||
+        !!(recipe.cycleDurationTicks && recipe.cycleDurationTicks !== recipe.durationTicks) ||
+        (recipe.euPerTick > 0 && (recipe.durationTicks > 0 || !!power.voltage || !!power.amperage)) ||
+        recipe.durationTicks !== 0 || power.details.length > 0 || undefined
+      }>
         <div className="recipe-stats">
           {recipe.steamPerTick !== undefined && (
             <>
@@ -650,6 +648,32 @@ export function RecipeView({
   );
 }
 
+function AlchemicChemistryLayout({ recipe, onBrowse }: { recipe: Recipe; onBrowse?: Browse }) {
+  const inputs = recipe.ingredients.filter(i => i.direction === "input");
+  const output = recipe.ingredients.find(i => i.direction === "output");
+  let lp: number | undefined;
+  try { lp = JSON.parse(recipe.layout).lifeEssence; } catch {}
+  const lpLabel = typeof lp === "number" ? `${lp.toLocaleString("en-US")}LP` : undefined;
+  const positions = [[50, 0], [0, 32], [100, 32], [26, 88], [74, 88]];
+  const slot = (ingredient: typeof output, label: string) => ingredient ? (
+    <ItemSlot ingredient={ingredient} item={ingredient.item} amount={ingredient.amount || undefined} onBrowse={onBrowse} />
+  ) : <span className="item-slot empty-recipe-slot" role="img" aria-label={label} />;
+  return (
+    <div className="alchemic-chemistry-layout" style={{ width: Math.max(216, 156 + (lpLabel?.length ?? 0) * 12) }} role="group" aria-label="Alchemic Chemistry Set recipe">
+      {positions.map(([left, top], index) => (
+        <div className="alchemic-slot" style={{ left, top }} key={index}>
+          {slot(inputs.find(i => i.slot === index), `Empty alchemy input slot ${index + 1}`)}
+        </div>
+      ))}
+      <div className="alchemic-slot alchemic-output" aria-label="Alchemy output">{slot(output, "Empty alchemy output")}</div>
+      <div className="alchemic-slot alchemic-orb" aria-label="Required blood orb (not consumed)">
+        {slot(inputs.find(i => i.slot === 5), "Blood orb slot")}
+      </div>
+      {lpLabel && <span className="alchemic-lp">{lpLabel}</span>}
+    </div>
+  );
+}
+
 function InfernalBlastFurnaceLayout({
   recipe,
   onBrowse,
@@ -662,7 +686,7 @@ function InfernalBlastFurnaceLayout({
   const slot = (ingredient: typeof input) =>
     ingredient ? (
       <ItemSlot
-        item={ingredient.item}
+        ingredient={ingredient} item={ingredient.item}
         amount={ingredient.amount}
         onBrowse={onBrowse}
       />
@@ -719,7 +743,7 @@ function SingleInputMachineLayout({
           {ingredient ? (
             <>
               <ItemSlot
-                item={ingredient.item}
+                ingredient={ingredient} item={ingredient.item}
                 amount={ingredient.amount}
                 onBrowse={onBrowse}
               />
@@ -758,7 +782,7 @@ function SingleInputMachineLayout({
           {fluids.map((fluid) => (
             <ItemSlot
               key={`${fluid.slot}:${fluid.itemId}`}
-              item={fluid.item}
+              ingredient={fluid} item={fluid.item}
               amount={fluid.amount}
               onBrowse={onBrowse}
             />
@@ -813,7 +837,7 @@ function FurnaceGridLayout({
                 <div className="blast-furnace-slot" key={index}>
                   {ingredient ? (
                     <ItemSlot
-                      item={ingredient.item}
+                      ingredient={ingredient} item={ingredient.item}
                       amount={ingredient.amount}
                       onBrowse={onBrowse}
                     />
@@ -882,7 +906,7 @@ function TwoInputMachineLayout({
                 {ingredient ? (
                   <>
                     <ItemSlot
-                      item={ingredient.item}
+                      ingredient={ingredient} item={ingredient.item}
                       amount={ingredient.amount}
                       onBrowse={onBrowse}
                     />
@@ -960,7 +984,7 @@ function CastingTableLayout({
       )}
       {cast && (
         <div className="casting-table-cast">
-          <ItemSlot item={cast.item} amount={cast.amount} onBrowse={onBrowse} />
+          <ItemSlot ingredient={cast} item={cast.item} amount={cast.amount} onBrowse={onBrowse} />
         </div>
       )}
       <CategorySymbol
@@ -973,7 +997,7 @@ function CastingTableLayout({
       <div className="casting-table-output">
         {output ? (
           <ItemSlot
-            item={output.item}
+            ingredient={output} item={output.item}
             amount={output.amount}
             onBrowse={onBrowse}
           />
@@ -1002,7 +1026,7 @@ function SmeltingLayout({
       <div className="smelting-input" role="group" aria-label="Smelting input">
         {input ? (
           <ItemSlot
-            item={input.item}
+            ingredient={input} item={input.item}
             amount={input.amount}
             onBrowse={onBrowse}
           />
@@ -1043,7 +1067,7 @@ function SmeltingLayout({
       >
         {output ? (
           <ItemSlot
-            item={output.item}
+            ingredient={output} item={output.item}
             amount={output.amount}
             onBrowse={onBrowse}
           />
@@ -1083,7 +1107,7 @@ function CarpenterLayout({
   const slot = (ingredient: typeof output) =>
     ingredient ? (
       <ItemSlot
-        item={ingredient.item}
+        ingredient={ingredient} item={ingredient.item}
         amount={ingredient.amount}
         onBrowse={onBrowse}
       />
@@ -1194,7 +1218,7 @@ function BottlerLayout({
                 items.map((ingredient) => (
                   <ItemSlot
                     key={ingredient.slot}
-                    item={ingredient.item}
+                    ingredient={ingredient} item={ingredient.item}
                     amount={ingredient.amount}
                     onBrowse={onBrowse}
                   />
@@ -1254,7 +1278,7 @@ function DistillationTowerLayout({
                 ingredient ? (
                   <ItemSlot
                     key={index}
-                    item={ingredient.item}
+                    ingredient={ingredient} item={ingredient.item}
                     amount={ingredient.amount}
                     onBrowse={onBrowse}
                   />
@@ -1294,7 +1318,7 @@ function DistillationTowerLayout({
           >
             {ingredient ? (
               <ItemSlot
-                item={ingredient.item}
+                ingredient={ingredient} item={ingredient.item}
                 amount={ingredient.amount}
                 onBrowse={onBrowse}
               />
@@ -1323,6 +1347,7 @@ function MachineRecipeLayout({
   onBrowse?: Browse;
 }) {
   const circuit = recipe.handler === "Circuit Assembler";
+  const abs = recipe.handler === "ABS Non-Alloy Recipes";
   const autoclave = recipe.handler === "Autoclave";
   const press = recipe.handler === "Forming Press";
   const distillery = recipe.handler === "Distillery";
@@ -1369,7 +1394,7 @@ function MachineRecipeLayout({
                 : 9,
     itemOutputs: fermenter || brewery || semifluidFuel
       ? 0
-      : multiblockMixer
+      : multiblockMixer || abs
         ? 9
         : mixer || autoclave
           ? 4
@@ -1379,14 +1404,14 @@ function MachineRecipeLayout({
               ? 2
               : 1,
     fluidInputs:
-      fluidExtractor || rockBreaker
+      abs ? 3 : fluidExtractor || rockBreaker
         ? 0
         : plant
           ? 4
           : largeChemical || multiblockMixer
             ? 6
             : 1,
-    fluidOutputs: plant
+    fluidOutputs: plant || abs
       ? 3
       : largeChemical || multiblockMixer
         ? 6
@@ -1406,6 +1431,7 @@ function MachineRecipeLayout({
   return (
     <div
       data-autoclave={autoclave || undefined}
+      data-abs-non-alloy={abs || undefined}
       className={`assembler-layout${circuit || press ? " circuit-assembler-layout" : ""}${press ? " forming-press-layout" : ""}${distillery ? " distillery-layout" : ""}${chemical ? " chemical-reactor-layout" : ""}${largeChemical || multiblockMixer ? " large-chemical-reactor-layout" : ""}${multiblockMixer ? " multiblock-mixer-layout" : ""}${plant ? " chemical-plant-layout" : ""}${mixer ? " mixer-layout" : ""}${vat ? " bacterial-vat-layout" : ""}${fermenter || brewery || semifluidFuel ? " fermenter-layout" : ""}${brewery ? " brewery-layout" : ""}${fluidExtractor ? " fluid-extractor-layout" : ""}${canner ? " fluid-canner-layout" : ""}${compressor ? " compressor-layout" : ""}${rockBreaker ? " rock-breaker-layout" : ""}${electrolyzer ? " electrolyzer-layout" : ""}`}
     >
       {(["input", "output"] as const).map((direction) => (
@@ -1428,7 +1454,7 @@ function MachineRecipeLayout({
                     <div className={`assembler-slot ${kind}`} key={index}>
                       {ingredient ? (
                         <ItemSlot
-                          item={ingredient.item}
+                          ingredient={ingredient} item={ingredient.item}
                           amount={ingredient.amount}
                           onBrowse={onBrowse}
                         />
@@ -1438,6 +1464,9 @@ function MachineRecipeLayout({
                           role="img"
                           aria-label={`Empty ${recipe.handler} ${kind} ${direction} slot`}
                         />
+                      )}
+                      {abs && ingredient && !ingredient.consumed && (
+                        <span className="tic-extruding-nc" aria-label="Not consumed">NC</span>
                       )}
                       {autoclave && ingredient && direction === "output" && ingredient.chance < 1 && (
                         <span className="blast-furnace-chance" aria-label={`${ingredient.chance * 100}% chance`}>
@@ -1463,7 +1492,9 @@ function MachineRecipeLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        {autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
+        {abs ? <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
+          <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
+        </svg> : autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
           src={
             semifluidFuel
               ? "/ui/blast-furnace-progress.png"

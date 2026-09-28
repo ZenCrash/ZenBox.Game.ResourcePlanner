@@ -31,6 +31,7 @@ export function DisplaySettingsPanel() {
       <input type="range" min="0" max="100" step="5" value={Math.round(settings.overviewZoom * 100)} onChange={(event) => update({ overviewZoom: Number(event.target.value) / 100 })} />
     </label>
     {([
+      ["showItemIds", "Show item IDs in tooltips"],
       ["overviewLineItems", "Show line items when zoomed out"],
       ["detailLineItems", "Show line item cards when zoomed in"],
       ["crossingBridges", "Show shadows where lines cross"],

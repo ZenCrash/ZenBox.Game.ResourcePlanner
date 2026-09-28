@@ -1,0 +1,3 @@
+Edited from user-provided codex-clipboard-4a744fea-6b30-4538-9fa4-66929676d5a9.png.
+Mode: built-in image_gen, transparent_background=true.
+Prompt: Remove only the flat light gray background. Preserve the dark downward arrow, cyan material symbol, cyan droplet, and dark machine, with their original colors, crisp pixel edges, positions and composition. Output a tightly framed transparent PNG.

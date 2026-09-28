@@ -275,7 +275,7 @@ export function RecipePorts({
                   }}
                 >
                   {isConnected && (
-                    <ItemTooltip placement={direction === "input" ? "side-left" : "side-right"}>
+                    <ItemTooltip followPointer={false} placement={direction === "input" ? "side-left" : "side-right"}>
                       <strong>{ingredient.item.name.replace(/§[0-9a-fk-or]/gi, "")}</strong>
                       {information}
                     </ItemTooltip>

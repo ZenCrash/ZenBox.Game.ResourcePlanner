@@ -72,6 +72,15 @@ async function main() {
   if (!file)
     throw new Error("Usage: npm run catalog:import -- path/to/catalog.json");
   const data = catalogSchema.parse(JSON.parse(await readFile(file, "utf8")));
+  for (const item of data.items) {
+    if (item.registryId !== "thaumcraftneiplugin:Aspect") continue;
+    const key = item.nbt.match(/key:"([^"]+)"/)?.[1];
+    if (!key) continue;
+    if (/unknown aspect/i.test(item.name)) item.name = `Aspect: ${key[0].toUpperCase()}${key.slice(1)}`;
+    item.tooltip = [item.name, ...item.tooltip.slice(1).filter(line => !/unknown aspect/i.test(line))];
+    item.hidden = item.metadata !== 1;
+    item.group = "Thaumcraft Aspects";
+  }
   const ids = new Set(data.items.map((i) => i.id));
   if (
     ids.size !== data.items.length ||

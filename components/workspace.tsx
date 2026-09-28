@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { ResizableSidebar } from "./resizable-sidebar";
 import { DisplaySettingsProvider, DisplaySettingsPanel, useDisplaySettings } from "./display-settings";
 
@@ -101,6 +102,7 @@ import { AutoRecipePlanner, type PlannedGraph } from "./auto-recipe-planner";
 import { overclockRecipe } from "@/lib/recipe-overclock";
 import { selectedMachine, machineOptions } from "@/lib/machine-selection";
 import { ItemTooltip } from "./item-tooltip";
+import { recipeCategoryMod } from "@/lib/recipe-handlers";
 import { summarizeArea, summaryRecipe } from "@/lib/area-summary";
 import type { SummaryCalculation } from "@/lib/summary-rate";
 import { MachineCard, EditorContext, type RecipeNode } from "./machine-card";
@@ -153,7 +155,8 @@ function Editor({ project }: { project: Project }) {
   }, [selectionMenu]);
   const recipeContent = useRef<HTMLDivElement>(null);
   const recipeTabBar = useRef<HTMLDivElement>(null);
-  const [tabsOverflow, setTabsOverflow] = useState(false);
+  const [tabsPerSection, setTabsPerSection] = useState(Number.MAX_SAFE_INTEGER);
+  const [tabSection, setTabSection] = useState(0);
   const [diagrams, setDiagrams] = useState(project.diagrams),
     [active, setActive] = useState(""),
     [ready, setReady] = useState(false),
@@ -179,18 +182,19 @@ function Editor({ project }: { project: Project }) {
     const bar = recipeTabBar.current;
     if (!strip || !bar) return;
     const measure = () => {
-      const buttons = Array.from(strip.children) as HTMLElement[];
-      const needed =
-        buttons.reduce((sum, button) => sum + button.offsetWidth, 0) +
-        Math.max(0, buttons.length - 1) * 3 +
-        6;
-      setTabsOverflow(needed > bar.clientWidth);
+      const count = new Set(recipes.map(recipe => recipe.handler)).size;
+      const overflow = count * 51 + 3 > bar.clientWidth;
+      setTabsPerSection(Math.max(1, Math.floor((bar.clientWidth - (overflow ? 40 : 0) - 3) / 51)));
     };
     const observer = new ResizeObserver(measure);
     observer.observe(bar);
     measure();
     return () => observer.disconnect();
   }, [browser, recipes]);
+  useEffect(() => {
+    const handlers = [...new Set(recipes.map(recipe => recipe.handler))];
+    setTabSection(Math.floor(Math.max(0, handlers.indexOf(handler)) / tabsPerSection));
+  }, [handler, recipes, tabsPerSection]);
   useEffect(() => {
     const content = recipeContent.current;
     const card = content?.querySelector<HTMLElement>(".recipe-view");
@@ -1026,19 +1030,55 @@ function Editor({ project }: { project: Project }) {
     filtered = recipes.filter((r) => r.handler === handler),
     selectedRecipe = filtered[recipePage];
   const recipeHandlers = [...new Set(recipes.map((recipe) => recipe.handler))];
+  const scrollRecipeTabs = (direction: number) => {
+    const sections = Math.max(1, Math.ceil(recipeHandlers.length / tabsPerSection));
+    setTabSection(section => (section + direction + sections) % sections);
+  };
+  const changeRecipeTab = (step: number) => {
+    if (!recipeHandlers.length) return;
+    const index = (recipeHandlers.indexOf(handler) + step + recipeHandlers.length) % recipeHandlers.length;
+    setHandler(recipeHandlers[index]);
+    setRecipePage(0);
+  };
   const changeRecipePage = (step: number) => {
     if (filtered.length) setRecipePage((page) => (page + step + filtered.length) % filtered.length);
   };
+  const draggedCatalogItem = useRef<Item | null>(null);
+  const [catalogDragPreview, setCatalogDragPreview] = useState<{ item: Item; x: number; y: number; zoom: number } | null>(null);
+  useEffect(() => {
+    const move = (event: DragEvent) => {
+      const item = draggedCatalogItem.current;
+      if (!item) return;
+      if (event.target instanceof Element && event.target.closest(".inventory")) {
+        setCatalogDragPreview(null);
+        return;
+      }
+      setCatalogDragPreview({ item, x: event.clientX, y: event.clientY, zoom: flow.current?.getZoom() ?? 1 });
+    };
+    const hide = () => setCatalogDragPreview(null);
+    const leave = (event: DragEvent) => { if (!event.relatedTarget) hide(); };
+    window.addEventListener("dragover", move);
+    window.addEventListener("dragleave", leave);
+    window.addEventListener("dragend", hide);
+    window.addEventListener("drop", hide);
+    return () => {
+      window.removeEventListener("dragover", move);
+      window.removeEventListener("dragleave", leave);
+      window.removeEventListener("dragend", hide);
+      window.removeEventListener("drop", hide);
+    };
+  }, []);
   function addCard(
     recipe: Recipe,
     variants: VariantSelection = {},
     keepOpen = false,
+    dropPosition?: { x: number; y: number },
   ) {
     if (!ready) {
       setError("Create or open a diagram before adding a card.");
       return;
     }
-    const origin = insertionPoint();
+    const origin = dropPosition ?? insertionPoint();
     const id = crypto.randomUUID();
     setNodes((ns) => {
       const position = snapPoint(origin);
@@ -1240,6 +1280,19 @@ function Editor({ project }: { project: Project }) {
   );
   return (
     <EditorContext.Provider value={context}>
+      {catalogDragPreview && createPortal(
+        <div className="catalog-drag-preview" aria-hidden="true" style={{ left: catalogDragPreview.x, top: catalogDragPreview.y, transform: `scale(${catalogDragPreview.zoom})` }}>
+          <div className="machine-card">
+            <div className="recipe-view item-source-card">
+              <div className="recipe-title">Item source</div>
+              <div className="item-source-content">
+                <ItemSlot item={catalogDragPreview.item} />
+                <span>{catalogDragPreview.item.name}</span>
+              </div>
+            </div>
+          </div>
+        </div>, window.document.body,
+      )}
       <main
         className="workspace"
         style={{ "--gui-scale": settings.guiScale } as CSSProperties}
@@ -1508,6 +1561,20 @@ function Editor({ project }: { project: Project }) {
               enabled={ready}
             >
               <ReactFlow<RecipeNode, DiagramEdge>
+                onDragOver={(event) => {
+                  if (!ready || !draggedCatalogItem.current) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "copy";
+                }}
+                onDrop={(event) => {
+                  const item = draggedCatalogItem.current;
+                  if (!ready || !item || !flow.current) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  draggedCatalogItem.current = null;
+                  setCatalogDragPreview(null);
+                  addCard(itemSourceRecipe(item), {}, false, flow.current.screenToFlowPosition({ x: event.clientX, y: event.clientY }));
+                }}
                 nodes={renderedNodes}
                 edges={renderedEdges}
                 nodeTypes={nodeTypes}
@@ -1757,6 +1824,16 @@ function Editor({ project }: { project: Project }) {
             recentItems={recentItems}
             onBrowse={browse}
             onAddItem={(item) => addCard(itemSourceRecipe(item))}
+            onItemDragStart={ready ? (item, event) => {
+              draggedCatalogItem.current = item;
+              event.dataTransfer.effectAllowed = "copy";
+              event.dataTransfer.setData("application/x-resource-planner-item", item.id);
+              // Render our own card preview instead of the browser's item-image ghost.
+              const emptyDragImage = window.document.createElement("canvas");
+              emptyDragImage.width = emptyDragImage.height = 1;
+              event.dataTransfer.setDragImage(emptyDragImage, 0, 0);
+            } : undefined}
+            onItemDragEnd={() => { draggedCatalogItem.current = null; setCatalogDragPreview(null); }}
           />}</ResizableSidebar>
         </div>
         {autoPlanner && <AutoRecipePlanner onClose={() => setAutoPlanner(false)} onAdd={addPlannedGraph} />}
@@ -1901,7 +1978,7 @@ function Editor({ project }: { project: Project }) {
           </div>
         )}
         {browser && (
-          <div className="modal-backdrop" onClick={() => { browserEpoch.current++; setBrowser(null); }}>
+          <div className="modal-backdrop recipe-browser-backdrop" onClick={() => { browserEpoch.current++; setBrowser(null); }}>
             <div
               className="recipe-dialog"
               role="dialog"
@@ -1928,12 +2005,25 @@ function Editor({ project }: { project: Project }) {
                     <span>{browser.item.name}</span>
                   </h2>
                 </div>
+                <div className="recipe-header-actions">
+                  <button
+                      type="button"
+                      className="primary recipe-header-add-item"
+                      disabled={!ready}
+                      onClick={() => addCard(itemSourceRecipe(browser.item))}
+                      aria-label="Add item card to diagram"
+                      title="Add item card to diagram"
+                    >
+                      <PackagePlus size={20} aria-hidden="true" />
+                  </button>
                 <button
+                  className="recipe-header-close"
                   aria-label="Close recipes"
                   onClick={() => { browserEpoch.current++; setBrowser(null); }}
                 >
                   <X size={20} />
                 </button>
+                </div>
               </div>
               <div
                 className="browser-mode"
@@ -1961,14 +2051,9 @@ function Editor({ project }: { project: Project }) {
                 <div className="recipe-tab-bar" ref={recipeTabBar}>
                   <button
                     className="recipe-tab-scroll"
-                    hidden={!tabsOverflow}
+                    hidden={recipeHandlers.length <= tabsPerSection}
                     aria-label="Scroll recipe tabs left"
-                    onClick={() =>
-                      recipeTabs.current?.scrollBy({
-                        left: -153,
-                        behavior: "smooth",
-                      })
-                    }
+                    onClick={() => scrollRecipeTabs(-1)}
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -1978,15 +2063,14 @@ function Editor({ project }: { project: Project }) {
                     role="tablist"
                     aria-label="Recipe machines and crafting methods"
                   >
-                    {[...new Set(recipes.map((r) => r.handler))].map(
-                      (h, index) => (
+                    {recipeHandlers.map(
+                      (h, index) => Math.floor(index / tabsPerSection) === tabSection && (
                         <button
                           className={h === handler ? "active" : ""}
                           key={h}
                           id={`recipe-handler-tab-${index}`}
                           role="tab"
                           aria-label={h}
-                          title={h}
                           aria-selected={h === handler}
                           aria-controls="recipe-handler-panel"
                           tabIndex={h === handler ? 0 : -1}
@@ -1997,25 +2081,22 @@ function Editor({ project }: { project: Project }) {
                             })
                           }
                           onKeyDown={(event) => {
-                            const tabs = Array.from(
-                              event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
-                                '[role="tab"]',
-                              ),
-                            );
                             const target =
                               event.key === "ArrowRight"
-                                ? (index + 1) % tabs.length
+                                ? (index + 1) % recipeHandlers.length
                                 : event.key === "ArrowLeft"
-                                  ? (index - 1 + tabs.length) % tabs.length
+                                  ? (index - 1 + recipeHandlers.length) % recipeHandlers.length
                                   : event.key === "Home"
                                     ? 0
                                     : event.key === "End"
-                                      ? tabs.length - 1
+                                      ? recipeHandlers.length - 1
                                       : -1;
                             if (target >= 0) {
                               event.preventDefault();
-                              tabs[target].focus();
-                              tabs[target].click();
+                              setHandler(recipeHandlers[target]);
+                              setRecipePage(0);
+                              setTabSection(Math.floor(target / tabsPerSection));
+                              requestAnimationFrame(() => window.document.getElementById(`recipe-handler-tab-${target}`)?.focus());
                             }
                           }}
                           onClick={() => {
@@ -2034,20 +2115,19 @@ function Editor({ project }: { project: Project }) {
                             alt=""
                             draggable={false}
                           />
+                          <ItemTooltip compact tight followPointer placement="side-right">
+                            <strong>{h}</strong>
+                            <em>{recipeCategoryMod(recipes.find(recipe => recipe.handler === h)!)}</em>
+                          </ItemTooltip>
                         </button>
                       ),
                     )}
                   </div>
                   <button
                     className="recipe-tab-scroll"
-                    hidden={!tabsOverflow}
+                    hidden={recipeHandlers.length <= tabsPerSection}
                     aria-label="Scroll recipe tabs right"
-                    onClick={() =>
-                      recipeTabs.current?.scrollBy({
-                        left: 153,
-                        behavior: "smooth",
-                      })
-                    }
+                    onClick={() => scrollRecipeTabs(1)}
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -2068,9 +2148,9 @@ function Editor({ project }: { project: Project }) {
                         previous: (
                           <button
                             className="recipe-nav-button"
-                            aria-label="Previous recipe page"
-                            disabled={!filtered.length}
-                            onClick={() => changeRecipePage(-1)}
+                            aria-label="Previous recipe tab"
+                            disabled={recipeHandlers.length < 2}
+                            onClick={() => changeRecipeTab(-1)}
                           >
                             <RecipeChevron direction="left" />
                           </button>
@@ -2078,9 +2158,9 @@ function Editor({ project }: { project: Project }) {
                         next: (
                           <button
                             className="recipe-nav-button"
-                            aria-label="Next recipe page"
-                            disabled={!filtered.length}
-                            onClick={() => changeRecipePage(1)}
+                            aria-label="Next recipe tab"
+                            disabled={recipeHandlers.length < 2}
+                            onClick={() => changeRecipeTab(1)}
                           >
                             <RecipeChevron direction="right" />
                           </button>

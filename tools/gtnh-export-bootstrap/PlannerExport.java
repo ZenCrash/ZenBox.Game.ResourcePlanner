@@ -21,6 +21,7 @@ public class PlannerExport {
     private boolean repairsOnly;
     private boolean blocksOnly;
     private boolean castingOnly;
+    private boolean thaumOnly;
     private File output;
     private final Map<String,Object> stacks = new LinkedHashMap<String,Object>();
     private final List<String> errors = new ArrayList<String>();
@@ -34,7 +35,8 @@ public class PlannerExport {
             File game = (File)field(mc,"field_71412_D|mcDataDir");
             String canonical = game.getCanonicalPath().replace('\\','/');
             if (!canonical.endsWith("/data/extraction/instance/minecraft") || !new File(game,"planner-export.enabled").isFile()) { disabled=true; return; }
-            output = new File(game,"dumps/planner"); output.mkdirs();
+            thaumOnly = new File(game,"planner-export.thaum-only").isFile();
+            output = new File(game,thaumOnly?"dumps/planner-thaum":"dumps/planner"); output.mkdirs();
             Object world = field(mc,"field_71441_e|theWorld");
             Object player = field(mc,"field_71439_g|thePlayer");
             if (phase == 0) {
@@ -55,6 +57,46 @@ public class PlannerExport {
             }
             if (world == null || player == null) return;
             if (phase == 1) {
+                if(new File(game,"planner-export.alchemy-only").isFile()) {
+                    status("capturing Alchemic Chemistry Set LP and orb requirements");
+                    Object handler=Class.forName("WayofTime.alchemicalWizardry.client.nei.NEIAlchemyRecipeHandler").newInstance();
+                    call(handler,"loadCraftingRecipes",call(handler,"getOverlayIdentifier"),new Object[0]);
+                    List<Object> rows=new ArrayList<Object>();
+                    List<?> cached=(List<?>)field(handler,"arecipes");
+                    for(int i=0;i<cached.size();i++) {
+                        Map<String,Object> row=new LinkedHashMap<String,Object>();
+                        row.put("inputs",positioned(call(handler,"getIngredientStacks",i)));
+                        row.put("outputs",positioned(call(handler,"getResultStack",i)));
+                        row.put("orbs",positioned(call(handler,"getOtherStacks",i)));
+                        row.put("lp",field(cached.get(i),"lp"));rows.add(row);
+                    }
+                    write("alchemy-recipes.json",rows);status("finished alchemy export");
+                    disabled=true;call(mc,"func_71400_g|shutdown");return;
+                }
+                if (thaumOnly) {
+                    status("capturing locked Thaumcraft baseline");
+                    dumpRecipes();
+                    Files.copy(new File(output,"recipes.json").toPath(), new File(output,"recipes-before-research.json").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    Object research;
+                    try(InputStream stream=new FileInputStream(new File(game,"planner-export.research.thaum"))) {
+                        research=call(Class.forName("net.minecraft.nbt.CompressedStreamTools"),"func_74796_a|readCompressed",stream);
+                    }
+                    Class<?> manager=Class.forName("thaumcraft.common.lib.research.ResearchManager");
+                    call(manager,"loadResearchNBT",research,player);
+                    call(manager,"loadAspectNBT",research,player);
+                    List<Object> aspects=new ArrayList<Object>();
+                    for(Object aspect:((Map<?,?>)field(Class.forName("thaumcraft.api.aspects.Aspect"),"aspects")).values()) {
+                        Map<String,Object> row=new LinkedHashMap<String,Object>();
+                        row.put("key",call(aspect,"getTag"));
+                        List<Object> components=new ArrayList<Object>();Object parts=call(aspect,"getComponents");
+                        if(parts!=null)for(int i=0;i<Array.getLength(parts);i++)components.add(call(Array.get(parts,i),"getTag"));
+                        row.put("components",components);aspects.add(row);
+                    }
+                    write("aspects.json",aspects);
+                    status("capturing Thaumcraft with Pieman research");
+                    dumpRecipes();
+                    phase=3;ticks=0;return;
+                }
                 if(new File(game,"planner-export.infernal-only").isFile()) {
                     status("capturing Infernal Blast Furnace bonus slots");
                     Object handler=Class.forName("witchinggadgets.client.nei.NEIInfernalBlastfurnaceHandler").newInstance();
@@ -190,12 +232,17 @@ public class PlannerExport {
                 Class<?> dumper=Class.forName("com.iouter.gtnhdumper.common.dumper.ItemIconDumper");
                 Object fbo=Class.forName("com.iouter.gtnhdumper.common.utils.FBOHelper").getConstructor(int.class).newInstance(iconSize);
                 Object renderer=call(Class.forName("net.minecraft.client.renderer.entity.RenderItem"),"getInstance");
-                File icons=new File(game,blocksOnly?"dumps/block-icons":"dumps/icons");icons.mkdirs();int done=0;
+                File icons=new File(game,thaumOnly?"dumps/thaum-icons":blocksOnly?"dumps/block-icons":"dumps/icons");icons.mkdirs();int done=0;
                 List<Object> rendered=new ArrayList<Object>();
                 for(Map.Entry<String,Object> entry:stacks.entrySet()) {
                     try {
                         String filename=(String)call(dumper,"getIconFileName",entry.getValue());
-                        java.awt.image.BufferedImage img=(java.awt.image.BufferedImage)call(dumper,"renderItem",entry.getValue(),fbo,renderer,1f,null);
+                        Object renderStack=entry.getValue();
+                        if(entry.getKey().startsWith("thaumcraftneiplugin:Aspect:")) {
+                            renderStack=call(renderStack,"func_77946_l|copy");
+                            call(renderStack,"func_77964_b|setItemDamage",0);
+                        }
+                        java.awt.image.BufferedImage img=(java.awt.image.BufferedImage)call(dumper,"renderItem",renderStack,fbo,renderer,1f,null);
                         javax.imageio.ImageIO.write(img,"png",new File(icons,filename));
                         call(fbo,"restoreTexture");rendered.add(Arrays.asList(entry.getKey(),filename,iconSize,1));
                     } catch(Throwable error){errors.add("Icon "+entry.getKey()+": "+error);}
@@ -262,6 +309,8 @@ public class PlannerExport {
     private void dumpRecipes() throws Exception {
         List<Object> handlers=new ArrayList<Object>();Class<?> gt=Class.forName("gregtech.nei.GTNEIDefaultHandler");
         for(Object handler:(Iterable<?>)field(Class.forName("codechicken.nei.recipe.GuiUsageRecipe"),"usagehandlers")) {
+            String source=String.valueOf(call(handler,"getHandlerId")).toLowerCase(Locale.ROOT);
+            if(thaumOnly && !(source.contains("thaum") || source.contains("tcnei") || source.contains("witchinggadgets") || source.contains("gadomancy") || source.contains("automagy")))continue;
             String name=String.valueOf(call(handler,"getRecipeName"));Map<String,Object> h=new LinkedHashMap<String,Object>();h.put("name",name);h.put("source",call(handler,"getHandlerId"));
             List<Object> recipes=new ArrayList<Object>();h.put("recipes",recipes);handlers.add(h);
             try {
@@ -281,7 +330,9 @@ public class PlannerExport {
                     }
                 } else {
                     h.put("kind","nei");Object overlay=h.get("overlay");
+                    if(thaumOnly && source.endsWith("aspectcombinationhandler")) { h.put("kind","aspect-registry");continue; }
                     if(overlay==null)throw new IllegalStateException("No general recipe enumeration interface");
+                    if(thaumOnly)((List<?>)field(handler,"arecipes")).clear();
                     call(handler,"loadCraftingRecipes",overlay,new Object[0]);
                     int count=((Number)call(handler,"numRecipes")).intValue();
                     for(int i=0;i<count;i++){Map<String,Object> r=new LinkedHashMap<String,Object>();r.put("inputs",positioned(call(handler,"getIngredientStacks",i)));r.put("outputs",positioned(call(handler,"getResultStack",i)));try{r.put("other",positioned(call(handler,"getOtherStacks",i)));}catch(Throwable error){r.put("otherError",error.toString());}recipes.add(r);}
