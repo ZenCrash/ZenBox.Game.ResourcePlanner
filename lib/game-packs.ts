@@ -179,7 +179,11 @@ export function validateArchive(zip: AdmZip) {
   packManifest.parse(JSON.parse(entry.getData().toString("utf8")));
   return entries;
 }
-export async function installPack(zipPath: string, root = process.cwd()) {
+export async function installPack(
+  zipPath: string,
+  root = process.cwd(),
+  options: { replace?: boolean; beforeReplace?: () => Promise<void> } = {},
+) {
   const p = packPaths(root);
   fs.mkdirSync(path.dirname(p.marker), { recursive: true });
   const lock = p.marker + ".lock";
@@ -194,13 +198,33 @@ export async function installPack(zipPath: string, root = process.cwd()) {
     "data/game-packs",
     `install-${randomUUID()}`,
   );
-  let movedAssets = false,
-    movedDatabase = false;
+  const saved: { original: string; backup: string }[] = [];
+  const added: string[] = [];
+  let rolledBack = false;
+  let committed = false;
+  const save = (original: string) => {
+    if (!fs.existsSync(/* turbopackIgnore: true */ original)) return;
+    const backup = path.join(
+      /* turbopackIgnore: true */ stage,
+      "previous",
+      String(saved.length),
+    );
+    fs.mkdirSync(path.dirname(backup), { recursive: true });
+    fs.renameSync(original, backup);
+    saved.push({ original, backup });
+  };
+  const move = (source: string, destination: string) => {
+    fs.renameSync(source, destination);
+    added.push(destination);
+  };
   try {
-    if (isGtnhInstalled(root)) throw new Error("GTNH is already installed.");
+    const replacing = isGtnhInstalled(root);
+    if (replacing && !options.replace)
+      throw new Error("GTNH is already installed.");
     if (
-      fs.existsSync(/* turbopackIgnore: true */ p.database) ||
-      fs.existsSync(/* turbopackIgnore: true */ p.assets)
+      !replacing &&
+      (fs.existsSync(/* turbopackIgnore: true */ p.database) ||
+        fs.existsSync(/* turbopackIgnore: true */ p.assets))
     )
       throw new Error(
         "Existing GTNH files need to be registered before importing another pack.",
@@ -228,34 +252,75 @@ export async function installPack(zipPath: string, root = process.cwd()) {
     );
     fs.mkdirSync(path.dirname(p.assets), { recursive: true });
     fs.mkdirSync(path.dirname(p.database), { recursive: true });
-    fs.renameSync(
+    if (replacing) {
+      // Block new catalog requests before closing readers and swapping files.
+      save(p.marker);
+      await options.beforeReplace?.();
+      save(p.database);
+      for (const suffix of ["-wal", "-shm", "-journal"])
+        save(p.database + suffix);
+      save(p.assets);
+      for (const name of fs.readdirSync(
+        /* turbopackIgnore: true */ path.dirname(p.database),
+      ))
+        if (/^gtnh-2\.8\.4[\w.-]*\.json$/.test(name))
+          save(
+            path.join(
+              /* turbopackIgnore: true */ path.dirname(p.database),
+              name,
+            ),
+          );
+    }
+    move(
       path.join(/* turbopackIgnore: true */ stage, "assets/gtnh-2.8.4"),
       p.assets,
     );
-    movedAssets = true;
-    fs.renameSync(
+    move(
       path.join(/* turbopackIgnore: true */ stage, "catalog.sqlite"),
       p.database,
     );
-    movedDatabase = true;
     const metadata = path.join(/* turbopackIgnore: true */ stage, "metadata");
     if (fs.existsSync(/* turbopackIgnore: true */ metadata))
       for (const name of fs.readdirSync(/* turbopackIgnore: true */ metadata))
-        fs.copyFileSync(
+        move(
           path.join(/* turbopackIgnore: true */ metadata, name),
           path.join(/* turbopackIgnore: true */ path.dirname(p.database), name),
         );
-    fs.writeFileSync(p.marker, JSON.stringify(manifest, null, 2));
+    const marker = path.join(
+      /* turbopackIgnore: true */ stage,
+      "installed.json",
+    );
+    fs.writeFileSync(
+      marker,
+      JSON.stringify({ ...manifest, revision: randomUUID() }, null, 2),
+    );
+    move(marker, p.marker);
+    committed = true;
   } catch (error) {
-    if (movedDatabase) fs.unlinkSync(p.database);
-    if (movedAssets) fs.rmSync(p.assets, { recursive: true, force: true });
+    for (const file of added.reverse())
+      fs.rmSync(file, { recursive: true, force: true });
+    for (const entry of saved.reverse())
+      fs.renameSync(entry.backup, entry.original);
+    rolledBack = true;
     throw error;
   } finally {
-    fs.rmSync(stage, { recursive: true, force: true });
-    fs.closeSync(lockFd);
-    fs.unlinkSync(lock);
+    // Preserve backups for recovery if rollback itself failed.
+    try {
+      if (committed || rolledBack)
+        fs.rmSync(stage, { recursive: true, force: true });
+    } finally {
+      fs.closeSync(lockFd);
+      fs.unlinkSync(lock);
+    }
   }
 }
+export function gamePackRevision() {
+  return fs.readFileSync(
+    /* turbopackIgnore: true */ packPaths().marker,
+    "utf8",
+  );
+}
+
 const exportsInFlight = new Map<string, Promise<string>>();
 export async function exportPack(root = process.cwd(), destination?: string) {
   const p = packPaths(root);
@@ -273,11 +338,19 @@ export async function exportPack(root = process.cwd(), destination?: string) {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     const temporary = target + `.${randomUUID()}.tmp`;
     const snapshot = temporary + ".sqlite";
-    const database = new Database(p.database, {
-      readonly: true,
-      fileMustExist: true,
-    });
+    const lock = p.marker + ".lock";
+    let lockFd: number;
     try {
+      lockFd = fs.openSync(lock, "wx");
+    } catch {
+      throw new Error("Another game-pack operation is in progress.");
+    }
+    let database: Sqlite | undefined;
+    try {
+      database = new Database(p.database, {
+        readonly: true,
+        fileMustExist: true,
+      });
       await database.backup(snapshot);
       const zip = new AdmZip();
       zip.addFile(
@@ -301,7 +374,9 @@ export async function exportPack(root = process.cwd(), destination?: string) {
       fs.renameSync(temporary, target);
       return target;
     } finally {
-      database.close();
+      database?.close();
+      fs.closeSync(lockFd);
+      fs.unlinkSync(lock);
       fs.rmSync(snapshot, { force: true });
       fs.rmSync(temporary, { force: true });
     }

@@ -8,7 +8,8 @@ export function MinecraftEditions() {
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [success, setSuccess] = useState("");
   const file = useRef<HTMLInputElement>(null);
   useEffect(() => {
     fetch("/api/game-packs")
@@ -24,8 +25,9 @@ export function MinecraftEditions() {
     setBusy(true);
     setProgress(0);
     setError("");
+    setSuccess("");
     const request = new XMLHttpRequest();
-    request.open("POST", "/api/game-packs/gtnh");
+    request.open(installed ? "PUT" : "POST", "/api/game-packs/gtnh");
     request.setRequestHeader("Content-Type", "application/zip");
     request.upload.onprogress = (event) => {
       if (event.lengthComputable)
@@ -33,8 +35,14 @@ export function MinecraftEditions() {
     };
     request.onload = () => {
       setBusy(false);
-      if (request.status === 201) setInstalled(true);
-      else {
+      if (request.status === 201) {
+        setInstalled(true);
+        setSuccess(
+          installed
+            ? "Game pack replaced successfully. Your projects and diagrams were preserved."
+            : "Game pack installed successfully.",
+        );
+      } else {
         try {
           setError(JSON.parse(request.responseText).error);
         } catch {
@@ -100,6 +108,18 @@ export function MinecraftEditions() {
                 >
                   <Download size={16} /> Download ZIP
                 </a>
+                <button
+                  disabled={busy}
+                  onClick={() => file.current?.click()}
+                  title="Replace the installed game pack after validation. Projects and diagrams are preserved."
+                >
+                  <Upload size={16} />{" "}
+                  {busy
+                    ? progress < 100
+                      ? `Uploading ${progress}%`
+                      : "Validating and replacing…"
+                    : "Upload ZIP"}
+                </button>
               </div>
             ) : (
               <button
@@ -129,6 +149,7 @@ export function MinecraftEditions() {
             if (selected) install(selected);
           }}
         />
+        {success && <p role="status">{success}</p>}
         {error && (
           <p className="error" role="alert">
             {error}

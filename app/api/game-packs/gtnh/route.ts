@@ -1,3 +1,4 @@
+import { catalog } from "@/lib/db";
 import { createReadStream } from "node:fs";
 import { mkdir, open, unlink, stat } from "node:fs/promises";
 import { Readable } from "node:stream";
@@ -12,7 +13,13 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  if (isGtnhInstalled())
+  return upload(request, false);
+}
+export async function PUT(request: Request) {
+  return upload(request, true);
+}
+async function upload(request: Request, replace: boolean) {
+  if (isGtnhInstalled() && !replace)
     return Response.json(
       { error: "GTNH is already installed." },
       { status: 409 },
@@ -43,7 +50,10 @@ export async function POST(request: Request) {
       await handle.close();
       reader.releaseLock();
     }
-    await installPack(file);
+    await installPack(file, process.cwd(), {
+      replace,
+      beforeReplace: () => catalog.$disconnect(),
+    });
     return Response.json({ installed: true }, { status: 201 });
   } catch (error) {
     return Response.json(

@@ -102,3 +102,150 @@ test("archive validation rejects traversal, executable payloads, links and exces
   oversized.getEntry("catalog.sqlite")!.header.size = 1024 ** 3;
   assert.throws(() => validateArchive(oversized), /too large/);
 });
+
+test("replacement validates first, updates exported data and preserves personal files", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "planner-replace-"));
+  try {
+    const zip = fixture(root),
+      file = path.join(root, "pack.zip"),
+      target = path.join(root, "target");
+    zip.addFile("metadata/gtnh-2.8.4.old.json", Buffer.from("{}"));
+    zip.writeZip(file);
+    await installPack(file, target);
+    const paths = packPaths(target);
+    const { PrismaClient } = await import("../generated/catalog/client");
+    const { PrismaBetterSqlite3 } =
+      await import("@prisma/adapter-better-sqlite3");
+    const client = new PrismaClient({
+      adapter: new PrismaBetterSqlite3({ url: "file:" + paths.database }),
+    });
+    assert.equal((await client.item.findFirst())?.name, "Stone");
+    const original = fs.readFileSync(paths.database);
+    const marker = fs.readFileSync(paths.marker);
+    fs.mkdirSync(path.join(target, "data/diagrams"));
+    fs.writeFileSync(
+      path.join(target, "data/diagrams/personal.json"),
+      "personal diagram",
+    );
+    fs.writeFileSync(path.join(target, "data/app.sqlite"), "personal projects");
+    zip.deleteFile("assets/gtnh-2.8.4/items/stone.png");
+    zip.writeZip(file);
+    let disconnected = false;
+    await assert.rejects(
+      installPack(file, target, {
+        replace: true,
+        beforeReplace: async () => {
+          disconnected = true;
+        },
+      }),
+      /Missing or invalid/,
+    );
+    assert.equal(disconnected, false);
+    assert.deepEqual(fs.readFileSync(paths.database), original);
+    assert.deepEqual(fs.readFileSync(paths.marker), marker);
+    zip.addFile(
+      "assets/gtnh-2.8.4/items/stone.png",
+      Buffer.from("replacement icon"),
+    );
+    zip.deleteFile("metadata/gtnh-2.8.4.old.json");
+    const source = new Database(path.join(root, "source.sqlite"));
+    source.exec("UPDATE Item SET name = 'Updated Stone'");
+    source.close();
+    zip.updateFile(
+      "catalog.sqlite",
+      fs.readFileSync(path.join(root, "source.sqlite")),
+    );
+    zip.writeZip(file);
+    await installPack(file, target, {
+      replace: true,
+      beforeReplace: async () => {
+        disconnected = true;
+        assert.equal(isGtnhInstalled(target), false);
+        await client.$disconnect();
+      },
+    });
+    assert.equal((await client.item.findFirst())?.name, "Updated Stone");
+    await client.$disconnect();
+    assert.equal(disconnected, true);
+    assert.equal(isGtnhInstalled(target), true);
+    assert.notDeepEqual(fs.readFileSync(paths.marker), marker);
+    assert.equal(
+      fs.existsSync(path.join(target, "data/catalogs/gtnh-2.8.4.old.json")),
+      false,
+    );
+    assert.equal(
+      fs.readFileSync(path.join(target, "data/diagrams/personal.json"), "utf8"),
+      "personal diagram",
+    );
+    assert.equal(
+      fs.readFileSync(path.join(target, "data/app.sqlite"), "utf8"),
+      "personal projects",
+    );
+    const updated = new Database(paths.database, { readonly: true });
+    assert.equal(
+      updated.prepare("SELECT name FROM Item").get().name,
+      "Updated Stone",
+    );
+    updated.close();
+    const exported = new AdmZip(await exportPack(target));
+    assert.equal(
+      exported
+        .getEntry("assets/gtnh-2.8.4/items/stone.png")!
+        .getData()
+        .toString(),
+      "replacement icon",
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a failed swap restores the previous database, images, metadata and installed marker", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "planner-rollback-"));
+  try {
+    const zip = fixture(root),
+      file = path.join(root, "pack.zip"),
+      target = path.join(root, "target");
+    zip.addFile("metadata/gtnh-2.8.4.old.json", Buffer.from("old metadata"));
+    zip.writeZip(file);
+    await installPack(file, target);
+    const paths = packPaths(target),
+      original = fs.readFileSync(paths.database),
+      marker = fs.readFileSync(paths.marker);
+    const rename = fs.renameSync;
+    const mocked = t.mock.method(
+      fs,
+      "renameSync",
+      (from: fs.PathLike, to: fs.PathLike) => {
+        if (
+          String(from).endsWith(path.sep + "catalog.sqlite") &&
+          String(to) === paths.database
+        )
+          throw new Error("Simulated disk failure");
+        return rename(from, to);
+      },
+    );
+    await assert.rejects(
+      installPack(file, target, { replace: true }),
+      /Simulated disk failure/,
+    );
+    mocked.mock.restore();
+    assert.equal(isGtnhInstalled(target), true);
+    assert.deepEqual(fs.readFileSync(paths.database), original);
+    assert.deepEqual(fs.readFileSync(paths.marker), marker);
+    assert.equal(
+      fs.readFileSync(path.join(paths.assets, "items/stone.png"), "utf8"),
+      "test icon",
+    );
+    assert.equal(
+      fs.readFileSync(
+        path.join(target, "data/catalogs/gtnh-2.8.4.old.json"),
+        "utf8",
+      ),
+      "old metadata",
+    );
+    assert.equal(fs.existsSync(paths.marker + ".lock"), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

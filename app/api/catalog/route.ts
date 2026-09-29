@@ -1,4 +1,4 @@
-import { isGtnhInstalled } from "@/lib/game-packs";
+import { isGtnhInstalled, gamePackRevision } from "@/lib/game-packs";
 import { catalog } from "@/lib/db";
 import { catalogTiles } from "@/lib/catalog-layout";
 import { AsyncCache } from "@/lib/async-cache";
@@ -26,6 +26,7 @@ export async function GET(request: Request) {
       { error: "Install the GTNH game pack first." },
       { status: 409 },
     );
+  const revision = gamePackRevision();
   const url = new URL(request.url),
     query = (url.searchParams.get("q") ?? "").slice(0, 200),
     group = url.searchParams.get("group");
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
   );
   const [{ tiles, total }, { groups, itemGroups, info }] = await Promise.all([
     layouts.get(
-      JSON.stringify([query, group, [...expanded].sort()]),
+      JSON.stringify([revision, query, group, [...expanded].sort()]),
       async () => {
         const matching = await catalog.item.findMany({
           where,
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
         };
       },
     ),
-    metadata.get("metadata", readMetadata),
+    metadata.get(revision, readMetadata),
   ]);
   const currentPage = Math.min(
     page,
