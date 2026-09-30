@@ -648,35 +648,6 @@ h3 {
   padding: 3px;
   border: 0;
 }
-.diagram-link {
-  width: 100%;
-  justify-content: flex-start;
-  border: 0;
-  padding: 13px 10px;
-  margin: 3px 0;
-  color: #a7a7a7;
-  font-size: 12px;
-  text-align: left;
-}
-.diagram-link span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.diagram-link.active {
-  color: #e4efff;
-  background: var(--action-gradient);
-}
-.diagram-link svg {
-  flex-shrink: 0;
-}
-.new-diagram {
-  justify-content: flex-start;
-  border: 0;
-  color: #909090;
-  font-size: 12px;
-  margin-top: 12px;
-}
 .sidebar-bottom {
   margin-top: auto;
   padding: 20px 10px 0;
@@ -4406,3 +4377,32 @@ h3 {
 .line-context-menu .base-ratio-option { color: #f87171; }
 .line-context-menu .info-ratio-heading { display: flex; align-items: center; gap: 10px; padding: 3px 10px 5px; font-size: 11px; color: #fff; }
 .info-line-sample { width: 42px; height: 6px; flex: 0 0 auto; background: repeating-linear-gradient(135deg, #fff 0 5px, transparent 5px 10px) #000; }
+
+/* Project diagram tree */
+.diagram-tree-tools { display:flex; align-items:center; gap:3px; }
+.diagram-tree { flex:1; min-height:80px; overflow-y:auto; padding:2px 0; }
+.diagram-tree-row { position:relative; display:flex; align-items:center; gap:1px; min-height:35px; padding-right:4px; border-radius:5px; cursor:pointer; user-select:none; outline-offset:-2px; }
+.diagram-tree-row:hover { background:rgba(255,255,255,.045); }
+.diagram-tree-row.selected { background:rgba(96,165,250,.20); }
+.diagram-tree-row.selected .tree-kind-icon { color:#a7c7ef; }
+.diagram-tree-row.current .tree-name { color:var(--accent, #a7c7ef); font-weight:600; }
+.diagram-tree-row.current::before { content:""; position:absolute; top:8px; bottom:8px; left:0; width:2px; background:#60a5fa; }
+.diagram-tree-row button { padding:2px; border:0; background:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.diagram-tree-row .tree-grip { width:15px; opacity:0; cursor:grab; }
+.tree-grip svg { flex-shrink:0; }
+.diagram-tree-row .tree-grip:active { cursor:grabbing; }
+.diagram-tree-row .tree-rename { margin-left:auto; opacity:0; }
+.diagram-tree-row:hover .tree-grip, .diagram-tree-row:hover .tree-rename, .diagram-tree-row:focus-within .tree-grip, .diagram-tree-row:focus-within .tree-rename { opacity:1; }
+.diagram-tree-row .tree-chevron { width:18px; height:24px; padding:0; flex-shrink:0; }
+.tree-chevron svg { flex-shrink:0; }
+.tree-kind-icon { flex-shrink:0; color:#a8b497; margin-right:4px; }
+.tree-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.diagram-tree-row input { min-width:0; width:100%; padding:4px; font-size:12px; }
+.diagram-tree-row.drop-before { box-shadow:inset 0 2px #60a5fa; }
+.diagram-tree-row.drop-after { box-shadow:inset 0 -2px #60a5fa; }
+.diagram-tree-row.drop-inside, .tree-root-drop.drop-inside { outline:1px solid #60a5fa; outline-offset:-1px; background:rgba(96,165,250,.16); }
+.tree-root-drop { min-height:38px; padding:9px 6px; font-size:10px; color:var(--muted); }
+.tree-status, .tree-error { padding:6px; font-size:11px; }
+.tree-error { color:#f2a8a8; }
+.tree-error button { display:block; margin-top:6px; }
+@media (hover:none) { .diagram-tree-row .tree-grip, .diagram-tree-row .tree-rename { opacity:1; } }

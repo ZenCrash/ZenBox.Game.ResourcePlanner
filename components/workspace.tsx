@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { createPortal } from "react-dom";
+import { DiagramTree } from "./diagram-tree";
 import { ResizableSidebar } from "./resizable-sidebar";
 import { DisplaySettingsProvider, DisplaySettingsPanel, useDisplaySettings } from "./display-settings";
 
@@ -35,7 +36,6 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Plus,
   Save,
   X,
   Workflow,
@@ -1453,44 +1453,10 @@ function Editor({ project }: { project: Project }) {
                 <small>GTNH {project.version}</small>
               </div>
             </div>
-            <div className="panel-heading">
-              DIAGRAMS
-              <button
-                aria-label="Create diagram"
-                onClick={() => {
-                  setDiagramName("");
-                  setDialog("create");
-                }}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-            <nav>
-              {diagrams.map((d) => (
-                <button
-                  className={`diagram-link ${d.id === active ? "active" : ""}`}
-                  key={d.id}
-                  disabled={saving}
-                  onClick={async () => {
-                    if (d.id === active) return;
-                    if (dirty && !(await save())) return;
-                    await load(d.id);
-                  }}
-                >
-                  <Workflow size={16} />
-                  <span>{d.name}</span>
-                </button>
-              ))}
-            </nav>
-            <button
-              className="new-diagram"
-              onClick={() => {
-                setDiagramName("");
-                setDialog("create");
-              }}
-            >
-              <Plus size={15} /> New diagram
-            </button>
+            <DiagramTree projectId={project.id} diagrams={diagrams} active={active} disabled={saving}
+              onCreate={() => { setDiagramName(""); setDialog("create"); }}
+              onRename={diagram => setDiagrams(ds => ds.map(d => d.id === diagram.id ? { ...d, name: diagram.name } : d))}
+              onOpen={async id => { if (id === active) return; if (dirty && !(await save())) return; await load(id); }} />
             </>}
             <div className="sidebar-bottom">
               <div className="sidebar-save">

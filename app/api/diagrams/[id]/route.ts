@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { isGtnhInstalled } from "@/lib/game-packs";
 import { catalog, db } from "@/lib/db";
 import { hydrateFluidContents } from "@/lib/fluid-containers";
@@ -94,5 +95,16 @@ export async function DELETE(_request: Request, context: Context) {
   return locked(id, async () => {
     await db.diagram.deleteMany({ where: { id } });
     return Response.json({ ok: true });
+  });
+}
+
+export async function PATCH(request: Request, context: Context) {
+  const { id } = await context.params;
+  const parsed = z.object({ name: z.string().trim().min(1).max(100) }).safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return Response.json({ error: "Enter a diagram name between 1 and 100 characters." }, { status: 400 });
+  return locked(id, async () => {
+    if (!await db.diagram.findUnique({ where: { id } })) return Response.json({ error: "Diagram not found." }, { status: 404 });
+    const diagram = await db.diagram.update({ where: { id }, data: { name: parsed.data.name } });
+    return Response.json({ id: diagram.id, name: diagram.name });
   });
 }
