@@ -33,6 +33,7 @@ export type PlannerStep = {
   inputSlot?: number;
   outputSlot: number;
   cycles: number;
+  recovery?: boolean;
 };
 export type PlannerPlan = {
   key: string;
@@ -245,6 +246,8 @@ async function findRoutes(
     // repeatedly following a locally attractive recycling chain.
     queue.sort(
       (a, b) =>
+        // Examine every target form before spending the budget on deeper routes.
+        Number(a.steps.length > 0) - Number(b.steps.length > 0) ||
         Number(options.nearInputIds?.includes(b.itemId) ?? false) -
           Number(options.nearInputIds?.includes(a.itemId) ?? false) ||
         (options.priority === "eu"
@@ -349,9 +352,18 @@ async function findRoutes(
   return { plans: plans.slice(0, options.maxSuggestions), limited, examined };
 }
 
+function compareDependencies(options: PlannerOptions, a: PlannerPlan, b: PlannerPlan) {
+  // Empty packaging is still required, but must not outweigh producing an
+  // actual ingredient from the chosen source.
+  const materials = (plan: PlannerPlan) => plan.supplies.filter(
+    (supply) => !options.packagingItemIds?.includes(supply.item.id),
+  ).length;
+  return materials(a) - materials(b) || a.supplies.length - b.supplies.length;
+}
+
 function comparePlans(options: PlannerOptions, a: PlannerPlan, b: PlannerPlan) {
   return (
-    a.supplies.length - b.supplies.length ||
+    compareDependencies(options, a, b) ||
     (options.priority === "yield"
       ? a.inputAmount - b.inputAmount
       : a.totalEu - b.totalEu) ||
@@ -428,6 +440,97 @@ function reuseByproducts(plan: PlannerPlan): PlannerPlan {
   };
 }
 
+// Reserve target outputs and already allocated connections before considering
+// recycling. Several producers may jointly supply one recovery input.
+function spareByproducts(plan: PlannerPlan) {
+  const outputs = plan.steps.flatMap((step, source) => step.recipe.ingredients
+    .filter(i => i.direction === "output" && i.amount > 0 && i.chance > 0)
+    .map(i => ({ source, slot: i.slot, itemId: i.itemId,
+      amount: i.amount * i.chance * step.cycles, primary: i.slot === step.outputSlot })));
+  const targets = new Map<string, typeof plan.links>();
+  for (const link of plan.links) {
+    const key = link.target + ":" + link.targetSlot;
+    targets.set(key, [...(targets.get(key) ?? []), link]);
+  }
+  for (const links of targets.values()) {
+    const first = links[0], step = plan.steps[first.target];
+    const input = step.recipe.ingredients.find(i => i.direction === "input" && i.slot === first.targetSlot)!;
+    let remaining = input.amount * step.cycles;
+    for (const link of links) {
+      const output = outputs.find(o => o.source === link.source && o.slot === link.sourceSlot)!;
+      const used = Math.min(output.amount, remaining);
+      output.amount -= used; remaining -= used;
+    }
+  }
+  return outputs.filter(o => !o.primary && o.amount > 1e-9);
+}
+
+async function recoverByproducts(
+  original: PlannerPlan, options: PlannerOptions,
+  lookup: (id: string) => Promise<Recipe[]>, interrupted: () => boolean,
+  budget: number,
+): Promise<PlannerResult> {
+  let plan = original, examined = 0, limited = false;
+  while (plan.supplies.length && plan.steps.length < options.maxSteps) {
+    const available = spareByproducts(plan);
+    if (!available.length) break;
+    const candidates: PlannerPlan[] = [];
+    for (const supply of plan.supplies) {
+      if (interrupted() || examined >= budget) { limited = true; break; }
+      for (const recipe of await lookup(supply.item.id)) {
+        if (interrupted() || examined >= budget) { limited = true; break; }
+        examined++;
+        if (options.excludedRecipes.includes(recipe.id) || plan.steps.some(s => s.recipe.id === recipe.id)) continue;
+        const machine = plannerMachine(recipe, options);
+        if (!machine) continue;
+        const output = recipe.ingredients.find(i => i.direction === "output" && i.itemId === supply.item.id && i.amount > 0 && i.chance > 0);
+        if (!output || !plannerConversionInputs(recipe, output.slot).length) continue;
+        const cycles = supply.amount / (output.amount * output.chance);
+        const stock = available.map(o => ({ ...o }));
+        const links = [...plan.links], variants: VariantSelection = {};
+        const index = plan.steps.length;
+        let valid = true, fed = false;
+        for (const input of recipe.ingredients.filter(i => i.direction === "input" && i.consumed && i.amount > 0)) {
+          const required = input.amount * cycles;
+          const id = acceptedItemIds(input).find(id => stock.filter(o => o.itemId === id).reduce((n, o) => n + o.amount, 0) + 1e-9 >= required);
+          if (!id) { valid = false; break; }
+          if (id !== input.itemId) variants["input:" + input.slot] = id;
+          let remaining = required;
+          for (const source of stock.filter(o => o.itemId === id)) {
+            const used = Math.min(source.amount, remaining);
+            if (used <= 1e-9) continue;
+            links.push({ source: source.source, sourceSlot: source.slot, target: index, targetSlot: input.slot });
+            source.amount -= used; remaining -= used; fed = true;
+          }
+        }
+        if (!valid || !fed) continue;
+        let demand = 0;
+        plan.steps.forEach((step, target) => {
+          for (const input of step.recipe.ingredients) {
+            if (input.direction !== "input" || !input.consumed || input.amount <= 0 ||
+              (step.variants["input:" + input.slot] ?? input.itemId) !== supply.item.id ||
+              plan.links.some(l => l.target === target && l.targetSlot === input.slot)) continue;
+            demand += input.amount * step.cycles;
+            links.push({ source: index, sourceSlot: output.slot, target, targetSlot: input.slot });
+          }
+        });
+        if (Math.abs(demand - supply.amount) > 1e-7 * Math.max(1, supply.amount)) continue;
+        const candidate: PlannerPlan = {
+          ...plan, key: plan.key + "~recover:" + recipe.id + ":" + output.slot,
+          steps: [...plan.steps, { recipe, machineId: machine.machineId, variants, cycles, outputSlot: output.slot, recovery: true }],
+          links, totalEu: plan.totalEu + cycles * machine.runtime.euPerTick * Math.max(0, machine.runtime.durationTicks),
+          supplies: plan.supplies.filter(s => s.item.id !== supply.item.id),
+        };
+        if (!options.excludedPlans.includes(candidate.key)) candidates.push(candidate);
+      }
+    }
+    candidates.sort((a, b) => comparePlans(options, a, b));
+    if (!candidates.length) break;
+    plan = candidates[0];
+  }
+  return { plans: [plan], examined, limited };
+}
+
 /** Extend a conversion route with ingredient branches when doing so reduces
  * external dependencies. All branch costs and source consumption are included.
  * This bounded search reports its limits rather than claiming global optimality.
@@ -453,6 +556,7 @@ export async function findAutoPlans(
   let examined = primary.examined;
   let limited = primary.limited;
   const plans: PlannerPlan[] = [];
+  const branchBudget = Math.max(primary.examined, Math.floor(budget * 0.8));
   for (const original of primary.plans) {
     let plan = reuseByproducts(original);
     const attempted = new Set<string>();
@@ -460,7 +564,7 @@ export async function findAutoPlans(
       const supply = plan.supplies.find(
         (supply) => !attempted.has(supply.item.id),
       );
-      if (!supply || interrupted() || examined >= budget) break;
+      if (!supply || interrupted() || examined >= branchBudget) break;
       attempted.add(supply.item.id);
       const sub = await findRoutes(
         {
@@ -477,7 +581,7 @@ export async function findAutoPlans(
         },
         lookup,
         interrupted,
-        Math.min(400, budget - examined),
+        Math.min(400, branchBudget - examined),
       );
       examined += sub.examined;
       limited ||= sub.limited;
@@ -541,7 +645,7 @@ export async function findAutoPlans(
           };
         })
         .filter(
-          (candidate) => candidate.supplies.length < plan.supplies.length,
+          (candidate) => compareDependencies(options, candidate, plan) < 0,
         );
       alternatives.sort((a, b) => comparePlans(options, a, b));
       if (alternatives[0]) plan = alternatives[0];
@@ -554,6 +658,16 @@ export async function findAutoPlans(
         !plans.some((p) => p.key === candidate.key)
       )
         plans.push(candidate);
+  }
+  plans.sort((a, b) => comparePlans(options, a, b));
+  // Check the most complete plans first and reserve work for recycling rather
+  // than spending the entire search on alternative source-to-target paths.
+  for (const plan of [...plans]) {
+    if (interrupted() || examined >= budget) break;
+    const recovered = await recoverByproducts(plan, options, lookup, interrupted, Math.min(400, budget - examined));
+    examined += recovered.examined; limited ||= recovered.limited;
+    for (const candidate of recovered.plans)
+      if (candidate !== plan && !plans.some(p => p.key === candidate.key)) plans.push(candidate);
   }
   limited ||= interrupted() || examined >= budget;
   plans.sort((a, b) => comparePlans(options, a, b));

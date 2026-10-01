@@ -1,6 +1,6 @@
 "use client";
+import { machineAmountRatio } from "@/lib/perfect-ratio";
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import { DiagramTree } from "./diagram-tree";
 import { ResizableSidebar } from "./resizable-sidebar";
 import { DisplaySettingsProvider, DisplaySettingsPanel, useDisplaySettings } from "./display-settings";
@@ -97,16 +97,37 @@ import { CanvasSelection } from "./canvas-selection";
 import { GridBackground } from "./grid-background";
 import { RecipeChevron } from "./recipe-chevron";
 import { SummaryArea } from "./summary-area";
+import { SidebarGroupSummary } from "./sidebar-group-summary";
 import { AutoRecipePlanner, type PlannedGraph } from "./auto-recipe-planner";
 
 import { overclockRecipe } from "@/lib/recipe-overclock";
 import { selectedMachine, machineOptions } from "@/lib/machine-selection";
 import { ItemTooltip } from "./item-tooltip";
 import { recipeCategoryMod } from "@/lib/recipe-handlers";
-import { summarizeArea, summaryRecipe } from "@/lib/area-summary";
+import { summaryRecipe } from "@/lib/area-summary";
 import type { SummaryCalculation } from "@/lib/summary-rate";
 import { MachineCard, EditorContext, type RecipeNode } from "./machine-card";
 import { DiagramLabel } from "./diagram-label";
+import { BatchCache } from "@/lib/batch-cache";
+import { AreaSummaryCache } from "@/lib/area-summary-cache";
+import { catalogDragImage } from "@/lib/catalog-drag-image";
+import { useStableValues } from "./use-stable-values";
+import { readCatalogBatch, catalogCacheDiagnostics } from "@/lib/persistent-catalog";
+import { diagramContent } from "@/lib/diagram-content";
+import { productionRates } from "@/lib/production-rates";
+import { recipeInsideGroup } from "@/lib/group-selection";
+import { connectedMachines, networkMachineCounts } from "@/lib/network-ratio";
+import { NetworkRatioControls } from "./network-ratio-controls";
+import { createScaleCalculator } from "@/lib/scale-view";
+let diagramCatalog: { revision: string; recipes: BatchCache<Recipe>; items: BatchCache<Item> } | undefined;
+function catalogForDiagram(revision: string) {
+  if (diagramCatalog?.revision !== revision) diagramCatalog = {
+    revision,
+    recipes: new BatchCache<Recipe>(ids => readCatalogBatch("recipes", revision, ids, missing => api<Recipe[]>(`/api/recipes?ids=${encodeURIComponent(missing.join(","))}`))),
+    items: new BatchCache<Item>(ids => readCatalogBatch("items", revision, ids, missing => api<Item[]>(`/api/items?ids=${encodeURIComponent(missing.join(","))}`))),
+  };
+  return diagramCatalog;
+}
 const nodeTypes = { recipe: MachineCard, summary: SummaryArea, label: DiagramLabel };
 const edgeTypes = { grid: GridEdge };
 export function Workspace({ project }: { project: Project }) {
@@ -121,8 +142,10 @@ function Editor({ project }: { project: Project }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [itemPicker, setItemPicker] = useState(false);
   const [autoPlanner, setAutoPlanner] = useState(false);
+  const [scaleView, setScaleView] = useState(false);
+  const [sidebarScaleRequested, setSidebarScaleRequested] = useState(false);
   const {
-    nodes,
+    nodes: storedNodes,
     edges,
     setNodes,
     setEdges,
@@ -133,6 +156,23 @@ function Editor({ project }: { project: Project }) {
     canUndo,
     canRedo,
   } = useGraphHistory<RecipeNode, DiagramEdge>();
+  const scaleInputs = useStableValues(storedNodes, (a, b) => a.id === b.id && a.data === b.data);
+  const scaleEdges = useStableValues(edges, (a, b) => a.source === b.source && a.target === b.target && a.sourceHandle === b.sourceHandle && a.targetHandle === b.targetHandle && a.data?.reference === b.data?.reference);
+  const calculateScale = useMemo(() => createScaleCalculator(), []);
+  const scaleResult = useMemo(() => scaleView ? calculateScale(scaleInputs, scaleEdges) : null, [scaleView, scaleInputs, scaleEdges, calculateScale]);
+  const scaleDataCache = useRef(new WeakMap<RecipeNode["data"], RecipeNode["data"]>());
+  const scaledData = useMemo(() => new Map(scaleInputs.map(node => {
+    if (!scaleView || node.type !== "recipe") return [node.id, node.data];
+    const machines = scaleResult?.counts.get(node.id) ?? node.data.machines;
+    const machineId = node.data.scaleMachineId ?? node.data.machineId;
+    let data = scaleDataCache.current.get(node.data);
+    if (!data || data.machines !== machines || data.machineId !== machineId) {
+      data = { ...node.data, originalMachines: node.data.machines, originalMachineId: node.data.machineId, machines, machineId };
+      scaleDataCache.current.set(node.data, data);
+    }
+    return [node.id, data];
+  })), [scaleInputs, scaleView, scaleResult]);
+  const nodes = useMemo(() => storedNodes.map(node => scaledData.get(node.id) === node.data ? node : { ...node, data: scaledData.get(node.id)! }), [storedNodes, scaledData]);
   const clipboard = useRef<{
     nodes: RecipeNode[];
     edges: DiagramEdge[];
@@ -166,6 +206,23 @@ function Editor({ project }: { project: Project }) {
     [dialog, setDialog] = useState<"create" | "delete" | null>(null),
     [diagramName, setDiagramName] = useState(""),
     [busy, setBusy] = useState(false);
+  const [diagramLoading, setDiagramLoading] = useState(project.diagrams.length > 0);
+  const [diagramLoadStage, setDiagramLoadStage] = useState("Loading diagram…");
+  const [diagramLoadPercent, setDiagramLoadPercent] = useState(0);
+  const loadMeasurement = useRef<{ started: number; initial: ReturnType<typeof catalogCacheDiagnostics> } | null>(null);
+  const [loadMetrics, setLoadMetrics] = useState<{ ms: number; persistentHits: number; networkBatches: number } | null>(null);
+  useEffect(() => {
+    if (!ready || !loadMeasurement.current) return;
+    const measurement = loadMeasurement.current;
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        const current = catalogCacheDiagnostics();
+        setLoadMetrics({ ms: Math.round(performance.now() - measurement.started), persistentHits: current.persistentHits - measurement.initial.persistentHits, networkBatches: current.networkBatches - measurement.initial.networkBatches });
+      });
+    });
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
+  }, [ready, active]);
   const [browser, setBrowser] = useState<{
       item: Item;
       mode: "recipes" | "uses" | "category";
@@ -249,6 +306,8 @@ function Editor({ project }: { project: Project }) {
     browserEpoch = useRef(0),
     generation = useRef(0),
     dirtyRef = useRef(false);
+  const savedContent = useRef<string | null>(null);
+  const captureLoadedContent = useRef(false);
   const markDirty = useCallback(() => {
     generation.current++;
     dirtyRef.current = true;
@@ -269,7 +328,7 @@ function Editor({ project }: { project: Project }) {
     (): DiagramDocument => ({
       ...blankDiagram(),
       revision: revision.current,
-      nodes: nodes
+      nodes: storedNodes
         .filter((n) => n.type === "recipe")
         .map((n) => ({
           id: n.id,
@@ -279,6 +338,8 @@ function Editor({ project }: { project: Project }) {
             : {}),
           machines: n.data.machines,
           machineId: n.data.machineId,
+          scaleAmount: n.data.scaleAmount,
+          scaleMachineId: n.data.scaleMachineId,
           ...(n.measured?.width && n.measured?.height
             ? { size: { width: n.measured.width, height: n.measured.height } }
             : {}),
@@ -287,8 +348,8 @@ function Editor({ project }: { project: Project }) {
           ...(n.data.portRows ? { portRows: n.data.portRows } : {}),
           ...(n.data.disabledPorts?.length ? { disabledPorts: n.data.disabledPorts } : {}),
         })),
-      labels: nodes.filter(n => n.type === "label").map(n => ({ id: n.id, position: n.position, text: n.data.text ?? "Label", fontSize: n.data.fontSize ?? 30, textColor: n.data.textColor, backgroundColor: n.data.backgroundColor })),
-      areas: nodes
+      labels: storedNodes.filter(n => n.type === "label").map(n => ({ id: n.id, position: n.position, text: n.data.text ?? "Label", fontSize: n.data.fontSize ?? 30, textColor: n.data.textColor, backgroundColor: n.data.backgroundColor })),
+      areas: storedNodes
         .filter((n) => n.type === "summary")
         .map((n) => ({
           id: n.id,
@@ -321,24 +382,41 @@ function Editor({ project }: { project: Project }) {
       })),
       viewport: flow.current?.getViewport() ?? blankDiagram().viewport,
     }),
-    [nodes, edges],
+    [storedNodes, edges],
   );
+  const currentDocument = useRef(document);
+  currentDocument.current = document;
+  useLayoutEffect(() => {
+    if (!ready) return;
+    // Do not add document comparison work to pointer-movement frames.
+    if (nodes.some(node => node.dragging || node.resizing)) return;
+    const content = diagramContent(document());
+    if (captureLoadedContent.current) {
+      savedContent.current = content;
+      captureLoadedContent.current = false;
+    }
+    const changed = savedContent.current !== content;
+    dirtyRef.current = changed;
+    setDirty(changed);
+  }, [document, ready, dirty, nodes]);
   const save = useCallback(async () => {
     if (!active || !ready || saving) return false;
     setSaving(true);
-    const snapshot = generation.current;
+    const submitted = document();
+    const token = epoch.current;
     try {
       const result = await api<{ revision: number }>(
         `/api/diagrams/${active}`,
-        { method: "PUT", body: JSON.stringify(document()) },
+        { method: "PUT", body: JSON.stringify(submitted) },
       );
+      if (token !== epoch.current) return false;
       revision.current = result.revision;
-      if (snapshot === generation.current) {
-        setDirty(false);
-        dirtyRef.current = false;
-      }
+      savedContent.current = diagramContent(submitted);
+      const changed = diagramContent(currentDocument.current()) !== savedContent.current;
+      setDirty(changed);
+      dirtyRef.current = changed;
       setError("");
-      return snapshot === generation.current;
+      return !changed;
     } catch (e) {
       setError((e as Error).message);
       return false;
@@ -346,33 +424,61 @@ function Editor({ project }: { project: Project }) {
       setSaving(false);
     }
   }, [active, ready, saving, document]);
+  const [pendingLeave, setPendingLeave] = useState<"reload" | "projects" | null>(null);
+  const [leaveError, setLeaveError] = useState("");
+  const leaveDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (pendingLeave) { setLeaveError(""); leaveDialog.current?.showModal(); }
+    else leaveDialog.current?.close();
+  }, [pendingLeave]);
+  const finishLeave = () => {
+    dirtyRef.current = false;
+    if (pendingLeave === "reload") window.location.reload();
+    else window.location.assign("/games/gtnh");
+  };
+  useEffect(() => {
+    const reload = (event: KeyboardEvent) => {
+      if (!dirtyRef.current || !(event.key === "F5" || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "r"))) return;
+      event.preventDefault();
+      setPendingLeave("reload");
+    };
+    window.addEventListener("keydown", reload);
+    return () => window.removeEventListener("keydown", reload);
+  }, []);
   const load = useCallback(
     async (id: string) => {
       const token = ++epoch.current;
+      loadMeasurement.current = { started: performance.now(), initial: catalogCacheDiagnostics() };
+      setLoadMetrics(null);
+      setDiagramLoading(true);
+      setDiagramLoadPercent(0);
+      setDiagramLoadStage("Loading diagram…");
       setReady(false);
       setError("");
       try {
-        let doc = await api<DiagramDocument>(`/api/diagrams/${id}`);
+        let doc = await api<DiagramDocument & { catalogRevision?: string }>(`/api/diagrams/${id}`);
+        const catalogData = catalogForDiagram(doc.catalogRevision ?? crypto.randomUUID());
+        if (epoch.current !== token) return;
+        setDiagramLoadStage("Loading recipes and items…");
+        setDiagramLoadPercent(10);
         const unique = [
           ...new Set(doc.nodes.filter((n) => !n.itemId).map((n) => n.recipeId)),
         ];
-        const loaded: Recipe[] = [];
-        for (let offset = 0; offset < unique.length; offset += 40)
-          loaded.push(
-            ...(await api<Recipe[]>(
-              `/api/recipes?ids=${encodeURIComponent(unique.slice(offset, offset + 40).join(","))}`,
-            )),
-          );
         const itemIds = [
           ...new Set(doc.nodes.flatMap((n) => (n.itemId ? [n.itemId] : []))),
         ];
-        for (let offset = 0; offset < itemIds.length; offset += 40) {
-          const items = await api<Item[]>(
-            `/api/items?ids=${encodeURIComponent(itemIds.slice(offset, offset + 40).join(","))}`,
-          );
-          loaded.push(...items.map(itemSourceRecipe));
-        }
+        let recipesDone = 0, itemsDone = 0;
+        const progress = () => {
+          if (epoch.current === token) setDiagramLoadPercent(10 + Math.round(80 * (recipesDone + itemsDone) / Math.max(1, unique.length + itemIds.length)));
+        };
+        const [recipes, items] = await Promise.all([
+          catalogData.recipes.get(unique, completed => { recipesDone = completed; progress(); }),
+          catalogData.items.get(itemIds, completed => { itemsDone = completed; progress(); }),
+        ]);
+        const loaded = [...recipes, ...items.map(itemSourceRecipe)];
         if (epoch.current !== token) return;
+        setDiagramLoadPercent(90);
+        setDiagramLoadStage("Preparing diagram…");
         doc = resolveDiagramVariants(doc, loaded);
         const map = new Map(loaded.map((r) => [r.id, r]));
         if (doc.nodes.some((n) => !map.has(n.recipeId)))
@@ -388,6 +494,8 @@ function Editor({ project }: { project: Project }) {
               recipe: map.get(n.recipeId)!,
               machines: Math.max(1, n.machines),
               machineId: n.machineId,
+              scaleAmount: n.scaleAmount,
+              scaleMachineId: n.scaleMachineId,
               variants: n.variants,
               portRows: n.portRows,
               disabledPorts: n.disabledPorts,
@@ -401,7 +509,7 @@ function Editor({ project }: { project: Project }) {
             width: area.width,
             height: area.height,
             zIndex: -100,
-            dragHandle: ".summary-area-header",
+            dragHandle: ".summary-area-header, .summary-area-content",
             data: {
               recipe: summaryRecipe,
               machines: 0,
@@ -427,15 +535,19 @@ function Editor({ project }: { project: Project }) {
           })),
         );
         revision.current = doc.revision;
+        captureLoadedContent.current = true;
         resetHistory();
         setActive(id);
         setDirty(false);
         dirtyRef.current = false;
         setReady(true);
+        setDiagramLoadPercent(100);
         flow.current?.setViewport(doc.viewport);
         window.history.replaceState(null, "", `?diagram=${id}`);
       } catch (e) {
         if (epoch.current === token) setError((e as Error).message);
+      } finally {
+        if (epoch.current === token) setDiagramLoading(false);
       }
     },
     [resetHistory, setNodes, setEdges],
@@ -627,16 +739,48 @@ function Editor({ project }: { project: Project }) {
     },
     [browser],
   );
-  const portColor = useMemo(
-    () => createPortColorResolver(nodes.map((node) => node.data.recipe)),
-    [nodes],
-  );
+  const paletteRecipes = useStableValues(nodes.map(node => node.data.recipe));
+  const productionNodes = useStableValues(nodes, (a, b) => a.id === b.id && a.type === b.type &&
+    a.data.recipe === b.data.recipe && a.data.variants === b.data.variants &&
+    a.data.machines === b.data.machines && a.data.machineId === b.data.machineId &&
+    a.data.disabledPorts === b.data.disabledPorts);
+  const productionEdges = useStableValues(edges, (a, b) => a.source === b.source && a.target === b.target && a.sourceHandle === b.sourceHandle && a.targetHandle === b.targetHandle && a.data?.reference === b.data?.reference);
+  const utilization = useMemo(() => productionRates(productionNodes.filter(node => node.type === "recipe").map(node => ({
+    id: node.id, recipe: overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId),
+    machines: node.data.machines, disabledPorts: node.data.disabledPorts,
+  })), productionEdges), [productionNodes, productionEdges]);
+  const networkFlows = useMemo(() => {
+    const recipes = new Map(productionNodes.filter(node => node.type === "recipe").map(node => [node.id, overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId)]));
+    return productionEdges.map(edge => {
+      const producer = recipes.get(edge.source), consumer = recipes.get(edge.target);
+      const output = producer && port(producer, edge.sourceHandle), input = consumer && port(consumer, edge.targetHandle);
+      const converted = edge.data?.reference && producer && consumer && output && input ? fluidReferenceInputRates(output, producer, input, consumer) : undefined;
+      return { source: edge.source, target: edge.target, input: edge.targetHandle ?? "", reference: !!edge.data?.reference,
+        supply: converted ? converted.supply : producer && output && hasRecipeTiming(producer) ? rate(output, producer) : NaN,
+        demand: converted ? converted.demand : consumer && input && hasRecipeTiming(consumer) ? rate(input, consumer) : NaN };
+    });
+  }, [productionNodes, productionEdges]);
+  const applyNetworkCounts = useCallback((counts: Record<string, number>) => {
+    setNodes(values => values.map(node => counts[node.id] !== undefined && node.data.machines !== counts[node.id]
+      ? { ...node, data: { ...node.data, machines: counts[node.id] } } : node));
+    markDirty();
+  }, [setNodes, markDirty]);
+  const topologyEdges = useStableValues(edges, (a, b) => a.id === b.id && a.source === b.source && a.target === b.target &&
+    a.sourceHandle === b.sourceHandle && a.targetHandle === b.targetHandle && a.selected === b.selected);
+  const portColor = useMemo(() => createPortColorResolver(paletteRecipes), [paletteRecipes]);
   const context = useMemo(
     () => ({
       browse,
       color: portColor,
+      utilization,
+      scaleView,
+      scaled: scaleResult?.scaled,
+      setScale: (id: string, patch: { scaleAmount?: number; scaleMachineId?: string }) => {
+        setNodes(values => values.map(node => node.id === id ? { ...node, data: { ...node.data, ...patch } } : node));
+        markDirty();
+      },
       togglePort: (id: string, handle: string) => {
-        if (edges.some((edge) =>
+        if (topologyEdges.some((edge) =>
           (edge.source === id && edge.sourceHandle === handle) ||
           (edge.target === id && edge.targetHandle === handle))) return;
         setNodes((values) => values.map((node) => {
@@ -680,12 +824,12 @@ function Editor({ project }: { project: Project }) {
         markDirty();
       },
       connected: new Set(
-        edges.flatMap((edge) => [
+        topologyEdges.flatMap((edge) => [
           `${edge.source}/${edge.sourceHandle}`,
           `${edge.target}/${edge.targetHandle}`,
         ]),
       ),
-      selectedConnections: edges
+      selectedConnections: topologyEdges
         .filter((edge) => edge.selected)
         .reduce((ports, edge) => {
           for (const key of [
@@ -720,7 +864,7 @@ function Editor({ project }: { project: Project }) {
         markDirty();
       },
     }),
-    [browse, markDirty, portColor, edges, setNodes, setEdges],
+    [browse, markDirty, portColor, topologyEdges, setNodes, setEdges, utilization, scaleView, scaleResult],
   );
   function normalize(c: Connection): Connection {
     return c.sourceHandle?.startsWith("input:")
@@ -796,15 +940,34 @@ function Editor({ project }: { project: Project }) {
         values.map((node) => ({ ...node, selected: false })),
       );
   };
-  const runtimeRecipes = new Map(
-    nodes.map((node) => [
-      node.id,
-      overclockRecipe(
-        applyVariants(node.data.recipe, node.data.variants),
-        node.data.machineId,
-      ),
-    ]),
-  );
+  const runtimeCache = useRef(new WeakMap<RecipeNode["data"], Recipe>());
+  // Positions do not change rates, machine menus, or line-card contents.
+  // Retain these objects while the canvas moves their endpoints.
+  const recipeState = useStableValues(nodes, (a, b) => a.id === b.id && a.data === b.data);
+  const lineState = useStableValues(edges);
+  const renderedEdges = useMemo(() => {
+  const nodes = recipeState, edges = lineState;
+  const runtimeRecipes = new Map(nodes.map(node => {
+    let recipe = runtimeCache.current.get(node.data);
+    if (!recipe) {
+      recipe = overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId);
+      runtimeCache.current.set(node.data, recipe);
+    }
+    return [node.id, recipe];
+  }));
+  const nodeLookup = new Map(nodes.map(node => [node.id, node]));
+  const networkCache = new Map<string, { ids: Set<string>; flows: typeof networkFlows; current: Record<string, number> }>();
+  const getNetwork = (id: string, includeInfo = false) => {
+    const key = `${includeInfo}/${id}`;
+    let network = networkCache.get(key);
+    if (!network) {
+      const ids = connectedMachines(id, productionEdges, includeInfo);
+      network = { ids, flows: networkFlows.filter(flow => (includeInfo || !flow.reference) && ids.has(flow.source) && ids.has(flow.target)),
+        current: Object.fromEntries(nodes.filter(node => ids.has(node.id)).map(node => [node.id, node.data.machines])) };
+      ids.forEach(nodeId => networkCache.set(`${includeInfo}/${nodeId}`, network!));
+    }
+    return network;
+  };
   const inputSupply = new Map<string, number>();
   const baseRatioCounts = (edge: Edge, allInputs: boolean, includeReferences = false) => {
     if (edge.data?.reference && !includeReferences) return null;
@@ -834,9 +997,10 @@ function Editor({ project }: { project: Project }) {
   };
   const stepRatio = (edge: Edge, allInputs: boolean, step: -1 | 1, includeReferences = false) => {
     const base = baseRatioCounts(edge, allInputs, includeReferences);
-    if (!base) return;
+    const connections = allInputs ? edges.filter(value => value.target === edge.target && (includeReferences || !value.data?.reference)) : [edge];
+    const affected = new Set(connections.flatMap(value => [value.source, value.target]));
     setNodes((values) => {
-      const counts = stepMachineRatio(base, Object.fromEntries(values.map((node) => [node.id, node.data.machines])), step);
+      const counts = stepMachineRatio(base, Object.fromEntries(values.filter(node => affected.has(node.id)).map((node) => [node.id, node.data.machines])), step);
       if (!counts) return values;
       return values.map((node) => counts[node.id] === undefined || counts[node.id] === node.data.machines ? node : {
         ...node, data: { ...node.data, machines: counts[node.id] },
@@ -852,25 +1016,27 @@ function Editor({ project }: { project: Project }) {
     const key = `${edge.target}/${edge.targetHandle}`;
     const supplied =
       source && output && hasRecipeTiming(runtimeRecipes.get(source.id)!)
-        ? rate(output, runtimeRecipes.get(source.id)!, source.data.machines)
+        ? rate(output, runtimeRecipes.get(source.id)!, source.data.machines) * (utilization.get(source.id) ?? 1)
         : NaN;
     inputSupply.set(key, (inputSupply.get(key) ?? 0) + supplied);
   }
-  const renderedEdges = edges.map((savedEdge) => {
+  return edges.map((savedEdge) => {
     // Info lines stay above production lines, including selected ones.
     // Cards and port circles remain above both line layers.
     const edge = { ...savedEdge, zIndex: savedEdge.data?.reference
       ? savedEdge.selected ? 2200 : 2100
       : savedEdge.selected ? 2000 : 0 };
-    const source = nodes.find((n) => n.id === edge.source),
-      target = nodes.find((n) => n.id === edge.target);
+    const source = nodeLookup.get(edge.source),
+      target = nodeLookup.get(edge.target);
     if (!source || !target) return edge;
     const sourceRecipe = runtimeRecipes.get(source.id)!,
       targetRecipe = runtimeRecipes.get(target.id)!;
     const output = port(sourceRecipe, edge.sourceHandle),
       input = port(targetRecipe, edge.targetHandle);
     if (!output || !input) return edge;
-    const referenceFlow = edge.data?.reference ? fluidReferenceFlow(output, sourceRecipe, source.data.machines, input, targetRecipe, target.data.machines) : undefined;
+    const referenceFlow = edge.data?.reference ? fluidReferenceFlow(output, sourceRecipe, source.data.machines * (utilization.get(source.id) ?? 1), input, targetRecipe, target.data.machines * (utilization.get(target.id) ?? 1)) : undefined;
+    const fullReferenceFlow = referenceFlow && ((utilization.get(source.id) ?? 1) < 1 - 1e-9 || (utilization.get(target.id) ?? 1) < 1 - 1e-9)
+      ? fluidReferenceFlow(output, sourceRecipe, source.data.machines, input, targetRecipe, target.data.machines) : undefined;
     const lineColor = referenceFlow ? referenceFlow.color : hasRecipeTiming(targetRecipe)
           ? supplyColor(
               inputSupply.get(`${edge.target}/${edge.targetHandle}`) ?? NaN,
@@ -885,6 +1051,8 @@ function Editor({ project }: { project: Project }) {
       input,
       targetRecipe,
       target.data.machines,
+      utilization.get(source.id) ?? 1,
+      utilization.get(target.id) ?? 1,
     );
     return {
       ...edge,
@@ -892,6 +1060,13 @@ function Editor({ project }: { project: Project }) {
       data: {
         ...edge.data,
         item: output.item,
+        readOnlyMachines: scaleView,
+        networkRatio: !edge.data?.reference && getNetwork(edge.source).ids.size > 2 ? () => networkMachineCounts(getNetwork(edge.source).flows) : undefined,
+        infoNetworkRatio: getNetwork(edge.source, true).ids.size > 2 && getNetwork(edge.source, true).flows.some(flow => flow.reference)
+          ? () => networkMachineCounts(getNetwork(edge.source, true).flows) : undefined,
+        infoNetworkCurrent: getNetwork(edge.source, true).current,
+        applyNetworkRatio: applyNetworkCounts,
+        networkCurrent: getNetwork(edge.source).current,
         catchup,
         applyCatchup: (side: "a" | "b") => {
           const count = catchup?.[side];
@@ -906,12 +1081,14 @@ function Editor({ project }: { project: Project }) {
         stepRatio: (allInputs: boolean, step: -1 | 1, includeReferences = false) => stepRatio(edge, allInputs, step, includeReferences),
         hasInfoConnections: edges.some((value) => value.target === edge.target && value.data?.reference),
         infoBaseRatio: () => applyRatio(edge, false, true),
-        canInfoBaseRatio: !!baseRatioCounts(edge, false, true),
-        canInfoInputRatio: !!baseRatioCounts(edge, true, true),
-        canStepConnectedRatio: !!baseRatioCounts(edge, true),
+        ratioAvailability: () => ({
+          canInfoBaseRatio: !!baseRatioCounts(edge, false, true),
+          canInfoInputRatio: !!baseRatioCounts(edge, true, true),
+          canStepConnectedRatio: !!baseRatioCounts(edge, true),
+          canPerfectRatio: !!baseRatioCounts(edge, false),
+          canBaseInputRatio: !!baseRatioCounts(edge, true),
+        }),
         baseInputRatio: () => applyRatio(edge, true),
-        canPerfectRatio: !!baseRatioCounts(edge, false),
-        canBaseInputRatio: !!baseRatioCounts(edge, true),
         hasOtherSuppliers: !edge.data?.reference && edges.some((value) => value.target === edge.target && value.source !== edge.source && !value.data?.reference),
         select: (additive: boolean, toggle?: boolean) =>
           selectEdge(edge.id, additive, toggle, true),
@@ -1008,17 +1185,33 @@ function Editor({ project }: { project: Project }) {
             </div>
           </div>
           {edge.data?.reference ? <>
+            {fullReferenceFlow && <div className="connection-full-supply">
+              <div className="connection-rates">
+                <strong>{fullReferenceFlow.supplied === undefined ? "Unspecified" : `${fullReferenceFlow.supplied.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
+                <span aria-label="to">→</span>
+                <strong>{fullReferenceFlow.needed === undefined ? "Unspecified" : `${fullReferenceFlow.needed.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
+              </div>
+            </div>}
             <div className="connection-rates">
               <strong>{referenceFlow?.supplied === undefined ? "Unspecified" : `${referenceFlow.supplied.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
               <span aria-label="to">→</span>
               <strong>{referenceFlow?.needed === undefined ? "Unspecified" : `${referenceFlow.needed.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/s`}</strong>
             </div>
             <div className="connection-reference-note">{input.item.name.replace(/§./g, "")} · excluded from flow calculations</div>
-          </> : <div className="connection-rates">
+          </> : <>
+          {summary.fullSupply && <div className="connection-full-supply">
+            <div className="connection-rates">
+              <strong>{summary.fullSupply.from}</strong>
+              <span aria-label="to">→</span>
+              <strong>{summary.fullSupply.target}</strong>
+            </div>
+          </div>}
+          <div className="connection-rates">
             <strong>{summary.from}</strong>
             <span aria-label="to">→</span>
             <strong>{summary.target}</strong>
-          </div>}
+          </div>
+          </>}
         </>
       ),
       labelStyle: { fill: "#e7e7e5", fontSize: 11 },
@@ -1026,6 +1219,7 @@ function Editor({ project }: { project: Project }) {
       labelBgPadding: [9, 6] as [number, number],
     };
   });
+  }, [recipeState, lineState, browse, settings.lineThickness, setNodes, setEdges, markDirty, utilization, productionEdges, networkFlows, applyNetworkCounts, scaleView]);
   const current = diagrams.find((d) => d.id === active),
     filtered = recipes.filter((r) => r.handler === handler),
     selectedRecipe = filtered[recipePage];
@@ -1044,30 +1238,6 @@ function Editor({ project }: { project: Project }) {
     if (filtered.length) setRecipePage((page) => (page + step + filtered.length) % filtered.length);
   };
   const draggedCatalogItem = useRef<Item | null>(null);
-  const [catalogDragPreview, setCatalogDragPreview] = useState<{ item: Item; x: number; y: number; zoom: number } | null>(null);
-  useEffect(() => {
-    const move = (event: DragEvent) => {
-      const item = draggedCatalogItem.current;
-      if (!item) return;
-      if (event.target instanceof Element && event.target.closest(".inventory")) {
-        setCatalogDragPreview(null);
-        return;
-      }
-      setCatalogDragPreview({ item, x: event.clientX, y: event.clientY, zoom: flow.current?.getZoom() ?? 1 });
-    };
-    const hide = () => setCatalogDragPreview(null);
-    const leave = (event: DragEvent) => { if (!event.relatedTarget) hide(); };
-    window.addEventListener("dragover", move);
-    window.addEventListener("dragleave", leave);
-    window.addEventListener("dragend", hide);
-    window.addEventListener("drop", hide);
-    return () => {
-      window.removeEventListener("dragover", move);
-      window.removeEventListener("dragleave", leave);
-      window.removeEventListener("dragend", hide);
-      window.removeEventListener("drop", hide);
-    };
-  }, []);
   function addCard(
     recipe: Recipe,
     variants: VariantSelection = {},
@@ -1126,8 +1296,8 @@ function Editor({ project }: { project: Project }) {
         height: 480,
         selected: true,
         zIndex: -100,
-        dragHandle: ".summary-area-header",
-        data: { recipe: summaryRecipe, machines: 0, variants: {} },
+        dragHandle: ".summary-area-header, .summary-area-content",
+        data: { recipe: summaryRecipe, machines: 0, variants: {}, title: `Group ${1 + Math.max(0, ...values.filter(value => value.type === "summary").map(value => Number(/^Group\s+(\d+)$/i.exec(value.data.title?.trim() ?? "")?.[1] ?? 0)))}` },
       },
     ]);
     markDirty();
@@ -1144,6 +1314,30 @@ function Editor({ project }: { project: Project }) {
     setAutoPlanner(false);
     requestAnimationFrame(() => void flow.current?.fitView({ nodes: pasted.nodes.map(({ id }) => ({ id })), padding: 0.15, duration: 300 }));
   }
+  const sidebarScaled = useMemo(() => {
+    if (!sidebarScaleRequested) return null;
+    const result = calculateScale(scaleInputs, scaleEdges);
+    const recipes = scaleInputs.filter(value => value.type === "recipe").map(value => ({
+      id: value.id, ...value.data,
+      machines: result.counts.get(value.id) ?? value.data.machines,
+      machineId: value.data.scaleMachineId ?? value.data.machineId,
+    }));
+    const utilization = productionRates(recipes.map(value => ({ ...value,
+      recipe: overclockRecipe(applyVariants(value.recipe, value.variants), value.machineId),
+    })), scaleEdges);
+    const affected = new Set(recipes.filter(value => result.scaled.has(value.id) || (value.scaleAmount ?? 0) > 0 ||
+      (!!value.scaleMachineId && value.scaleMachineId !== machineOptions(value.recipe).defaultMachine?.id)).map(value => value.id));
+    return { recipes: new Map(recipes.map(value => [value.id, value])), utilization, affected };
+  }, [sidebarScaleRequested, scaleInputs, scaleEdges, calculateScale]);
+  const scaledSummaryCache = useRef(new AreaSummaryCache());
+  scaledSummaryCache.current.retain(new Set(nodes.filter(node => node.type === "summary").map(node => node.id)));
+  const sidebarScaledBounds = sidebarScaled ? nodes.filter(value => sidebarScaled.affected.has(value.id)).map(value => ({
+    ...sidebarScaled.recipes.get(value.id)!, position: value.position,
+    width: value.measured?.width ?? 340, height: value.measured?.height ?? 240,
+    utilization: sidebarScaled.utilization.get(value.id) ?? 1,
+  })) : [];
+  const areaSummaryCache = useRef(new AreaSummaryCache());
+  areaSummaryCache.current.retain(new Set(nodes.filter(node => node.type === "summary").map(node => node.id)));
   const recipeBounds = nodes
     .filter((node) => node.type === "recipe")
     .map((node) => ({
@@ -1151,6 +1345,7 @@ function Editor({ project }: { project: Project }) {
       width: node.measured?.width ?? 340,
       height: node.measured?.height ?? 240,
       ...node.data,
+      utilization: utilization.get(node.id) ?? 1,
     }));
   const renderedNodes = nodes.map((node) =>
     node.type === "label" ? { ...node, data: { ...node.data, removeLabel: () => context.remove(node.id), updateLabel: (patch: { text?: string; fontSize?: number; textColor?: string; backgroundColor?: string }) => { setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, ...patch } } : value)); markDirty(); } } } :
@@ -1159,13 +1354,23 @@ function Editor({ project }: { project: Project }) {
           ...node,
           data: {
             ...node.data,
-            summary: summarizeArea(
+            selectRecipes: nodes.some(value => recipeInsideGroup(value, node)) ? () => {
+              setNodes(values => values.map(value => ({ ...value, selected: recipeInsideGroup(value, node) })));
+              setEdges(values => values.map(value => value.selected ? { ...value, selected: false } : value));
+            } : undefined,
+            selectArea: () => {
+              setNodes(values => values.map(value => value.selected === (value.id === node.id) ? value : { ...value, selected: value.id === node.id }));
+              setEdges(values => values.map(value => value.selected ? { ...value, selected: false } : value));
+            },
+            summary: areaSummaryCache.current.get(
+              node.id,
               {
                 position: node.position,
                 width: node.width ?? 640,
                 height: node.height ?? 480,
               },
               recipeBounds,
+              !!(node.dragging || node.resizing),
             ),
             itemPortState: (itemId: string) => {
               let hasEnabled = false;
@@ -1185,7 +1390,7 @@ function Editor({ project }: { project: Project }) {
             },
             setItemDisabled: (itemId: string, disabled: boolean) => {
               const affected = new Map<string, Set<string>>();
-              const updated = nodes.map(value => {
+              const updated = storedNodes.map(value => {
                 if (value.type !== "recipe" || value.data.recipe.sourceItemId ||
                     value.position.x < node.position.x || value.position.y < node.position.y ||
                     value.position.x + (value.measured?.width ?? 340) > node.position.x + (node.width ?? 640) ||
@@ -1274,27 +1479,54 @@ function Editor({ project }: { project: Project }) {
     markDirty();
   };
   const selectedRecipeNodes = nodes.filter((node) => node.selected && node.type === "recipe");
+  const selectedMachines = selectedRecipeNodes.filter(node => !node.data.recipe.sourceItemId);
+  const machineSelectionOrder = useRef<string[]>([]);
+  const selectedMachineMap = new Map(selectedMachines.map(node => [node.id, node]));
+  const retainedOrder = machineSelectionOrder.current.filter(id => selectedMachineMap.has(id));
+  const retainedIds = new Set(retainedOrder);
+  const selectionOrder = [...retainedOrder, ...selectedMachines.filter(node => !retainedIds.has(node.id)).map(node => node.id)];
+  useLayoutEffect(() => { machineSelectionOrder.current = selectionOrder; });
+  const ratioMachines = selectionOrder.length >= 2 ? selectionOrder.map(id => selectedMachineMap.get(id)!) : null;
+  const selectedNetworkIds = new Set(selectedRecipeNodes.map(node => node.id));
+  const selectedNetworkFlows = selectionMenu?.onSelection ? networkFlows.filter(flow => !flow.reference && selectedNetworkIds.has(flow.source) && selectedNetworkIds.has(flow.target)) : [];
+  const selectedInfoNetworkFlows = selectionMenu?.onSelection ? networkFlows.filter(flow => selectedNetworkIds.has(flow.source) && selectedNetworkIds.has(flow.target)) : [];
+  const selectedInfoNetworkCounts = selectedInfoNetworkFlows.some(flow => flow.reference) ? networkMachineCounts(selectedInfoNetworkFlows) : null;
+  const selectedNetworkCounts = selectedNetworkFlows.length ? networkMachineCounts(selectedNetworkFlows) : null;
   const canResetAmount = selectedRecipeNodes.some((node) => node.data.machines !== 1);
   const canResetTier = selectedRecipeNodes.some((node) =>
     selectedMachine(node.data.recipe, node.data.machineId)?.id !== machineOptions(node.data.recipe).defaultMachine?.id,
   );
   return (
     <EditorContext.Provider value={context}>
-      {catalogDragPreview && createPortal(
-        <div className="catalog-drag-preview" aria-hidden="true" style={{ left: catalogDragPreview.x, top: catalogDragPreview.y, transform: `scale(${catalogDragPreview.zoom})` }}>
-          <div className="machine-card">
-            <div className="recipe-view item-source-card">
-              <div className="recipe-title">Item source</div>
-              <div className="item-source-content">
-                <ItemSlot item={catalogDragPreview.item} />
-                <span>{catalogDragPreview.item.name}</span>
-              </div>
-            </div>
-          </div>
-        </div>, window.document.body,
-      )}
+      {diagramLoading && <div className="modal-backdrop diagram-loading-backdrop">
+        <section className="dialog diagram-loading-dialog" role="dialog" aria-modal="true" aria-labelledby="diagram-loading-title" aria-busy="true">
+          <h2 id="diagram-loading-title">Loading diagram</h2>
+          <p role="status">{diagramLoadStage}</p>
+          <div className="diagram-loading-bar" role="progressbar" aria-label="Loading diagram" aria-valuemin={0} aria-valuemax={100} aria-valuenow={diagramLoadPercent}><span style={{ width: `${diagramLoadPercent}%` }} /></div>
+          <strong className="diagram-loading-percent">{diagramLoadPercent}%</strong>
+        </section>
+      </div>}
+      <dialog ref={leaveDialog} className="dialog unsaved-changes-dialog" aria-labelledby="unsaved-changes-title" onCancel={(event) => {
+        event.preventDefault();
+        if (!saving) setPendingLeave(null);
+      }}>
+        <h2 id="unsaved-changes-title">Save changes before {pendingLeave === "reload" ? "reloading" : "leaving"}?</h2>
+        <p>Your diagram has unsaved changes.</p>
+        {leaveError && <p className="error" role="alert">{leaveError}</p>}
+        <div className="dialog-actions">
+          <button type="button" disabled={saving} onClick={() => setPendingLeave(null)}>Cancel</button>
+          <button type="button" disabled={saving} onClick={finishLeave}>Discard changes</button>
+          <button type="button" className="primary" disabled={saving} onClick={async () => {
+            if (await save()) finishLeave();
+            else setLeaveError("Changes could not be saved. Please try again; your diagram is still open.");
+          }}><Save size={16} />{saving ? "Saving…" : "Save changes"}</button>
+        </div>
+      </dialog>
       <main
         className="workspace"
+        data-diagram-load-ms={loadMetrics?.ms}
+        data-catalog-persistent-hits={loadMetrics?.persistentHits}
+        data-catalog-network-batches={loadMetrics?.networkBatches}
         style={{ "--gui-scale": settings.guiScale } as CSSProperties}
         onPointerDownCapture={(event) => {
           if (event.button === 2)
@@ -1309,7 +1541,7 @@ function Editor({ project }: { project: Project }) {
           if (
             !(event.target instanceof Element) ||
             event.target.closest(
-              "input,textarea,select,.react-flow__handle,button,.summary-flow-item",
+              "input,textarea,select,.react-flow__handle,button,.summary-area",
             )
           )
             return;
@@ -1395,8 +1627,14 @@ function Editor({ project }: { project: Project }) {
             >
               <ClipboardPaste size={16} aria-hidden="true" /> Paste
             </button>
-            {selectionMenu.onSelection && selectedRecipeNodes.length > 0 && <>
+            {!scaleView && selectionMenu.onSelection && selectedRecipeNodes.length > 0 && <>
               <div role="separator" className="diagram-menu-divider" />
+              {selectedNetworkFlows.length > 0 && <NetworkRatioControls base={selectedNetworkCounts} current={Object.fromEntries(selectedRecipeNodes.map(node => [node.id, node.data.machines]))} apply={applyNetworkCounts} />}
+              {selectedInfoNetworkFlows.some(flow => flow.reference) && <>
+                <div role="separator" className="diagram-menu-divider" />
+                <div className="info-ratio-heading">Including info lines<span className="info-line-sample" aria-hidden="true" /></div>
+                <NetworkRatioControls includeInfo base={selectedInfoNetworkCounts} current={Object.fromEntries(selectedRecipeNodes.map(node => [node.id, node.data.machines]))} apply={applyNetworkCounts} />
+              </>}
               <button role="menuitem" type="button" disabled={!canResetAmount} onClick={() => {
                 setNodes((values) => values.map((node) => node.selected && node.type === "recipe" && node.data.machines !== 1
                   ? { ...node, data: { ...node.data, machines: 1 } } : node));
@@ -1431,11 +1669,10 @@ function Editor({ project }: { project: Project }) {
               href="/games/gtnh"
               className="back"
               onClick={(e) => {
-                if (
-                  dirty &&
-                  !window.confirm("Leave without saving this diagram?")
-                )
+                if (dirty) {
                   e.preventDefault();
+                  setPendingLeave("projects");
+                }
               }}
             >
               <ArrowLeft size={14} /> Projects
@@ -1454,6 +1691,11 @@ function Editor({ project }: { project: Project }) {
               </div>
             </div>
             <DiagramTree projectId={project.id} diagrams={diagrams} active={active} disabled={saving}
+              onExport={async (format, entries, progress) => {
+                const { exportProjectZip } = await import("@/lib/project-export");
+                await exportProjectZip({ name: project.name, diagrams, entries, format, progress,
+                  current: ready ? { id: active, document: document(), recipes: nodes.filter(n => n.type === "recipe").map(n => n.data.recipe) } : undefined });
+              }}
               onCreate={() => { setDiagramName(""); setDialog("create"); }}
               onRename={diagram => setDiagrams(ds => ds.map(d => d.id === diagram.id ? { ...d, name: diagram.name } : d))}
               onOpen={async id => { if (id === active) return; if (dirty && !(await save())) return; await load(id); }} />
@@ -1538,7 +1780,7 @@ function Editor({ project }: { project: Project }) {
                   event.preventDefault();
                   event.stopPropagation();
                   draggedCatalogItem.current = null;
-                  setCatalogDragPreview(null);
+
                   addCard(itemSourceRecipe(item), {}, false, flow.current.screenToFlowPosition({ x: event.clientX, y: event.clientY }));
                 }}
                 nodes={renderedNodes}
@@ -1560,6 +1802,7 @@ function Editor({ project }: { project: Project }) {
                 panOnDrag={[1]}
                 selectionKeyCode={null}
                 selectionOnDrag={false}
+                selectNodesOnDrag
                 snapGrid={[GRID_SIZE, GRID_SIZE]}
                 onInit={(instance) => {
                   flow.current = instance;
@@ -1675,9 +1918,6 @@ function Editor({ project }: { project: Project }) {
                 }}
                 isValidConnection={valid}
                 connectionMode={ConnectionMode.Loose}
-                onMoveEnd={(event) => {
-                  if (ready && event) markDirty();
-                }}
                 minZoom={0.05}
                 maxZoom={3}
                 deleteKeyCode={
@@ -1760,12 +2000,17 @@ function Editor({ project }: { project: Project }) {
                 </div>
               )}
             </CanvasSelection>
-            <footer className="canvas-footer">
-              <span>
-                Wheel-drag to pan · Drag to select · Shift+drag to deselect ·
-                Scroll to zoom
-              </span>
-              <span>20 ticks / second · Producer : consumer</span>
+            <footer className={`canvas-footer${ratioMachines ? " has-machine-ratio" : ""}`}>
+              <div className="diagram-view-options" role="group" aria-label="Diagram view">
+                <button type="button" aria-pressed={!scaleView} onClick={() => setScaleView(false)}>Normal view</button>
+                <button type="button" aria-pressed={scaleView} onClick={() => setScaleView(true)}>Scale view</button>
+              </div>
+              {ratioMachines && <div className="selected-machine-ratio" role="status" aria-label="Selected machine amount ratio" title="Current machine counts, in selection order">
+                <span className="selected-ratio-names">{ratioMachines.map(node => node.data.recipe.handler).join(" : ")}</span>
+                <strong>{machineAmountRatio(...ratioMachines.map(node => node.data.machines))}</strong>
+              </div>}
+              {!!scaleResult?.failed.size && <span role="status" className="scale-view-error">Cannot balance this network with the fixed amounts and tiers. Adjust or clear a fixed amount.</span>}
+              {!!scaleResult?.proportional.size && <span className="scale-view-note">Scaled existing proportions where no exact balance is available.</span>}
             </footer>
           </section>
           <ResizableSidebar side="right" defaultWidth={318}>{(collapse) => <Inventory
@@ -1774,15 +2019,48 @@ function Editor({ project }: { project: Project }) {
               <>
                 {renderedNodes.filter((node) => node.type === "summary").map((node, index) => {
                   const summary = "summary" in node.data ? node.data.summary : undefined;
-                  return (
-                    <button key={node.id} className="sidebar-area-summary" onClick={() => {
-                      setNodes((values) => values.map((value) => ({ ...value, selected: value.id === node.id })));
-                      void flow.current?.fitView({ nodes: [{ id: node.id }], padding: 0.2, duration: 300 });
-                    }}>
-                      <strong>{node.data.title?.trim() || `Grouping ${index + 1}`}</strong>
-                      {summary && <><span>{summary.recipeCount} recipes · {summary.machineCount.toLocaleString()} machines</span><span>{summary.euPerTick.toLocaleString()} EU/t</span></>}
-                    </button>
-                  );
+                  const members = nodes.filter(value => recipeInsideGroup(value, node) && !value.data.recipe.sourceItemId);
+                  const entry = (value: RecipeNode, scaled = false) => {
+                    const machine = selectedMachine(value.data.recipe, scaled ? value.data.scaleMachineId ?? value.data.machineId : value.data.machineId);
+                    const amount = scaled && !scaleView ? value.data.scaleAmount : value.data.machines;
+                    return { id: value.id, name: value.data.recipe.name || value.data.recipe.handler, image: machine?.image,
+                      detail: [amount == null ? "Automatic amount" : amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) + " ×", machine?.name.replace(/§./g, "")].filter(Boolean).join(" ") };
+                  };
+                  return <SidebarGroupSummary key={node.id} connections={renderedEdges}
+                    onRename={title => {
+                      setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, title } } : value));
+                      markDirty();
+                    }}
+                    title={node.data.title?.trim() || "Grouping " + (index + 1)}
+                    summary={summary}
+                    setItemDisabled={"setItemDisabled" in node.data ? node.data.setItemDisabled : undefined}
+                    itemPortState={"itemPortState" in node.data ? node.data.itemPortState : undefined}
+                    scaledSummary={sidebarScaled ? scaledSummaryCache.current.get(node.id, {
+                      position: node.position, width: node.width ?? 640, height: node.height ?? 480,
+                    }, sidebarScaledBounds, !!(node.dragging || node.resizing)) : undefined}
+                    scaledMachineRows={sidebarScaledBounds.filter(value =>
+                      value.position.x >= node.position.x && value.position.y >= node.position.y &&
+                      value.position.x + value.width <= node.position.x + (node.width ?? 640) &&
+                      value.position.y + value.height <= node.position.y + (node.height ?? 480)
+                    ).map(value => {
+                      const machine = selectedMachine(value.recipe, value.machineId);
+                      return { id: value.id, name: value.recipe.name || value.recipe.handler, image: machine?.image,
+                        amount: value.machines, detail: (machine?.name ?? value.recipe.handler).replace(/§./g, "") };
+                    })}
+                    onRequestScaled={() => setSidebarScaleRequested(true)}
+                    calculators={node.data.calculators ?? []}
+                    onCalculatorsChange={calculators => {
+                      setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, calculators } } : value));
+                      markDirty();
+                    }}
+                    scaledRecipes={members.filter(value => (value.data.scaleAmount ?? 0) > 0 ||
+                      (!!value.data.scaleMachineId && value.data.scaleMachineId !== machineOptions(value.data.recipe).defaultMachine?.id) ||
+                      (!!scaleResult?.scaled.has(value.id))).map(value => entry(value, true))}
+                    onLocate={(recipeId) => {
+                      const target = recipeId ?? node.id;
+                      setNodes(values => values.map(value => ({ ...value, selected: value.id === target })));
+                      void flow.current?.fitView({ nodes: [{ id: target }], padding: 0.2, duration: 300 });
+                    }} />;
                 })}
                 {!renderedNodes.some((node) => node.type === "summary") && <p>No groupings in this diagram yet.</p>}
               </>
@@ -1794,12 +2072,9 @@ function Editor({ project }: { project: Project }) {
               draggedCatalogItem.current = item;
               event.dataTransfer.effectAllowed = "copy";
               event.dataTransfer.setData("application/x-resource-planner-item", item.id);
-              // Render our own card preview instead of the browser's item-image ghost.
-              const emptyDragImage = window.document.createElement("canvas");
-              emptyDragImage.width = emptyDragImage.height = 1;
-              event.dataTransfer.setDragImage(emptyDragImage, 0, 0);
+              catalogDragImage(item, flow.current?.getZoom() ?? 1, event.dataTransfer);
             } : undefined}
-            onItemDragEnd={() => { draggedCatalogItem.current = null; setCatalogDragPreview(null); }}
+            onItemDragEnd={() => { draggedCatalogItem.current = null;  }}
           />}</ResizableSidebar>
         </div>
         {autoPlanner && <AutoRecipePlanner onClose={() => setAutoPlanner(false)} onAdd={addPlannedGraph} />}

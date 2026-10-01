@@ -8,6 +8,7 @@ import {
   itemSourceRecipe,
 } from "@/lib/model";
 import { locked, readDiagram, writeDiagram } from "@/lib/storage";
+import { catalogRevision } from "@/lib/catalog-revision";
 type Context = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: Context) {
   if (!isGtnhInstalled())
@@ -18,7 +19,7 @@ export async function GET(_request: Request, context: Context) {
   const { id } = await context.params;
   if (!(await db.diagram.findUnique({ where: { id } })))
     return Response.json({ error: "Diagram not found" }, { status: 404 });
-  return Response.json(await readDiagram(id));
+  return Response.json({ ...await readDiagram(id), catalogRevision: catalogRevision() }, { headers: { "Cache-Control": "no-store" } });
 }
 export async function PUT(request: Request, context: Context) {
   if (!isGtnhInstalled())

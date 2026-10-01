@@ -33,23 +33,25 @@ export function useGraphHistory<N extends Node, E extends Edge>() {
     };
   }, []);
   const setNodes = useCallback(
-    (value: SetStateAction<N[]>) =>
-      dispatch({ type: "nodes", value, group: group.current }),
+    (value: SetStateAction<N[]>) => {
+      dispatch({ type: "nodes", value, group: group.current });
+    },
     [],
   );
   const setEdges = useCallback(
-    (value: SetStateAction<E[]>) =>
-      dispatch({ type: "edges", value, group: group.current }),
+    (value: SetStateAction<E[]>) => {
+      dispatch({ type: "edges", value, group: group.current });
+    },
     [],
   );
-  const undo = useCallback(() => dispatch({ type: "undo" }), []);
+  const undo = useCallback(() => { dispatch({ type: "undo" }); }, []);
   const changeNodes = useCallback(
     (changes: NodeChange<N>[]) =>
       dispatch({ type: "nodeChanges", changes, group: group.current }),
     [],
   );
-  const redo = useCallback(() => dispatch({ type: "redo" }), []);
-  const resetHistory = useCallback(() => dispatch({ type: "reset" }), []);
+  const redo = useCallback(() => { dispatch({ type: "redo" }); }, []);
+  const resetHistory = useCallback(() => { dispatch({ type: "reset" }); }, []);
   return {
     ...state.present,
     setNodes,

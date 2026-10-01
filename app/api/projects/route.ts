@@ -34,11 +34,20 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const project = await db.project.create({
-    data: { ...result.data, diagrams: { create: { name: "Main production" } } },
+    data: { ...result.data, diagrams: { create: { name: "My Production" } } },
     include: { diagrams: true },
   });
   try {
     await writeDiagram(project.diagrams[0].id, blankDiagram());
+    await db.setting.create({
+      data: {
+        key: "diagram-tree:" + project.id,
+        value: JSON.stringify({ revision: 0, entries: [
+          { id: crypto.randomUUID(), kind: "folder", name: "My Recepies", parentId: null, collapsed: false },
+          { id: project.diagrams[0].id, kind: "diagram", parentId: null },
+        ] }),
+      },
+    });
   } catch (error) {
     await db.project.delete({ where: { id: project.id } });
     throw error;

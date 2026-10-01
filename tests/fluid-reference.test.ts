@@ -80,3 +80,18 @@ test("saved references preserve variants, survive copy, and do not cancel area r
   assert.throws(() => resolveDiagramVariants({ ...document, edges: document.edges.map((edge) => ({ ...edge, reference: false })) }, [producer, consumer]));
   assert.throws(() => resolveDiagramVariants(document, [producer, { ...consumer, ingredients: [ingredient({ ...cell, containedFluidIds: [] }, "input")] }]));
 });
+
+
+test("whole-network ratios include container conversions and info-only branches", async () => {
+  const { connectedMachines, networkMachineCounts } = await import("../lib/network-ratio");
+  const recipe = { ...summaryRecipe, durationTicks: 20 };
+  const converted = fluidReferenceInputRates({ ...ingredient(fluid, "output"), amount: 2000 }, recipe, { ...ingredient(cell, "input"), amount: 3 }, recipe)!;
+  const edges = [{ source: "a", target: "b", data: { reference: true } }, { source: "b", target: "c" }, { source: "unrelated", target: "other" }];
+  const ids = connectedMachines("b", edges, true);
+  assert.deepEqual([...ids].sort(), ["a", "b", "c"]);
+  assert.deepEqual([...connectedMachines("b", edges)].sort(), ["b", "c"]);
+  const base = networkMachineCounts([{ source: "a", target: "b", input: "0", ...converted }, { source: "b", target: "c", input: "0", supply: 4, demand: 5 }])!;
+  assert.deepEqual(base, { a: 15, b: 10, c: 8 });
+  assert.deepEqual(stepMachineRatio(base, base, -1), { a: 1, b: 1, c: 1 });
+  assert.deepEqual(stepMachineRatio(base, base, 1), { a: 30, b: 20, c: 16 });
+});

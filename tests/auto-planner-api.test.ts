@@ -204,3 +204,55 @@ test("planner finds a multistep cobblestone-to-glass route", async () => {
     }),
   );
 });
+
+
+test("benzene initial target searches include fluid and cell recipes in both directions", async () => {
+  const fluid = "fluid:benzene", cell = "gregtech:gt.metaitem.01:30686";
+  assert.equal((await fluidLookupAmounts(fluid))[cell], 0.001);
+  assert.equal((await fluidLookupAmounts(cell))[fluid], 1000);
+  for (const targetId of [fluid, cell]) {
+    const response = await POST(request({ ...options, inputId: undefined, targetId, maxTier: 14, allowMultiblocks: true, maxSuggestions: 100 }));
+    assert.equal(response.status, 200);
+    const result: PlannerResult = await response.json();
+    const outputs = new Set(result.plans.map(plan => {
+      const step = plan.steps.at(-1)!;
+      return step.recipe.ingredients.find(i => i.direction === "output" && i.slot === step.outputSlot)?.itemId;
+    }));
+    assert(outputs.has(fluid)); assert(outputs.has(cell));
+  }
+});
+
+
+test("oil-to-diesel prefers producing both heavy and light fuel from oil", async () => {
+  for (const priority of ["eu", "yield"]) {
+    const response = await POST(request({ ...options, priority,
+      inputId: "gregtech:gt.metaitem.01:30707", targetId: "gregtech:gt.metaitem.01:30708",
+      maxTier: 2, maxSteps: 10, maxSuggestions: 1,
+    }));
+    assert.equal(response.status, 200);
+    const result: PlannerResult = await response.json();
+    assert(result.plans.length > 0);
+    const plan = result.plans[0];
+    const outputs = new Set(plan.steps.flatMap(step => step.recipe.ingredients.filter(i => i.direction === "output").map(i => i.itemId)));
+    assert(outputs.has("fluid:liquid_light_fuel"));
+    assert(outputs.has("fluid:liquid_heavy_fuel"));
+    assert(plan.steps.some(step => step.recipe.handler === "Electrolyzer"));
+    assert(!plan.supplies.some(supply => supply.item.name === "Hydrogen Cell"));
+    assert(plan.supplies.every(supply => !/fuel/i.test(supply.item.name)));
+    const mixer = plan.steps.findIndex(step => step.recipe.handler === "Mixer");
+    assert(mixer >= 0);
+    assert.equal(plan.links.filter(link => link.target === mixer).length, 2);
+    for (const link of plan.links) {
+      const output = plan.steps[link.source].recipe.ingredients.find(i => i.direction === "output" && i.slot === link.sourceSlot);
+      const input = plan.steps[link.target].recipe.ingredients.find(i => i.direction === "input" && i.slot === link.targetSlot);
+      assert.equal(output?.itemId, input?.itemId);
+      const sources = plan.links.filter(other => other.target === link.target && other.targetSlot === link.targetSlot);
+      const available = sources.reduce((sum, other) => {
+        const step = plan.steps[other.source];
+        const output = step.recipe.ingredients.find(i => i.direction === "output" && i.slot === other.sourceSlot)!;
+        return sum + output.amount * output.chance * step.cycles;
+      }, 0);
+      assert(available + 1e-9 >= input!.amount * plan.steps[link.target].cycles);
+    }
+  }
+});

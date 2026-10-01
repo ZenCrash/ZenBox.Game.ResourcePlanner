@@ -52,6 +52,12 @@ export function connectionRoute(
   if (waypoints) {
     points[1].y = source.y;
     points[points.length - 2].y = target.y;
+    // Straight auto-routes retain two distinct horizontal endpoint waypoints.
+    // Once a card moves vertically, join those legs with orthogonal bends.
+    if (points.length === 4 && points[1].x !== points[2].x && source.y !== target.y) {
+      const y = (source.y + target.y) / 2;
+      points.splice(2, 0, { x: points[1].x, y }, { x: points[2].x, y });
+    }
   }
   return {
     middle,

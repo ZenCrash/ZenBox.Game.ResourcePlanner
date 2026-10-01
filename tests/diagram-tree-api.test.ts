@@ -18,6 +18,10 @@ test("diagram rename and tree hierarchy persist, reject invalid moves and detect
     assert.equal(created.status, 201);
     const project = await created.json();
     id = project.id;
+    assert.equal(project.diagrams[0].name, "My Production");
+    const initialTree = await (await fetch(base + "/api/projects/" + id + "/tree")).json();
+    assert.equal(initialTree.entries.find((entry: { kind: string }) => entry.kind === "folder")?.name, "My Recepies");
+    assert.ok(initialTree.entries.some((entry: { id: string; kind: string }) => entry.kind === "diagram" && entry.id === project.diagrams[0].id));
     const first = project.diagrams[0].id;
     const diagramUrl = "/api/diagrams/" + first;
     const before = await (await fetch(base + diagramUrl)).json();

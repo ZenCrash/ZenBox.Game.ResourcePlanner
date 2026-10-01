@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { convertSummaryRate } from "../lib/summary-rate";
+import { convertSummaryRate, moveSummaryCalculation, type SummaryCalculation } from "../lib/summary-rate";
 import assert from "node:assert/strict";
 import {
   summarizeArea,
@@ -275,4 +275,33 @@ test("label background colors persist and invalid colors are rejected", () => {
   const label = { id: "f027ac35-2fa9-4b54-9044-4ff5bec99875", position: { x: 0, y: 0 }, text: "Label", fontSize: 30, textColor: "#123456", backgroundColor: "#abcdef" };
   assert.deepEqual(diagramSchema.parse({ ...blankDiagram(), labels: [label] }).labels, [label]);
   assert.equal(diagramSchema.safeParse({ ...blankDiagram(), labels: [{ ...label, textColor: "invalid" }] }).success, false);
+});
+
+
+test("grouping uses actual consumption, output and running power without changing installed counts", () => {
+  const producer = card(recipe("producer", [ingredient("ore", "input", 2), ingredient("dust", "output", 2)]));
+  const consumer = { ...card(recipe("consumer", [ingredient("dust", "input", 8), ingredient("ingot", "output", 4)])), utilization: 0.25 };
+  const summary = summarizeArea(area, [producer, consumer]);
+  assert.deepEqual(summary.inputs.map(flow => [flow.item.id, flow.rate]), [["ore", 2]]);
+  assert.deepEqual(summary.outputs.map(flow => [flow.item.id, flow.rate]), [["ingot", 1]]);
+  assert.equal(summary.euPerTick, 37.5);
+  assert.equal(summary.machineCount, 2);
+  assert.equal(summary.totalEu, 1200); // Energy per full cycle remains unchanged.
+  const stopped = summarizeArea(area, [{ ...consumer, utilization: 0 }]);
+  assert.deepEqual(stopped.inputs, []);
+  assert.deepEqual(stopped.outputs, []);
+  assert.equal(stopped.euPerTick, 0);
+  assert.equal(stopped.machineCount, 1);
+});
+
+test("ratio calculator reordering moves before/after targets and preserves values", () => {
+  const rows: SummaryCalculation[] = ["a", "b", "c"].map(id => ({ id, inputId: "ore", outputId: "dust", side: "input", value: "12" }));
+  const down = moveSummaryCalculation(rows, "a", "c", "after");
+  assert.deepEqual(down.map(row => row.id), ["b", "c", "a"]);
+  assert.equal(down[2], rows[0]);
+  assert.deepEqual(moveSummaryCalculation(rows, "c", "a", "before").map(row => row.id), ["c", "a", "b"]);
+  assert.equal(moveSummaryCalculation(rows, "a", "b", "before"), rows);
+  assert.equal(moveSummaryCalculation(rows, "a", "a", "after"), rows);
+  assert.equal(moveSummaryCalculation(rows, "missing", "b", "before"), rows);
+  assert.deepEqual(rows.map(row => row.id), ["a", "b", "c"]);
 });

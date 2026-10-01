@@ -14,33 +14,28 @@ export type HistoryAction<N extends Node, E extends Edge> =
   | { type: "edges"; value: E[] | ((edges: E[]) => E[]); group: number }
   | { type: "undo" | "redo" | "reset" };
 
-function content<N extends Node, E extends Edge>(graph: Graph<N, E>) {
-  return JSON.stringify({
-    nodes: graph.nodes.map(({ id, position, data, type, width, height }) => ({
-      id,
-      position,
-      data,
-      ...(type === "summary" ? { width, height } : {}),
-    })),
-    edges: graph.edges.map(
-      ({ id, source, target, sourceHandle, targetHandle, data }) => ({
-        id,
-        source,
-        target,
-        sourceHandle,
-        targetHandle,
-        data: {
-          bend: data?.bend,
-          targetBendX: data?.targetBendX,
-          waypoints: data?.waypoints,
-          labelPosition: data?.labelPosition,
-          imagePosition: data?.imagePosition,
-        },
-      }),
-    ),
-  });
+// Graph updates are immutable. Compare the editable fields without serializing
+// the entire catalog payload on every pointer movement.
+function sameData(a: Record<string, unknown> | undefined, b: Record<string, unknown> | undefined) {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every(key => Object.is(a[key], b[key]));
 }
-
+function sameContent<N extends Node, E extends Edge>(a: Graph<N, E>, b: Graph<N, E>) {
+  return a.nodes.length === b.nodes.length && a.edges.length === b.edges.length &&
+    a.nodes.every((node, i) => {
+      const old = b.nodes[i];
+      return node === old || (node.id === old.id && node.type === old.type &&
+        node.position.x === old.position.x && node.position.y === old.position.y &&
+        (node.type !== "summary" || (node.width === old.width && node.height === old.height)) &&
+        sameData(node.data, old.data));
+    }) && a.edges.every((edge, i) => {
+      const old = b.edges[i];
+      return edge === old || (edge.id === old.id && edge.source === old.source && edge.target === old.target &&
+        edge.sourceHandle === old.sourceHandle && edge.targetHandle === old.targetHandle && sameData(edge.data, old.data));
+    });
+}
 export function graphHistoryReducer<N extends Node, E extends Edge>(
   state: GraphHistory<N, E>,
   action: HistoryAction<N, E>,
@@ -93,7 +88,7 @@ export function graphHistoryReducer<N extends Node, E extends Edge>(
                 ? action.value(state.present.edges)
                 : action.value,
           };
-  if (content(present) === content(state.present)) return { ...state, present };
+  if (sameContent(present, state.present)) return { ...state, present };
   return {
     present,
     past:

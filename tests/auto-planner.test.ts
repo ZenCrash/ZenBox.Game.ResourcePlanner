@@ -402,3 +402,100 @@ test("exact target suggestions keep cell and fluid outputs separate in both dire
     assert.equal(step.recipe.ingredients.find(i => i.direction === "output" && i.slot === step.outputSlot)?.itemId, targetId);
   }
 });
+
+
+test("all target forms are checked before following a promising deep route", async () => {
+  const visited: string[] = [];
+  const candidates = [recipe("fluid-route", ["intermediate"], "fuel"), recipe("cell-route", ["raw"], "fuel-cell")];
+  await findAutoPlans({ ...options, targetId: "fuel", targetAmounts: { fuel: 1, "fuel-cell": 0.001 }, nearInputIds: ["intermediate"] }, async id => {
+    visited.push(id);
+    return lookup(candidates)(id);
+  }, () => visited.length >= 2);
+  assert.deepEqual(visited.slice(0, 2), ["fuel", "fuel-cell"]);
+});
+
+test("initial searches match both source and target forms in either direction", async () => {
+  const recipes = [recipe("cell-input", ["raw-cell"], "fuel"), recipe("fluid-input", ["raw-fluid"], "fuel-cell")];
+  for (const inputId of ["raw-fluid", "raw-cell"]) for (const targetId of ["fuel", "fuel-cell"]) {
+    const result = await findAutoPlans({ ...options, inputId, targetId,
+      inputFactors: inputId === "raw-cell" ? { "raw-cell": 1, "raw-fluid": 0.001 } : { "raw-fluid": 1, "raw-cell": 1000 },
+      targetAmounts: targetId === "fuel-cell" ? { "fuel-cell": 1, fuel: 1000 } : { fuel: 1, "fuel-cell": 0.001 },
+    }, lookup(recipes));
+    assert.deepEqual(new Set(result.plans.map(plan => plan.steps[0].recipe.id)), new Set(["cell-input", "fluid-input"]));
+  }
+});
+
+
+test("making both fuel ingredients outranks buying one even when filling introduces empty cells", async () => {
+  const heavy = recipe("heavy", ["raw", "hydrogen"], "heavy-fuel");
+  const light = recipe("light", ["raw", "hydrogen"], "light-fuel");
+  const fill = recipe("fill-light", ["light-fuel", "empty-cell"], "light-cell");
+  fill.handler = "Fluid Canner";
+  fill.ingredients[0].item.kind = "fluid";
+  const mixer = recipe("diesel", ["heavy-fuel", "light-cell"], "target");
+  for (const priority of ["eu", "yield"] as const) {
+    const result = await findAutoPlans({ ...options, priority, maxSuggestions: 1, packagingItemIds: ["empty-cell"] }, lookup([heavy, light, fill, mixer]));
+    const plan = result.plans[0];
+    assert.deepEqual(new Set(plan.steps.map(step => step.recipe.id)), new Set(["heavy", "light", "fill-light", "diesel"]));
+    assert.deepEqual(new Set(plan.supplies.map(supply => supply.item.id)), new Set(["hydrogen", "empty-cell"]));
+    const mixerIndex = plan.steps.findIndex(step => step.recipe.id === "diesel");
+    assert.equal(plan.links.filter(link => link.target === mixerIndex).length, 2);
+    assert.equal(plan.inputAmount, 2);
+    assert.equal(plan.totalEu, 80);
+  }
+});
+
+
+test("byproduct recovery closes a hydrogen loop only when every recovery input is supplied", async () => {
+  const process = recipe("process", ["raw", "hydrogen"], "target");
+  process.ingredients.push(ingredient("sulfide", "output", 1, 1), ingredient("empty-cell", "output", 1, 2));
+  const recovery = recipe("electrolyzer", ["sulfide", "empty-cell"], "hydrogen", 2);
+  for (const outputAmount of [0.5, 1, 2]) {
+    recovery.ingredients.at(-1)!.amount = outputAmount;
+    const result = await findAutoPlans({ ...options, packagingItemIds: ["empty-cell"] }, lookup([process, recovery]));
+    const plan = result.plans[0];
+    if (outputAmount < 1) {
+      assert(plan.supplies.some(s => s.item.id === "hydrogen"));
+      assert.equal(plan.steps.length, 1);
+    } else {
+      assert.equal(plan.supplies.length, 0);
+      assert.equal(plan.steps.length, 2);
+      assert.equal(plan.links.length, 3);
+      assert.equal(plan.steps[1].cycles, 1 / outputAmount);
+      assert.equal(plan.totalEu, 20 + 40 / outputAmount);
+      assert.equal(plan.inputAmount, 1);
+    }
+  }
+  recovery.ingredients.at(-1)!.amount = 1;
+  for (const overrides of [{ maxSteps: 1 }, { excludedRecipes: ["electrolyzer"] }, { maxTier: 0 }]) {
+    const blockedRecovery = { ...recovery, euPerTick: 120 };
+    const result = await findAutoPlans({ ...options, ...overrides }, lookup([process, blockedRecovery]));
+    assert(result.plans[0].supplies.some(s => s.item.id === "hydrogen"));
+  }
+});
+
+test("recovery does not turn an empty container into missing fuel through an incomplete bottler export", async () => {
+  const process = recipe("process", ["raw", "fuel-cell"], "target");
+  process.ingredients.push(ingredient("empty-cell", "output", 1, 1));
+  const bottler = { ...recipe("bottler", ["empty-cell"], "fuel-cell"), handler: "Bottler" };
+  const result = await findAutoPlans(options, lookup([process, bottler]));
+  assert(result.plans.every(p => p.supplies.some(s => s.item.id === "fuel-cell")));
+});
+
+test("recovery cannot spend byproducts already used by another input", async () => {
+  const process = recipe("process", ["raw"], "middle");
+  process.ingredients.push(ingredient("byproduct", "output", 1, 1));
+  const consumer = recipe("consumer", ["middle", "byproduct", "extra"], "target");
+  const recovery = recipe("recovery", ["byproduct"], "extra");
+  const result = await findAutoPlans(options, lookup([process, consumer, recovery]));
+  assert(result.plans[0].supplies.some(s => s.item.id === "extra"));
+});
+
+test("preview placement supports recycling feedback without recursion loops", async () => {
+  const { plannerColumns } = await import("../lib/planner-columns");
+  const links = [{ source: 0, target: 1 }, { source: 1, target: 2 }, { source: 2, target: 1 }, { source: 1, target: 3 }];
+  const columns = plannerColumns(4, links);
+  assert.equal(columns.size, 4);
+  assert([...columns.values()].every(n => Number.isFinite(n) && n >= 0));
+  assert.equal(links.length, 4);
+});

@@ -28,7 +28,10 @@ test("project creation, persisted diagrams, revision conflicts, validation and d
     assert.equal(project.version, "2.8.4");
     const url = `/api/diagrams/${project.diagrams[0].id}`;
     const initial = await (await fetch(base + url)).json();
-    assert.deepEqual(initial, blankDiagram());
+    const { catalogRevision, ...document } = initial;
+    assert.match(catalogRevision, /^[a-f0-9]{64}$/);
+    assert.deepEqual(document, blankDiagram());
+    assert.equal((await (await fetch(base + url)).json()).catalogRevision, catalogRevision);
     const save = await send(url, "PUT", initial);
     assert.equal(save.status, 200);
     assert.equal((await save.json()).revision, 1);

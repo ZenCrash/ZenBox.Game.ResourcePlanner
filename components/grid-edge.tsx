@@ -4,19 +4,22 @@ import {
   EdgeLabelRenderer,
   useReactFlow,
   useStore,
+  useStoreApi,
   type Edge,
   type EdgeProps,
 } from "@xyflow/react";
-import { useEffect, useLayoutEffect, useId, useRef, useState, type PointerEvent, type MouseEvent } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useId, useRef, useState, type PointerEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { CornerDownRight, Minus, Plus, Factory, Eye, EyeOff } from "lucide-react";
 import { crossingPath } from "@/lib/line-crossings";
-import { hiddenOverviewItems, type OverviewItem } from "@/lib/overview-overlap";
-import { lineDirectionColor, lineDirectionMarkers } from "@/lib/line-direction";
+import { GraphGeometry } from "@/lib/graph-geometry";
+import { useStableValues } from "./use-stable-values";
+import { lineDirectionColor, animatedDirectionMarkers } from "@/lib/line-direction";
 import type { Item } from "@/lib/model";
 import { ItemTooltip } from "./item-tooltip";
 import { useDisplaySettings } from "./display-settings";
 import { AnimatedLineArrows } from "./animated-line-arrows";
+import { NetworkRatioControls } from "./network-ratio-controls";
 import {
   connectionRoute,
   routeMidpoint,
@@ -30,7 +33,15 @@ import {
   snapPoint,
   type Point,
 } from "@/lib/diagram-geometry";
+
+const graphScenes = new WeakMap<object, GraphGeometry>();
 export type DiagramEdge = Edge<{
+  readOnlyMachines?: boolean;
+  networkRatio?: () => Record<string, number> | null;
+  infoNetworkRatio?: () => Record<string, number> | null;
+  infoNetworkCurrent?: Record<string, number>;
+  networkCurrent?: Record<string, number>;
+  applyNetworkRatio?: (counts: Record<string, number>) => void;
   item?: Item;
   reference?: boolean;
   catchup?: { a: number | null; b: number | null } | null;
@@ -45,6 +56,10 @@ export type DiagramEdge = Edge<{
   baseInputRatio?: () => void;
   canPerfectRatio?: boolean;
   canBaseInputRatio?: boolean;
+  ratioAvailability?: () => {
+    canInfoBaseRatio: boolean; canInfoInputRatio: boolean; canStepConnectedRatio: boolean;
+    canPerfectRatio: boolean; canBaseInputRatio: boolean;
+  };
   hasOtherSuppliers?: boolean;
   bend?: Point;
   targetBendX?: number;
@@ -83,7 +98,7 @@ function OperationTooltip({ title, text, unavailable = false }: { title: string;
     </ItemTooltip>
   );
 }
-export function GridEdge({
+export const GridEdge = memo(function GridEdge({
   id,
   sourceX,
   sourceY,
@@ -95,7 +110,11 @@ export function GridEdge({
   selected,
 }: EdgeProps<DiagramEdge>) {
   const flow = useReactFlow();
+  const store = useStoreApi();
   const [menu, setMenu] = useState<{ x: number; y: number; point: Point; onLine: boolean } | null>(null);
+  const ratioAvailability = menu && data?.ratioAvailability ? data.ratioAvailability() : data;
+  const networkCounts = useMemo(() => menu && data?.networkRatio ? data.networkRatio() : null, [menu, data?.networkRatio]);
+  const infoNetworkCounts = useMemo(() => menu && data?.infoNetworkRatio ? data.infoNetworkRatio() : null, [menu, data?.infoNetworkRatio]);
   const menuRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const element = menuRef.current;
@@ -125,8 +144,14 @@ export function GridEdge({
   const { settings } = useDisplaySettings();
   const arrowScale = settings.lineThickness / 6;
   const overview = useStore((state) => state.transform[2] < settings.overviewZoom);
-  const edges = useStore((state) => state.edges);
-  const nodes = useStore((state) => state.nodes);
+  let scene = graphScenes.get(store);
+  if (!scene) { scene = new GraphGeometry(); graphScenes.set(store, scene); }
+  const geometry = scene;
+  useStore(state => {
+    geometry.update(state);
+    return geometry.dependencies(id, overview, settings.overviewLineItems, !settings.disableArrows);
+  }, (a, b) => a.length === b.length && a.every((value, index) => Object.is(value, b[index])));
+  const edges = store.getState().edges;
   const dragging = useRef<number | null>(null);
   const cornerStart = useRef<ReturnType<typeof connectionRoute> | null>(null);
   const segmentDrag = useRef<{
@@ -173,62 +198,24 @@ export function GridEdge({
     data?.targetBendX,
     data?.waypoints,
   );
-  const crossingRoutes: Point[][] = [];
-  const junctionRoutes: Point[][] = [];
-  const otherRoutes: { id: string; points: Point[] }[] = [];
+  scene.update(store.getState());
+  const nearby = useStableValues(scene.nearby(id, route.points), (a, b) => a.edge.id === b.edge.id && a.points === b.points &&
+    a.edge.selected === b.edge.selected && a.edge.data?.reference === b.edge.data?.reference);
   const midpoint = data?.imagePosition ?? routeMidpoint(route.points);
-  const overviewItems: OverviewItem[] = data?.item ? [{
-    id, itemId: data.item.id, position: midpoint, selected: !!selected,
-    order: edges.findIndex((edge) => edge.id === id),
-  }] : [];
-  const routes = edges.flatMap((edge, order) => {
-    if (edge.id === id) return [];
-    const source = flow.getInternalNode(edge.source),
-      target = flow.getInternalNode(edge.target);
-    const sourceHandle = source?.internals.handleBounds?.source?.find(
-      (handle) => handle.id === edge.sourceHandle,
-    );
-    const targetHandle = target?.internals.handleBounds?.target?.find(
-      (handle) => handle.id === edge.targetHandle,
-    );
-    if (!source || !target || !sourceHandle || !targetHandle) return [];
-    const edgeData = edge.data as DiagramEdge["data"];
-    const points = connectionRoute(
-      {
-        x:
-          source.internals.positionAbsolute.x +
-          sourceHandle.x +
-          sourceHandle.width / 2,
-        y:
-          source.internals.positionAbsolute.y +
-          sourceHandle.y +
-          sourceHandle.height / 2,
-      },
-      {
-        x: target.internals.positionAbsolute.x + targetHandle.x + targetHandle.width / 2,
-        y:
-          target.internals.positionAbsolute.y +
-          targetHandle.y +
-          targetHandle.height / 2,
-      },
-      edgeData?.bend,
-      edgeData?.targetBendX,
-      edgeData?.waypoints,
-    ).points;
-    if (!edge.selected) crossingRoutes.push(points);
-    if (!edge.selected && !edgeData?.reference) junctionRoutes.push(points);
-    otherRoutes.push({ id: edge.id, points });
-    if (!edge.hidden && edgeData?.item && (edgeData.showOverviewCard ?? settings.overviewLineItems)) overviewItems.push({
-      id: edge.id, itemId: edgeData.item.id,
-      position: edgeData.imagePosition ?? routeMidpoint(points),
-      selected: !!edge.selected, order,
-    });
-    return edgeData?.reference ? [] : [points];
-  });
-  const showOverviewItem = overview && (data?.showOverviewCard ?? settings.overviewLineItems) && !hiddenOverviewItems(overviewItems).has(id);
-  const crossing = !settings.crossingBridges || data?.reference || selected || edges.some((edge) => edge.selected)
+  const showOverviewItem = overview && (data?.showOverviewCard ?? settings.overviewLineItems) && !scene.hiddenItems(settings.overviewLineItems).has(id);
+  const anySelected = scene.selected;
+  const crossing = useMemo(() => !settings.crossingBridges || data?.reference || selected || anySelected
     ? { path: route.path, underpasses: [], junctions: [] }
-    : crossingPath(route.points, crossingRoutes, data?.reference ? [] : junctionRoutes);
+    : crossingPath(route.points, nearby.filter(other => !other.edge.selected).map(other => other.points),
+      nearby.filter(other => !other.edge.selected && !other.edge.data?.reference).map(other => other.points)),
+    [route.path, nearby, settings.crossingBridges, data?.reference, selected, anySelected]);
+  const otherRoutes = nearby.map(other => ({ id: other.edge.id, points: other.points }));
+
+  const staticArrows = useMemo(() => {
+    if (settings.disableArrows || settings.animatedArrows || data?.reference) return [];
+    const length = route.points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point.x - route.points[i].x, point.y - route.points[i].y), 0);
+    return length < 40 ? [] : animatedDirectionMarkers(route.points, 0);
+  }, [route.path, settings.disableArrows, settings.animatedArrows, data?.reference]);
   const foregroundArrows = otherRoutes.flatMap((other) => {
     const axes = new Set<string>();
     for (let index = 1; index < other.points.length; index++) {
@@ -243,21 +230,17 @@ export function GridEdge({
     }
     return [...axes].map((axis) => `connection-arrows-${other.id}-${axis}`);
   });
-  const position =
-    data?.labelPosition ??
-    connectionLabelPosition(route, size.width, size.height, [
-      route.points,
-      ...routes,
-    ], nodes.flatMap((node) => {
-      if (node.type === "summary" || node.hidden) return [];
-      const internal = flow.getInternalNode(node.id);
-      if (!internal) return [];
-      return [{
-        ...internal.internals.positionAbsolute,
-        width: internal.measured.width ?? node.width ?? 352,
-        height: internal.measured.height ?? node.height ?? 240,
-      }];
-    }));
+  // The detailed label is hidden in overview mode; don't solve its placement.
+  const placedLabel = useRef<{ position: Point; middle: Point } | null>(null);
+  const position = data?.labelPosition ?? (overview || !(data?.showLineCard ?? settings.detailLineItems)
+    ? route.middle
+    : scene.moving && placedLabel.current
+    ? { x: placedLabel.current.position.x + route.middle.x - placedLabel.current.middle.x,
+        y: placedLabel.current.position.y + route.middle.y - placedLabel.current.middle.y }
+    : connectionLabelPosition(route, size.width, size.height,
+      [route.points, ...[...scene.records.values()].filter(other => other.edge.id !== id && !other.edge.data?.reference).map(other => other.points)],
+      scene.obstacles));
+  if (!scene.moving) placedLabel.current = { position, middle: route.middle };
   const startLabelDrag = (
     event: PointerEvent<HTMLDivElement>,
     image = false,
@@ -397,11 +380,12 @@ export function GridEdge({
           {menu.onLine && <button role="menuitem" type="button" onClick={() => {
             data?.movePoints?.(id, insertRouteBend(route, menu.point)); setMenu(null);
           }}><CornerDownRight size={16} /> Create angle</button>}
-          {[false, true].map(isOverview => {
+          {[overview].map(isOverview => {
             const visible = isOverview ? (data?.showOverviewCard ?? settings.overviewLineItems) : (data?.showLineCard ?? settings.detailLineItems);
             const Icon = visible ? EyeOff : Eye;
-            return <button key={String(isOverview)} role="menuitem" type="button" onClick={() => { data?.setCardVisible?.(isOverview, !visible); setMenu(null); }}><Icon size={16} />{visible ? "Hide" : "Show"} {isOverview ? "zoomed-out line card" : "line card"}</button>;
+            return <button key={String(isOverview)} role="menuitem" type="button" onClick={() => { data?.setCardVisible?.(isOverview, !visible); setMenu(null); }}><Icon size={16} />{visible ? "Hide" : "Show"} line card</button>;
           })}
+          {!data?.readOnlyMachines && <>
           {data?.catchup && <>
             <div role="separator" className="diagram-menu-divider" />
             <button role="menuitem" type="button" disabled={data.catchup.a === null}
@@ -421,11 +405,11 @@ export function GridEdge({
           {[{ allInputs: false, info: false }, ...(data?.hasOtherSuppliers ? [{ allInputs: true, info: false }] : []), ...(data?.hasInfoConnections ? [{ allInputs: true, info: true }] : [])].map(({ allInputs, info }) => {
             const label = allInputs ? "Adjust connected inputs ratio" : "Adjust connected machines ratio";
             const includeReferences = info || (!allInputs && !!data?.reference);
-            const enabled = info ? data?.canInfoInputRatio : allInputs ? data?.canStepConnectedRatio : data?.reference ? data?.canInfoBaseRatio : data?.canPerfectRatio;
+            const enabled = info ? ratioAvailability?.canInfoInputRatio : allInputs ? ratioAvailability?.canStepConnectedRatio : data?.reference ? ratioAvailability?.canInfoBaseRatio : ratioAvailability?.canPerfectRatio;
             const scope = allInputs ? "the receiving machine and all its directly connected input suppliers" : "the two machines on this line";
             const infoHelp = includeReferences ? " Includes info connections using actual container capacities; they remain excluded from production and area-summary relationships." : "";
             const increaseHelp = `If unbalanced, brings ${scope} to the smallest balanced whole-number ratio without reducing any count. Keeps the receiving machine's count when possible. Once balanced, each click adds one ratio unit: 2:3 becomes 4:6, then 6:9. Keeps this menu open.${infoHelp}`;
-            const decreaseHelp = `If unbalanced, brings ${scope} down to the nearest balanced whole-number ratio. Once balanced, each click removes one ratio unit: 6:9 becomes 4:6, then 2:3. Stops at the smallest balanced ratio; no machine drops below 1. Keeps this menu open.${infoHelp}`;
+            const decreaseHelp = `If unbalanced, brings ${scope} down to the nearest balanced whole-number ratio. Once balanced, each click removes one ratio unit: 6:9 becomes 4:6, then 2:3. If no lower perfect ratio is available, resets all affected machines to 1. Keeps this menu open.${infoHelp}`;
             return (
               <div key={`${label}-${info}`} role={info ? "group" : undefined} aria-label={info ? "Ratios including info connections" : undefined}>
               {info && <>
@@ -437,10 +421,10 @@ export function GridEdge({
                   <ConnectedFactoriesIcon multipleInputs={allInputs} /> {label}
                   <OperationTooltip title={label} text={increaseHelp} unavailable={!enabled} />
                 </div>
-                <button className="line-ratio-step" role="menuitem" type="button" disabled={!enabled}
+                <button className="line-ratio-step" role="menuitem" type="button" disabled={!data?.stepRatio}
                   aria-label={allInputs ? "Decrease connected inputs ratio" : "Decrease connected machines ratio"}
                   onClick={() => data?.stepRatio?.(allInputs, -1, includeReferences)}><Minus size={16} />
-                  <OperationTooltip title={allInputs ? "Decrease connected inputs ratio" : "Decrease connected machines ratio"} text={decreaseHelp} unavailable={!enabled} />
+                  <OperationTooltip title={allInputs ? "Decrease connected inputs ratio" : "Decrease connected machines ratio"} text={decreaseHelp} unavailable={!data?.stepRatio} />
                 </button>
                 <button className="line-ratio-step" role="menuitem" type="button" disabled={!enabled}
                   aria-label={allInputs ? "Increase connected inputs ratio" : "Increase connected machines ratio"}
@@ -450,20 +434,31 @@ export function GridEdge({
               </div>
               {!info && allInputs === !!data?.hasOtherSuppliers && <>
           <div role="separator" className="diagram-menu-divider" />
-          <button className="base-ratio-option" role="menuitem" type="button" disabled={!(data?.reference ? data?.canInfoBaseRatio : data?.canPerfectRatio)}
+          <button className="base-ratio-option" role="menuitem" type="button" disabled={!(data?.reference ? ratioAvailability?.canInfoBaseRatio : ratioAvailability?.canPerfectRatio)}
             onClick={() => { if (data?.reference) data.infoBaseRatio?.(); else data?.perfectRatio?.(); setMenu(null); }}><ConnectedFactoriesIcon multipleInputs={false} /> Set connected machines to base ratio
-            <OperationTooltip title="Set connected machines to base ratio" unavailable={!(data?.reference ? data?.canInfoBaseRatio : data?.canPerfectRatio)}
+            <OperationTooltip title="Set connected machines to base ratio" unavailable={!(data?.reference ? ratioAvailability?.canInfoBaseRatio : ratioAvailability?.canPerfectRatio)}
               text={`Sets these two machines to the smallest whole-number counts that balance production and consumption on this line. Other suppliers are not included, and existing counts may decrease.${data?.reference ? " Converts containers to their actual fluid capacity; this remains an info connection." : ""}`} />
           </button>
-          {data?.hasOtherSuppliers && <button className="base-ratio-option" role="menuitem" type="button" disabled={!data.canBaseInputRatio}
+          {data?.networkRatio && <NetworkRatioControls base={networkCounts} current={data.networkCurrent ?? {}} includeInfo={data.reference}
+            apply={counts => data.applyNetworkRatio?.(counts)} />}
+
+          {data?.hasOtherSuppliers && <button className="base-ratio-option" role="menuitem" type="button" disabled={!ratioAvailability?.canBaseInputRatio}
             onClick={() => { data.baseInputRatio?.(); setMenu(null); }}><ConnectedFactoriesIcon /> Set connected inputs to base ratio
-            <OperationTooltip title="Set connected inputs to base ratio" unavailable={!data.canBaseInputRatio}
+            <OperationTooltip title="Set connected inputs to base ratio" unavailable={!ratioAvailability?.canBaseInputRatio}
               text="Sets the receiving machine and all machines directly supplying its connected inputs to their smallest balanced whole-number counts. All incoming lines balance, and existing machine counts may decrease." />
           </button>}
               </>}
               </div>
             );
           })}
+          {data?.infoNetworkRatio && <>
+            {!data.hasInfoConnections && <>
+              <div role="separator" className="diagram-menu-divider" />
+              <div className="info-ratio-heading">Including info lines<span className="info-line-sample" aria-hidden="true" /></div>
+            </>}
+            <NetworkRatioControls includeInfo base={infoNetworkCounts} current={data.infoNetworkCurrent ?? {}} apply={counts => data.applyNetworkRatio?.(counts)} />
+          </>}
+          </>}
         </div>, document.body,
       )}
       <g
@@ -581,9 +576,9 @@ export function GridEdge({
         <g mask={crossing.underpasses.length ? `url(#${crossingId}-mask)` : undefined}>
         <g id={`${crossingId}-arrows`}>
         {settings.disableArrows || data?.reference ? null : settings.animatedArrows ? (
-          <AnimatedLineArrows idPrefix={`connection-arrows-${id}`} points={route.points} others={routes} scale={arrowScale} color={lineDirectionColor(String(style?.stroke ?? "#ffffff"))} />
+          <AnimatedLineArrows idPrefix={`connection-arrows-${id}`} points={route.points} scale={arrowScale} color={lineDirectionColor(String(style?.stroke ?? "#ffffff"))} />
         ) : ["horizontal", "vertical"].map((axis) => <g key={axis} id={`connection-arrows-${id}-${axis}`}>
-        {lineDirectionMarkers(route.points, routes).filter((marker) => (Math.abs(marker.angle) % 180 === 0) === (axis === "horizontal")).map((marker, index) => (
+        {staticArrows.filter((marker) => (Math.abs(marker.angle) % 180 === 0) === (axis === "horizontal")).map((marker, index) => (
           <path
             key={`direction-${index}`}
             d="M8,0 L-6,-9 L-6,9 Z"
@@ -841,4 +836,4 @@ export function GridEdge({
       </EdgeLabelRenderer>
     </>
   );
-}
+});

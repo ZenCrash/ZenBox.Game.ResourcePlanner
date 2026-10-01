@@ -81,11 +81,12 @@ export function moveConnectedEdges<E extends Edge>(
   edges: E[],
   movements: Map<string, Point>,
 ): E[] {
-  return edges.map((edge) => {
+  const updated = edges.map((edge) => {
     const a = movements.get(edge.source),
       b = movements.get(edge.target);
     if (!a && !b) return edge;
     if (a && b && Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6) {
+      if (!edge.data?.bend && typeof edge.data?.targetBendX !== "number" && !edge.data?.waypoints && !edge.data?.labelPosition && !edge.data?.imagePosition) return edge;
       const translate = (p: Point) => ({ x: p.x + a.x, y: p.y + a.y });
       return {
         ...edge,
@@ -120,4 +121,5 @@ export function moveConnectedEdges<E extends Edge>(
         }
       : edge;
   });
+  return updated.every((edge, index) => edge === edges[index]) ? edges : updated;
 }

@@ -19,6 +19,7 @@ import { fluidReferenceFlow } from "./fluid-reference";
 import { initialPortRows } from "./port-layout";
 import { GRID_SIZE } from "./diagram-geometry";
 import { summarizeArea } from "./area-summary";
+import { productionRates } from "./production-rates";
 export function download(content: string | Blob, name: string, type: string) {
   const blob =
     typeof content === "string" ? new Blob([content], { type }) : content;
@@ -46,6 +47,7 @@ export async function exportDiagram(
   recipes: Recipe[],
   format: "svg" | "pdf",
   name: string,
+  asBlob = false,
 ) {
   const baseRecipes = new Map(recipes.map((r) => [r.id, r]));
   const map = new Map(
@@ -76,6 +78,9 @@ export async function exportDiagram(
       ) as Record<string, number>,
     ]),
   );
+  const utilization = productionRates(doc.nodes.map(node => ({
+    id: node.id, recipe: map.get(node.id)!, machines: node.machines, disabledPorts: node.disabledPorts,
+  })), doc.edges.map(edge => ({ ...edge, data: { reference: edge.reference } })));
   const summaries = (doc.areas ?? []).map((area) => ({
     area,
     summary: summarizeArea(
@@ -89,6 +94,7 @@ export async function exportDiagram(
         machines: node.machines,
         variants: node.variants,
         disabledPorts: node.disabledPorts,
+        utilization: utilization.get(node.id) ?? 1,
       })),
     ),
   }));
@@ -427,7 +433,11 @@ export async function exportDiagram(
   }
   body += "</g>";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + 50}" viewBox="0 0 ${width} ${height + 50}">${body}</svg>`;
-  if (format === "svg") download(svg, `${name}.svg`, "image/svg+xml");
+  if (format === "svg") {
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    if (asBlob) return blob;
+    download(blob, `${name}.svg`, "image/svg+xml");
+  }
   else {
     const { jsPDF } = await import("jspdf");
     await import("svg2pdf.js");
@@ -445,6 +455,7 @@ export async function exportDiagram(
       width: width * scale,
       height: (height + 50) * scale,
     });
+    if (asBlob) return pdf.output("blob");
     pdf.save(`${name.replace(/[<>:"/\\|?*]/g, "-")}.pdf`);
   }
 }

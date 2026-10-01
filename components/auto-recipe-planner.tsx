@@ -31,6 +31,7 @@ import { Inventory } from "./inventory";
 import { ItemSlot } from "./recipe-view";
 import { PlannerFilterDropdown } from "./planner-filter-dropdown";
 import { PlannerPreview } from "./planner-preview";
+import { plannerPositions } from "@/lib/planner-columns";
 import { readPlannerFilters, plannerFiltersKey } from "@/lib/planner-filters";
 
 export type PlannedNode = Node<
@@ -45,21 +46,8 @@ export type PlannedNode = Node<
 export type PlannedGraph = { nodes: PlannedNode[]; edges: Edge[] };
 
 export function plannerGraph(plan: PlannerPlan): PlannedGraph {
-  const columns = new Map<number, number>();
-  const column = (index: number): number => {
-    if (!columns.has(index))
-      columns.set(
-        index,
-        Math.max(
-          0,
-          ...plan.links
-            .filter((link) => link.target === index)
-            .map((link) => column(link.source) + 1),
-        ),
-      );
-    return columns.get(index)!;
-  };
-  const rows = new Map<number, number>();
+  const positions = plannerPositions(plan.steps.length, plan.links,
+    new Set(plan.steps.flatMap((step, index) => step.recovery ? [index] : [])));
   const rowHeight = Math.max(
     500,
     ...plan.steps.map(
@@ -79,12 +67,8 @@ export function plannerGraph(plan: PlannerPlan): PlannedGraph {
     id: `plan-${index}`,
     type: "recipe",
     position: {
-      x: column(index) * 860,
-      y: (() => {
-        const row = rows.get(column(index)) ?? 0;
-        rows.set(column(index), row + 1);
-        return row * rowHeight;
-      })(),
+      x: positions.get(index)!.column * 860,
+      y: positions.get(index)!.row * rowHeight,
     },
     data: {
       recipe: step.recipe,

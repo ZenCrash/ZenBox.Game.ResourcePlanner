@@ -1,6 +1,47 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Node, Edge } from "@xyflow/react";
+import { diagramContent } from "../lib/diagram-content";
+import { blankDiagram } from "../lib/model";
+import { recipeInsideGroup } from "../lib/group-selection";
+
+test("group selection includes contained recipe cards but not partial overlaps or other groups", () => {
+  const group: Node = { id: "group", type: "summary", position: { x: 100, y: 100 }, width: 640, height: 480, data: {} };
+  const recipe: Node = { id: "recipe", type: "recipe", position: { x: 100, y: 100 }, measured: { width: 340, height: 240 }, data: {} };
+  assert.equal(recipeInsideGroup(recipe, group), true);
+  assert.equal(recipeInsideGroup({ ...recipe, position: { x: 400, y: 340 } }, group), true);
+  assert.equal(recipeInsideGroup({ ...recipe, position: { x: 401, y: 340 } }, group), false);
+  assert.equal(recipeInsideGroup({ ...recipe, position: { x: 99, y: 100 } }, group), false);
+  assert.equal(recipeInsideGroup({ ...recipe, type: "label" }, group), false);
+  assert.equal(recipeInsideGroup(group, group), false);
+});
+
+test("adding, moving, connecting and deleting a temporary card returns to saved content", () => {
+  const saved = { ...blankDiagram(), nodes: [{ id: "existing", recipeId: "recipe", machines: 1, position: { x: 0, y: 0 }, variants: {} }] };
+  const baseline = diagramContent(saved);
+  for (const itemId of [undefined, "iron"]) {
+    const added = { ...saved, nodes: [...saved.nodes, { id: "temporary", recipeId: "other", itemId, machines: 1, position: { x: 200, y: 100 }, variants: {} }],
+      edges: [{ id: "connection", source: "temporary", target: "existing", sourceHandle: "output:0", targetHandle: "input:0" }] };
+    assert.notEqual(diagramContent(added), baseline);
+    added.nodes[1].position = { x: 400, y: 300 };
+    const deleted = { ...added, nodes: added.nodes.filter(node => node.id !== "temporary"), edges: added.edges.filter(edge => edge.source !== "temporary" && edge.target !== "temporary") };
+    assert.equal(diagramContent(deleted), baseline);
+    assert.notEqual(diagramContent({ ...deleted, nodes: deleted.nodes.map(node => ({ ...node, machines: 2 })) }), baseline);
+  }
+});
+
+test("saved-content comparison ignores camera, revision, measurements and object key order", () => {
+  const saved = { ...blankDiagram(), nodes: [{ id: "a", recipeId: "recipe", machines: 1, position: { x: 0, y: 0 }, variants: { one: "a", two: "b" } }] };
+  assert.equal(diagramContent(saved), diagramContent({ ...saved, revision: 4, viewport: { x: 100, y: -80, zoom: 2 }, areas: [], labels: [], nodes: [{ ...saved.nodes[0], variants: { two: "b", one: "a" }, size: { width: 360, height: 240 }, disabledPorts: [] }] }));
+  assert.notEqual(diagramContent(saved), diagramContent({ ...saved, nodes: [{ ...saved.nodes[0], position: { x: 20, y: 0 } }] }));
+});
+
+test("dragging cards without manual line geometry preserves the edge list identity", () => {
+  const edges: Edge[] = [{ id: "ab", source: "a", target: "b" }];
+  assert.equal(moveConnectedEdges(edges, new Map([["a", { x: 20, y: 0 }]])), edges);
+  assert.equal(moveConnectedEdges(edges, new Map([["a", { x: 20, y: 0 }], ["b", { x: 20, y: 0 }]])), edges);
+});
+
 import {
   graphHistoryReducer as reduce,
   type GraphHistory,
@@ -48,6 +89,27 @@ const initial = (): GraphHistory<Node, Edge> => ({
   past: [],
   future: [],
   group: null,
+});
+
+test("drag history never serializes recipe payloads and retains one undo step", () => {
+  const state = initial();
+  state.present.nodes = state.present.nodes.map(node => ({ ...node, data: {
+    recipe: { toJSON() { throw new Error("Recipe serialization in drag path"); } },
+  } }));
+  let next = state;
+  for (let i = 0; i < 30; i++) next = reduce(next, {
+    type: "nodeChanges", group: 1,
+    changes: [{ id: "a", type: "position", position: { x: 101 + i, y: 200 }, dragging: true }],
+  });
+  assert.equal(next.past.length, 1);
+  assert.deepEqual(reduce(next, { type: "undo" }).present, state.present);
+});
+
+test("line-card visibility changes can be undone", () => {
+  const state = initial();
+  const next = reduce(state, { type: "edges", group: 1, value: edges => edges.map(edge => ({ ...edge, data: { ...edge.data, showLineCard: false } })) });
+  assert.equal(next.past.length, 1);
+  assert.deepEqual(reduce(next, { type: "undo" }).present, state.present);
 });
 
 test("overview image positions persist, undo, paste and follow group moves while endpoint edits reset them", () => {

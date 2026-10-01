@@ -19,6 +19,7 @@ import {
 } from "@/lib/model";
 import { GRID_SIZE } from "@/lib/diagram-geometry";
 import { ItemTooltip } from "@/components/item-tooltip";
+import { isSupplyLimited } from "@/lib/connection-summary";
 import { usePortItemHighlight } from "./port-item-highlight";
 import { useDisplaySettings } from "./display-settings";
 import {
@@ -31,6 +32,7 @@ export function RecipePorts({
   id,
   recipe,
   machines,
+  utilization = 1,
   saved,
   disabledPorts,
   togglePort,
@@ -43,6 +45,7 @@ export function RecipePorts({
   id: string;
   recipe: Recipe;
   machines: number;
+  utilization?: number;
   saved?: PortRows;
   disabledPorts?: string[];
   togglePort: (id: string, handle: string) => void;
@@ -107,7 +110,8 @@ export function RecipePorts({
       ),
     };
   });
-  const layoutKey = JSON.stringify([saved, preview, nodeY]);
+  // Moving on the grid does not change handle offsets inside the card.
+  const layoutKey = JSON.stringify([saved, preview, origin - nodeY, overview, sides.map(side => side.ingredients.map(i => i.slot))]);
   useLayoutEffect(() => {
     update(id);
   }, [id, update, layoutKey]);
@@ -159,14 +163,20 @@ export function RecipePorts({
             const isConnected = connected.has(`${id}/${handle}`);
             const isDisabled = disabledPorts?.includes(handle) ?? false;
             const information = hasRecipeTiming(recipe) ? (
+              <>
+              {isSupplyLimited(ingredient, recipe, utilization) && <small className="port-full-supply">
+                {rate(ingredient, recipe, machines).toLocaleString(undefined, { maximumFractionDigits: 3 })} {ingredient.item.kind === "fluid" ? "mB" : "items"}/s
+              </small>}
               <small>
                 {ingredient.consumed
-                  ? `${rate(ingredient, recipe, machines).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${ingredient.item.kind === "fluid" ? "mB" : "items"}/s`
+                  ? `${(rate(ingredient, recipe, machines) * utilization).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${ingredient.item.kind === "fluid" ? "mB" : "items"}/s`
                   : `${ingredient.amount * machines} reusable`}
                 {ingredient.chance < 1 && direction === "output"
                   ? ` · ${ingredient.chance * 100}% expected`
                   : ""}
               </small>
+              </>
+
             ) : null;
             return (
               <div

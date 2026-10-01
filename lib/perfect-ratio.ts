@@ -70,13 +70,36 @@ export function increaseMachineCounts(base: Record<string, number>, current: Rec
   return Object.values(counts).every((count) => Number.isSafeInteger(count) && count <= 1e9) ? counts : null;
 }
 
-export function stepMachineRatio(base: Record<string, number>, current: Record<string, number>, step: -1 | 1) {
+export function stepMachineRatio(base: Record<string, number> | null, current: Record<string, number>, step: -1 | 1) {
+  const reset = () => Object.fromEntries(Object.keys(base ?? current).map(id => [id, 1]));
+  if (!base) return step === -1 ? reset() : null;
   const ratios = Object.entries(base).map(([id, count]) => (current[id] ?? 1) / count);
   if (!ratios.length || ratios.some((value) => !Number.isFinite(value) || value <= 0)) return null;
   let multiple = step === 1 ? Math.ceil(Math.max(...ratios)) : Math.floor(Math.min(...ratios));
   const alreadyBalanced = Object.entries(base).every(([id, count]) => current[id] === count * multiple);
   if (alreadyBalanced) multiple += step;
+  if (step === -1 && multiple < 1) return reset();
   multiple = Math.max(1, multiple);
   const counts = Object.fromEntries(Object.entries(base).map(([id, count]) => [id, count * multiple]));
   return Object.values(counts).every((count) => Number.isSafeInteger(count) && count >= 1 && count <= 1e9) ? counts : null;
+}
+
+
+/** Display the actual selected machine-count ratio, including fractional Scale counts. */
+export function machineAmountRatio(...amounts: number[]) {
+  if (!amounts.length || !amounts.every(value => Number.isFinite(value) && value >= 0)) return "Unrated";
+  if (amounts.every(Number.isSafeInteger)) {
+    const divisor = amounts.reduce(gcd) || 1;
+    return amounts.map(value => value / divisor).join(" : ");
+  }
+  const reference = [...amounts].reverse().find(value => value > 0) ?? 1;
+  const values = amounts.map(value => value / reference);
+  for (let denominator = 1; denominator <= 1000; denominator++) {
+    const integers = values.map(value => Math.round(value * denominator));
+    if (integers.every((number, i) => Number.isSafeInteger(number) && (values[i] === 0 || number > 0) && Math.abs(number / denominator - values[i]) <= 1e-10 * values[i])) {
+      const divisor = integers.reduce(gcd) || 1;
+      return integers.map(value => value / divisor).join(" : ");
+    }
+  }
+  return "≈ " + values.map(value => value.toLocaleString(undefined, { maximumSignificantDigits: 5 })).join(" : ");
 }

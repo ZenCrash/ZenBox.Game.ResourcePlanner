@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, memo, useRef, useLayoutEffect, useMemo } from "react";
 import { useStore, type Node, type NodeProps } from "@xyflow/react";
 import { X } from "lucide-react";
 import { itemColor, applyVariants, recipeTabIcon, type Recipe, type VariantSelection } from "@/lib/model";
@@ -11,14 +11,20 @@ import { useDisplaySettings } from "./display-settings";
 import { PortItemHighlight } from "./port-item-highlight";
 import { RecipePorts } from "./recipe-ports";
 import { ItemSlot, RecipeView, type Browse } from "./recipe-view";
+import { useRecipeCardWidth } from "./use-recipe-card-width";
 import { MachineSelector } from "./machine-selector";
 import { RecipeChevron } from "./recipe-chevron";
 import { ItemTooltip } from "./item-tooltip";
+import { outsideViewport } from "@/lib/viewport-visibility";
 export type RecipeNode = Node<
   {
     recipe: Recipe;
     machines: number;
     machineId?: string;
+    originalMachines?: number;
+    originalMachineId?: string;
+    scaleAmount?: number;
+    scaleMachineId?: string;
     variants: VariantSelection;
     portRows?: PortRows;
     disabledPorts?: string[];
@@ -37,6 +43,10 @@ export const EditorContext = createContext<{
   selectMachine: (id: string, machineId: string) => void;
   color: (itemId: string) => string;
   connected: Set<string>;
+  utilization: Map<string, number>;
+  scaleView?: boolean;
+  scaled?: Set<string>;
+  setScale?: (id: string, patch: { scaleAmount?: number; scaleMachineId?: string }) => void;
   selectedConnections: Map<string, string[]>;
   disconnect: (id: string) => void;
   movePorts: (id: string, rows: PortRows) => void;
@@ -48,37 +58,55 @@ export const EditorContext = createContext<{
   selectMachine: () => {},
   color: itemColor,
   connected: new Set(),
+  utilization: new Map(),
   selectedConnections: new Map(),
   disconnect: () => {},
   movePorts: () => {},
   togglePort: () => {},
   remove: () => {},
 });
-export function MachineCard(props: NodeProps<RecipeNode>) {
+export const MachineCard = memo(function MachineCard(props: NodeProps<RecipeNode>) {
   return <PortItemHighlight><MachineCardContent {...props} /></PortItemHighlight>;
-}
-function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
+}, (a, b) => a.id === b.id && a.data === b.data && a.selected === b.selected);
+const MachineCardContent = memo(function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
   const { settings } = useDisplaySettings();
   const overview = useStore((state) => state.transform[2] < settings.overviewZoom);
+  const offscreen = useStore(state => {
+    const node = state.nodeLookup.get(id);
+    return !!node && outsideViewport({ ...node.internals.positionAbsolute, width: node.measured.width ?? 0, height: node.measured.height ?? 0 }, state.transform, state.width, state.height);
+  });
+  const cardRef = useRef<HTMLDivElement>(null);
+  const measured = useRef(new WeakMap<RecipeNode["data"], { scale: number; overview: boolean; width: number; height: number }>());
+  const cached = measured.current.get(data);
+  const deferBody = offscreen && !!cached && cached.scale === settings.guiScale && cached.overview === overview;
+  useLayoutEffect(() => {
+    if (!deferBody && cardRef.current) measured.current.set(data, { scale: settings.guiScale, overview, width: cardRef.current.offsetWidth, height: cardRef.current.offsetHeight });
+  });
   const {
       browse,
       count,
       selectMachine,
       color,
       connected,
+      utilization,
+      scaleView,
+      scaled,
+      setScale,
       movePorts,
       togglePort,
       remove,
       selectedConnections,
       disconnect,
     } = useContext(EditorContext),
-    baseRecipe = applyVariants(data.recipe, data.variants),
-    recipe = overclockRecipe(baseRecipe, data.machineId);
+    baseRecipe = useMemo(() => applyVariants(data.recipe, data.variants), [data.recipe, data.variants]),
+    recipe = useMemo(() => overclockRecipe(baseRecipe, data.machineId), [baseRecipe, data.machineId]);
+  useRecipeCardWidth(cardRef, data, deferBody, `${!!scaleView}/${!!scaled?.has(id)}`, settings.guiScale);
   const ports = (
     <RecipePorts
       id={id}
       recipe={recipe}
       machines={data.machines}
+      utilization={utilization.get(id) ?? 1}
       saved={data.portRows}
       disabledPorts={data.disabledPorts}
       togglePort={togglePort}
@@ -102,11 +130,14 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
       <X size={15} />
     </button>
   );
+  // Keep dimensions and ports mounted: offscreen endpoints must still connect
+  // correctly, and cards must not jump when they enter the viewport.
+  if (deferBody && cached) return <div ref={cardRef} className="machine-card machine-card-deferred" style={{ height: cached.height }}>{ports}</div>;
   if (recipe.sourceItemId) {
     const item = recipe.ingredients[0].item;
     return (
-      <div className={`machine-card ${selected ? "selected" : ""}`}>
-        <div className="recipe-view item-source-card">
+      <div ref={cardRef} className={`machine-card ${selected ? "selected" : ""}`}>
+        <div className={`recipe-view item-source-card${scaleView ? " scale-view-card" : ""}`}>
           <div className="recipe-title">Item source</div>
           {deleteButton}
           <div className="item-source-content">
@@ -128,9 +159,12 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
       .filter((tier): tier is string => !!tier)
       .sort((a, b) => machineTiers.indexOf(a) - machineTiers.indexOf(b))[0] : undefined);
   const comparison = recipeComparison(baseRecipe, data.machineId);
+  const originalMachine = selectedMachine(baseRecipe, data.originalMachineId);
+  const originalTier = scaleView && data.machineId !== data.originalMachineId && originalMachine ? machineTier(originalMachine) : undefined;
   return (
     <div
-      className={`machine-card ${selected ? "selected" : ""}${overview ? " machine-card-overview" : ""}`}
+      ref={cardRef}
+      className={`machine-card ${selected ? "selected" : ""}${overview ? " machine-card-overview" : ""}${scaleView ? " scale-view-card" : ""}`}
     >
       <RecipeView
         recipe={recipe}
@@ -146,15 +180,38 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
             onClick={(event) => event.stopPropagation()}
             onDoubleClick={(event) => event.stopPropagation()}
           >
-            <div className="machine-count-controls">
+            <div className={`machine-count-controls${scaleView ? " scale-count-controls" : ""}${scaleView && scaled?.has(id) ? " scale-calculated" : ""}`}>
               <MachineSelector
                 recipe={baseRecipe}
                 machineId={data.machineId}
                 amount={data.machines}
+                readOnly={scaleView}
+                originalAmount={scaleView && scaled?.has(id) ? data.originalMachines : undefined}
+                originalTier={originalTier}
                 onAmountChange={(amount) => count(id, amount)}
                 onSelect={(machineId) => selectMachine(id, machineId)}
               />
-              <div className="machine-count-stepper nopan">
+              {scaleView ? <div className={`scale-fixed-control${(data.scaleAmount ?? 0) > 0 || selectedMachine(baseRecipe, data.scaleMachineId ?? data.machineId)?.id !== defaultMachine?.id ? " is-modified" : ""}`}>
+                <MachineSelector recipe={baseRecipe} machineId={data.scaleMachineId ?? data.machineId} amount={data.scaleAmount} decimal
+                  onClear={() => setScale?.(id, { scaleAmount: undefined })}
+                  onReset={() => setScale?.(id, { scaleAmount: undefined, scaleMachineId: defaultMachine?.id })}
+                  onAmountChange={amount => setScale?.(id, { scaleAmount: amount })}
+                  onSelect={machineId => setScale?.(id, { scaleMachineId: machineId })} />
+                <div className="machine-count-stepper nopan">
+                  <button type="button" className="recipe-nav-button" aria-label="Increase fixed machine amount" title="Increase fixed machine amount"
+                    disabled={(data.scaleAmount ?? 0) >= 1e9}
+                    onClick={() => setScale?.(id, { scaleAmount: Math.min(1e9, (data.scaleAmount ?? 0) + 1) })}>
+                    <RecipeChevron direction="up" />
+                  </button>
+                  <button type="button" className="recipe-nav-button" aria-label="Decrease fixed machine amount" title="Decrease fixed machine amount"
+                    onClick={() => {
+                      if (data.scaleAmount === undefined || data.scaleAmount <= 0) return;
+                      setScale?.(id, { scaleAmount: data.scaleAmount > 1 ? data.scaleAmount - 1 : undefined });
+                    }}>
+                    <RecipeChevron direction="down" />
+                  </button>
+                </div>
+              </div> : <div className="machine-count-stepper nopan">
                 <button
                   type="button"
                   className="recipe-nav-button"
@@ -177,7 +234,7 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
                 >
                   <RecipeChevron direction="down" />
                 </button>
-              </div>
+              </div>}
             </div>
           </div>
         }
@@ -207,7 +264,7 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
             ) : (
               <span>{recipe.handler}</span>
             )}
-            {data.machines > 1 && <span className="machine-overview-count">{data.machines}</span>}
+            {data.machines !== 1 && <span className="machine-overview-count">{data.machines.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>}
             {isMachineUpgrade(baseRecipe, data.machineId) && (
               <span className="machine-overview-upgrade" aria-label="Upgraded machine">
                 <RecipeChevron direction="up" />
@@ -215,6 +272,12 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
               </span>
             )}
           </div>
+          {scaleView && scaled?.has(id) && data.originalMachines !== undefined && (
+            <div className="machine-overview-original">
+              {data.originalMachines.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+              {originalTier && <> <span className="recipe-tier-parenthesis">(</span><span className="recipe-tier-text" data-tier={originalTier} style={{ color: tierColors[originalTier] }}>{originalTier}</span><span className="recipe-tier-parenthesis">)</span></>}
+            </div>
+          )}
         </div>
       </div>
       {overview && (
@@ -227,4 +290,4 @@ function MachineCardContent({ id, data, selected }: NodeProps<RecipeNode>) {
       {ports}
     </div>
   );
-}
+});

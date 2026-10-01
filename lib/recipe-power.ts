@@ -31,7 +31,7 @@ export function recipePowerInfo(
         (line): line is string => typeof line === "string",
       );
   } catch {}
-  if (isCombustionFuelHandler(recipe.handler ?? "") || recipe.handler === "Acid Generator")
+  if (isCombustionFuelHandler(recipe.handler ?? "") || recipe.handler === "Acid Generator" || recipe.handler === "Semifluid Generator Fuels" || recipe.handler === "Gas Turbine Fuel")
     details = details.map((line) =>
       line.replace(/^Special value:\s*([\d,]+(?:\.\d+)?)$/i, (_, value: string) =>
         `Fuel Value: ${(Number(value.replaceAll(",", "")) * 1000).toLocaleString("en-US")} EU`,

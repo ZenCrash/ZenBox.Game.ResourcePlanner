@@ -9,7 +9,7 @@ import {
 } from "./model";
 import { recipePowerInfo } from "./recipe-power";
 import { overclockRecipe } from "./recipe-overclock";
-import { selectedMachine, machineTier } from "./machine-selection";
+import { selectedMachine, machineTier, machineTiers } from "./machine-selection";
 
 export type SummaryBounds = {
   position: { x: number; y: number };
@@ -21,6 +21,7 @@ export type SummaryRecipe = SummaryBounds & {
   machines: number;
   machineId?: string;
   disabledPorts?: string[];
+  utilization?: number;
   variants: VariantSelection;
 };
 export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
@@ -51,7 +52,8 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
       node.machineId,
     );
     const chosenMachine = selectedMachine(node.recipe, node.machineId);
-    euPerTick += Math.max(0, recipe.euPerTick) * node.machines;
+    const activeMachines = node.machines * (node.utilization ?? 1);
+    euPerTick += Math.max(0, recipe.euPerTick) * activeMachines;
     machineCount += node.machines;
     const tier =
       (chosenMachine && machineTier(chosenMachine)) ??
@@ -80,14 +82,14 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
       Math.max(0, recipe.euPerTick) * recipe.durationTicks * node.machines;
     for (const ingredient of recipe.ingredients) {
       if (node.disabledPorts?.includes(`${ingredient.direction}:${ingredient.slot}`)) {
-        const amount = rate(ingredient, recipe, node.machines);
+        const amount = rate(ingredient, recipe, activeMachines);
         const entry = disabled.get(ingredient.itemId) ?? { item: ingredient.item, rate: 0 };
         if (ingredient.consumed && Number.isFinite(amount)) entry.rate += amount;
         disabled.set(ingredient.itemId, entry);
         continue;
       }
       if (!ingredient.consumed) continue;
-      const amount = rate(ingredient, recipe, node.machines);
+      const amount = rate(ingredient, recipe, activeMachines);
       if (!Number.isFinite(amount)) continue;
       const flow = flows.get(ingredient.itemId) ?? {
         item: ingredient.item,
@@ -122,7 +124,10 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     euPerTick,
     totalEu,
     machineCount,
-    machines: [...machines.values()].filter((m) => m.count > 0),
+    machines: [...machines.values()].filter((m) => m.count > 0).sort((a, b) =>
+      machineTiers.indexOf(a.tier) - machineTiers.indexOf(b.tier) ||
+      a.name.replace(/§./g, "").localeCompare(b.name.replace(/§./g, "")),
+    ),
     inputs,
     recursiveInputIds,
     outputs,

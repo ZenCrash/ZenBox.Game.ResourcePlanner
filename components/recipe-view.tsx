@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode, type DragEvent } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode, type DragEvent } from "react";
 import { Plus } from "lucide-react";
 import {
   applyVariants,
@@ -323,13 +323,13 @@ export function RecipeView({
 }) {
   const power = recipePowerInfo(recipe);
   const count = Number.isFinite(machineCount)
-    ? Math.max(1, Math.trunc(machineCount))
+    ? Math.max(0, machineCount)
     : 1;
-  const countPrefix = count > 1 ? `(x${count}) ` : "";
+  const countPrefix = count !== 1 ? `(x${count.toLocaleString(undefined, { maximumFractionDigits: 4 })}) ` : "";
   const comparisonColor = isDefaultMachine ? "#ffffff" : tierColors.MV;
   const reference =
     referenceRecipe &&
-    (count > 1 ||
+    (count !== 1 ||
       referenceRecipe.euPerTick !== recipe.euPerTick ||
       referenceRecipe.durationTicks !== recipe.durationTicks)
       ? referenceRecipe
@@ -341,16 +341,6 @@ export function RecipeView({
   const isCrafting =
     recipe.handler === "Shaped Crafting" ||
     recipe.handler === "Shapeless Crafting";
-  const crafting = isCrafting ? shapedCraftingSlots(recipe.ingredients) : null;
-  let layout: {
-    background?: string;
-    width?: number;
-    height?: number;
-    slotCounts?: RecipeSlotCounts;
-  } = {};
-  try {
-    layout = JSON.parse(recipe.layout);
-  } catch {}
   return (
     <div
       className={`recipe-view${isCrafting ? " shaped-crafting" : ""}`}
@@ -362,171 +352,7 @@ export function RecipeView({
         {navigation?.next}
       </div>
       {belowTitle}
-      {crafting ? (
-        <div className="crafting-layout">
-          <div
-            className="crafting-inputs"
-            role="group"
-            aria-label="Crafting inputs, 3 by 3 grid"
-          >
-            {crafting.inputs.map((ingredient, index) =>
-              ingredient ? (
-                <ItemSlot
-                  key={index}
-                  ingredient={ingredient} item={ingredient.item}
-                  amount={ingredient.amount}
-                  onBrowse={onBrowse}
-                />
-              ) : (
-                <span
-                  key={index}
-                  className="item-slot empty-recipe-slot"
-                  role="img"
-                  aria-label={`Empty crafting slot ${index + 1}`}
-                />
-              ),
-            )}
-          </div>
-          <CategorySymbol
-            className="crafting-arrow"
-            recipe={recipe}
-            onBrowse={onBrowse}
-          >
-            <svg
-              viewBox="0 0 24 18"
-              aria-hidden="true"
-              shapeRendering="crispEdges"
-            >
-              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-            </svg>
-          </CategorySymbol>
-          <div
-            className="crafting-output"
-            role="group"
-            aria-label="Crafting output"
-          >
-            {crafting.output ? (
-              <ItemSlot
-                ingredient={crafting.output} item={crafting.output.item}
-                amount={crafting.output.amount}
-                onBrowse={onBrowse}
-              />
-            ) : (
-              <span
-                className="item-slot empty-recipe-slot"
-                role="img"
-                aria-label="Empty crafting output slot"
-              />
-            )}
-          </div>
-        </div>
-      ) : recipe.handler === "Alchemic Chemistry Set" ? (
-        <AlchemicChemistryLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Smelting" ? (
-        <SmeltingLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Casting Table" ? (
-        <CastingTableLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Infernal Blast Furnace" ? (
-        <InfernalBlastFurnaceLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "TiC Part Extruding" ||
-        recipe.handler === "Extruder" ||
-        recipe.handler === "Alloy Smelter Molding" ||
-        recipe.handler === "Alloy Smelter Recycling" ? (
-        <TwoInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Fluid Solidifier" ||
-        recipe.handler === "Large Boiler" ||
-        isCombustionFuelHandler(recipe.handler) ||
-        recipe.handler.startsWith("Magic Energy Absorber Fu") ? (
-        <SingleInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Blast Furnace" ||
-        recipe.handler === "Bricked Blast Furnace" ||
-        recipe.handler === "Arc Furnace Recycling" ||
-        recipe.handler === "Macerator Recycling" ? (
-        <FurnaceGridLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Carpenter" ? (
-        <CarpenterLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Bottler" ? (
-        <BottlerLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Distillation Tower" ? (
-        <DistillationTowerLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "ABS Non-Alloy Recipes" ||
-        recipe.handler === "Assembler" ||
-        recipe.handler === "Circuit Assembler" ||
-        recipe.handler === "Forming Press" ||
-        recipe.handler === "Distillery" ||
-        recipe.handler === "Chemical Reactor" ||
-        recipe.handler === "Large Chemical Reactor" ||
-        recipe.handler === "Chemical Plant" ||
-        recipe.handler === "Mixer" ||
-        recipe.handler === "Bacterial Vat" ||
-        recipe.handler === "Multiblock Mixer" ||
-        recipe.handler === "Fermenter" ||
-        recipe.handler === "Semifluid Generator Fuels" ||
-        recipe.handler === "Brewery" ||
-        recipe.handler === "Fluid Extractor" ||
-        recipe.handler === "Fluid Extractor Recycling" ||
-        recipe.handler === "Electrolyzer" ||
-        recipe.handler === "Autoclave" ||
-        recipe.handler === "Fluid Canner" ||
-        recipe.handler === "Compressor" ||
-        recipe.handler === "Rock Breaker" ? (
-        <MachineRecipeLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : (
-        <div className="recipe-process default-recipe-process">
-          <CategorySymbol className="default-recipe-arrow" recipe={recipe} onBrowse={onBrowse}>
-            <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-            </svg>
-          </CategorySymbol>
-          {(["input", "output"] as const).map((direction) => (
-            <div className={`recipe-slot-side recipe-slot-side-${direction}`} key={direction}>
-              <div className="recipe-slot-groups">
-                {recipeSlotGroups(
-                  recipe.ingredients,
-                  direction,
-                  layout.slotCounts,
-                ).map(
-                  ({ kind, slots }) =>
-                    slots.length > 0 && (
-                      <div
-                        className="recipe-slots"
-                        key={kind}
-                        role="group"
-                        aria-label={`${kind === "fluid" ? "Fluid" : "Item"} ${direction} slots`}
-                        style={
-                          layout.slotCounts
-                            ? {
-                                gridTemplateColumns: `repeat(${Math.min(slots.length, 3)}, 36px)`,
-                              }
-                            : undefined
-                        }
-                      >
-                        {slots.map((ingredient, index) =>
-                          ingredient ? (
-                            <ItemSlot
-                              key={index}
-                              ingredient={ingredient} item={ingredient.item}
-                              amount={ingredient.amount}
-                              onBrowse={onBrowse}
-                            />
-                          ) : (
-                            <span
-                              key={index}
-                              className={`item-slot empty-recipe-slot ${kind === "fluid" ? "empty-fluid-slot" : ""}`}
-                              role="img"
-                              aria-label={`Empty ${kind} ${direction} slot`}
-                              title={`Empty ${kind} ${direction} slot`}
-                            />
-                          ),
-                        )}
-                      </div>
-                    ),
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <RecipeProcessContent recipe={recipe} onBrowse={onBrowse} />
       <div className="recipe-footer" data-has-info={
         recipe.steamPerTick !== undefined ||
         !!(recipe.cycleDurationTicks && recipe.cycleDurationTicks !== recipe.durationTicks) ||
@@ -538,10 +364,10 @@ export function RecipeView({
             <>
               <div className="recipe-stat-row">
                 <strong>Total steam:</strong>
-                <span className={count > 1 ? "recipe-struck-stat" : undefined}>
+                <span className={count !== 1 ? "recipe-struck-stat" : undefined}>
                   {(recipe.steamPerBatch ?? recipe.steamPerTick * recipe.durationTicks).toLocaleString("en-US", { maximumFractionDigits: 3 })} L
                 </span>
-                {count > 1 && (
+                {count !== 1 && (
                   <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: tierColors.MV }}>
                     {countPrefix}{((recipe.steamPerBatch ?? recipe.steamPerTick * recipe.durationTicks) * count).toLocaleString("en-US", { maximumFractionDigits: 3 })} L
                   </span>
@@ -549,10 +375,10 @@ export function RecipeView({
               </div>
               <div className="recipe-stat-row" title={recipe.steamPerBatch ? "Steam is consumed upfront per batch. This is the average supply needed for continuous operation." : undefined}>
                 <strong>{recipe.steamPerBatch ? "Steam (avg.):" : "Steam:"}</strong>
-                <span className={count > 1 ? "recipe-struck-stat" : undefined}>
+                <span className={count !== 1 ? "recipe-struck-stat" : undefined}>
                   {recipe.steamPerTick.toLocaleString("en-US", { maximumFractionDigits: 3 })} L/t
                 </span>
-                {count > 1 && (
+                {count !== 1 && (
                   <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: tierColors.MV }}>
                     {countPrefix}{(recipe.steamPerTick * count).toLocaleString("en-US", { maximumFractionDigits: 3 })} L/t
                   </span>
@@ -1432,6 +1258,7 @@ function MachineRecipeLayout({
     <div
       data-autoclave={autoclave || undefined}
       data-abs-non-alloy={abs || undefined}
+      data-semifluid-fuel={semifluidFuel || undefined}
       className={`assembler-layout${circuit || press ? " circuit-assembler-layout" : ""}${press ? " forming-press-layout" : ""}${distillery ? " distillery-layout" : ""}${chemical ? " chemical-reactor-layout" : ""}${largeChemical || multiblockMixer ? " large-chemical-reactor-layout" : ""}${multiblockMixer ? " multiblock-mixer-layout" : ""}${plant ? " chemical-plant-layout" : ""}${mixer ? " mixer-layout" : ""}${vat ? " bacterial-vat-layout" : ""}${fermenter || brewery || semifluidFuel ? " fermenter-layout" : ""}${brewery ? " brewery-layout" : ""}${fluidExtractor ? " fluid-extractor-layout" : ""}${canner ? " fluid-canner-layout" : ""}${compressor ? " compressor-layout" : ""}${rockBreaker ? " rock-breaker-layout" : ""}${electrolyzer ? " electrolyzer-layout" : ""}`}
     >
       {(["input", "output"] as const).map((direction) => (
@@ -1492,13 +1319,11 @@ function MachineRecipeLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        {abs ? <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
+        {abs || semifluidFuel ? <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
           <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
         </svg> : autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
           src={
-            semifluidFuel
-              ? "/ui/blast-furnace-progress.png"
-              : canner
+            canner
               ? "/ui/fluid-canner-progress.svg"
               : fluidExtractor || electrolyzer
                 ? "/ui/fluid-extractor-progress.svg"
@@ -1653,3 +1478,183 @@ function FluidTank({
     </button>
   );
 }
+
+const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrowse }: { recipe: Recipe; onBrowse?: Browse }) {
+  const isCrafting = recipe.handler === "Shaped Crafting" || recipe.handler === "Shapeless Crafting";
+  const crafting = isCrafting ? shapedCraftingSlots(recipe.ingredients) : null;
+  let layout: {
+    background?: string;
+    width?: number;
+    height?: number;
+    slotCounts?: RecipeSlotCounts;
+  } = {};
+  try {
+    layout = JSON.parse(recipe.layout);
+  } catch {}
+  return <>      {crafting ? (
+        <div className="crafting-layout">
+          <div
+            className="crafting-inputs"
+            role="group"
+            aria-label="Crafting inputs, 3 by 3 grid"
+          >
+            {crafting.inputs.map((ingredient, index) =>
+              ingredient ? (
+                <ItemSlot
+                  key={index}
+                  ingredient={ingredient} item={ingredient.item}
+                  amount={ingredient.amount}
+                  onBrowse={onBrowse}
+                />
+              ) : (
+                <span
+                  key={index}
+                  className="item-slot empty-recipe-slot"
+                  role="img"
+                  aria-label={`Empty crafting slot ${index + 1}`}
+                />
+              ),
+            )}
+          </div>
+          <CategorySymbol
+            className="crafting-arrow"
+            recipe={recipe}
+            onBrowse={onBrowse}
+          >
+            <svg
+              viewBox="0 0 24 18"
+              aria-hidden="true"
+              shapeRendering="crispEdges"
+            >
+              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
+            </svg>
+          </CategorySymbol>
+          <div
+            className="crafting-output"
+            role="group"
+            aria-label="Crafting output"
+          >
+            {crafting.output ? (
+              <ItemSlot
+                ingredient={crafting.output} item={crafting.output.item}
+                amount={crafting.output.amount}
+                onBrowse={onBrowse}
+              />
+            ) : (
+              <span
+                className="item-slot empty-recipe-slot"
+                role="img"
+                aria-label="Empty crafting output slot"
+              />
+            )}
+          </div>
+        </div>
+      ) : recipe.handler === "Alchemic Chemistry Set" ? (
+        <AlchemicChemistryLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Smelting" ? (
+        <SmeltingLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Casting Table" ? (
+        <CastingTableLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Infernal Blast Furnace" ? (
+        <InfernalBlastFurnaceLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "TiC Part Extruding" ||
+        recipe.handler === "Extruder" ||
+        recipe.handler === "Alloy Smelter Molding" ||
+        recipe.handler === "Alloy Smelter Recycling" ? (
+        <TwoInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Fluid Solidifier" ||
+        recipe.handler === "Large Boiler" ||
+        isCombustionFuelHandler(recipe.handler) ||
+        recipe.handler.startsWith("Magic Energy Absorber Fu") ? (
+        <SingleInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Blast Furnace" ||
+        recipe.handler === "Bricked Blast Furnace" ||
+        recipe.handler === "Arc Furnace Recycling" ||
+        recipe.handler === "Macerator Recycling" ? (
+        <FurnaceGridLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Carpenter" ? (
+        <CarpenterLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Bottler" ? (
+        <BottlerLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Distillation Tower" ? (
+        <DistillationTowerLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "ABS Non-Alloy Recipes" ||
+        recipe.handler === "Assembler" ||
+        recipe.handler === "Circuit Assembler" ||
+        recipe.handler === "Forming Press" ||
+        recipe.handler === "Distillery" ||
+        recipe.handler === "Chemical Reactor" ||
+        recipe.handler === "Large Chemical Reactor" ||
+        recipe.handler === "Chemical Plant" ||
+        recipe.handler === "Mixer" ||
+        recipe.handler === "Bacterial Vat" ||
+        recipe.handler === "Multiblock Mixer" ||
+        recipe.handler === "Fermenter" ||
+        recipe.handler === "Semifluid Generator Fuels" ||
+        recipe.handler === "Brewery" ||
+        recipe.handler === "Fluid Extractor" ||
+        recipe.handler === "Fluid Extractor Recycling" ||
+        recipe.handler === "Electrolyzer" ||
+        recipe.handler === "Autoclave" ||
+        recipe.handler === "Fluid Canner" ||
+        recipe.handler === "Compressor" ||
+        recipe.handler === "Rock Breaker" ? (
+        <MachineRecipeLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : (
+        <div className="recipe-process default-recipe-process">
+          <CategorySymbol className="default-recipe-arrow" recipe={recipe} onBrowse={onBrowse}>
+            <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
+              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
+            </svg>
+          </CategorySymbol>
+          {(["input", "output"] as const).map((direction) => (
+            <div className={`recipe-slot-side recipe-slot-side-${direction}`} key={direction}>
+              <div className="recipe-slot-groups">
+                {recipeSlotGroups(
+                  recipe.ingredients,
+                  direction,
+                  layout.slotCounts,
+                ).map(
+                  ({ kind, slots }) =>
+                    slots.length > 0 && (
+                      <div
+                        className="recipe-slots"
+                        key={kind}
+                        role="group"
+                        aria-label={`${kind === "fluid" ? "Fluid" : "Item"} ${direction} slots`}
+                        style={
+                          layout.slotCounts
+                            ? {
+                                gridTemplateColumns: `repeat(${Math.min(slots.length, 3)}, 36px)`,
+                              }
+                            : undefined
+                        }
+                      >
+                        {slots.map((ingredient, index) =>
+                          ingredient ? (
+                            <ItemSlot
+                              key={index}
+                              ingredient={ingredient} item={ingredient.item}
+                              amount={ingredient.amount}
+                              onBrowse={onBrowse}
+                            />
+                          ) : (
+                            <span
+                              key={index}
+                              className={`item-slot empty-recipe-slot ${kind === "fluid" ? "empty-fluid-slot" : ""}`}
+                              role="img"
+                              aria-label={`Empty ${kind} ${direction} slot`}
+                              title={`Empty ${kind} ${direction} slot`}
+                            />
+                          ),
+                        )}
+                      </div>
+                    ),
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+</>;
+});

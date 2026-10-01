@@ -139,7 +139,7 @@ export function ProjectList() {
               </select>
             </label>
             <p className="muted">
-              Your project starts with a Main production diagram.
+              Your project starts with a My Recepies folder and a My Production diagram.
             </p>
             {error && (
               <p className="error" role="alert">

@@ -76,3 +76,30 @@ test("does not mutate the supplied endpoint positions", () => {
   assert.deepEqual(start, source);
   assert.deepEqual(end, target);
 });
+
+test("moving cards on an initially straight planner route never creates diagonal segments", async () => {
+  const { connectionRoute, moveRouteCorner } = await import("../lib/diagram-geometry");
+  const waypoints = initialRoute(source, target, "a", "b", cards)!;
+  const saved = structuredClone(waypoints);
+  for (const [a, b] of [
+    [{ x: 100, y: 100 }, target],
+    [source, { x: 500, y: -70 }],
+    [{ x: 220, y: 50.5 }, { x: 400, y: 140.25 }],
+    [{ x: 100, y: 160 }, { x: 500, y: 160 }],
+  ]) {
+    const route = connectionRoute(a, b, undefined, undefined, waypoints);
+    const orthogonal = (points: typeof waypoints) => {
+      assert.deepEqual(points[0], a);
+      assert.deepEqual(points.at(-1), b);
+      assert(points.slice(1).every((p, i) => p.x === points[i].x || p.y === points[i].y));
+      assert.equal(points[1].y, a.y);
+      assert.equal(points.at(-2)!.y, b.y);
+    };
+    orthogonal(route.points);
+    for (const corner of route.corners) {
+      const edit = moveRouteCorner(route, corner.index, { x: corner.point.x + 20, y: corner.point.y + 20 });
+      orthogonal(connectionRoute(a, b, undefined, undefined, edit.waypoints).points);
+    }
+  }
+  assert.deepEqual(waypoints, saved, "rendering must not mutate saved routes");
+});

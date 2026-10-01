@@ -10,6 +10,8 @@ import {
   Pencil,
   Plus,
   Workflow,
+  MoreHorizontal,
+  Download,
 } from "lucide-react";
 import { api } from "./project-list";
 import {
@@ -30,6 +32,7 @@ export function DiagramTree({
   onOpen,
   onCreate,
   onRename,
+  onExport,
 }: {
   projectId: string;
   diagrams: Diagram[];
@@ -38,12 +41,25 @@ export function DiagramTree({
   onOpen: (id: string) => Promise<void>;
   onCreate: () => void;
   onRename: (diagram: Diagram) => void;
+  onExport: (format: "json" | "svg" | "pdf", entries: TreeEntry[], progress: (text: string) => void) => Promise<void>;
 }) {
   const [tree, setTree] = useState<Tree>({ revision: 0, entries: [] });
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
+  const exportMenu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!exportOpen) return;
+    const outside = (event: PointerEvent) => { if (!exportMenu.current?.contains(event.target as Node)) setExportOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setExportOpen(false); };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, [exportOpen]);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const [selected, setSelected] = useState(new Set<string>());
+  const [selected, setSelected] = useState(new Set<string>(active ? [active] : []));
+  useEffect(() => { if (active) setSelected(new Set([active])); }, [active]);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(
     null,
   );
@@ -170,7 +186,7 @@ export function DiagramTree({
   }
   return (
     <>
-      <div className="panel-heading">
+      <div className="panel-heading diagram-tree-heading">
         DIAGRAMS{" "}
         <div className="diagram-tree-tools">
           <button
@@ -191,8 +207,22 @@ export function DiagramTree({
           >
             <FolderPlus size={16} />
           </button>
+          <div className="diagram-tree-export" ref={exportMenu}>
+            <button type="button" aria-label="Download all diagrams" title="Download all diagrams" aria-haspopup="menu" aria-expanded={exportOpen} disabled={blocked || !!exportProgress || !diagrams.length} onClick={() => setExportOpen(value => !value)}>
+              <MoreHorizontal size={16} />
+            </button>
+            {exportOpen && <div className="diagram-actions-menu" role="menu" aria-label="Download all diagrams">
+              {(["json", "svg", "pdf"] as const).map(format => <button key={format} type="button" role="menuitem" onClick={async () => {
+                setExportOpen(false); setExportProgress("Preparing export…"); setError("");
+                try { await onExport(format, entries, setExportProgress); }
+                catch (error) { setError((error as Error).message); }
+                finally { setExportProgress(""); }
+              }}><Download size={16} />Download all as {format.toUpperCase()} (.zip)</button>)}
+            </div>}
+          </div>
         </div>
       </div>
+      {exportProgress && <p className="tree-status" role="status">{exportProgress}</p>}
       <nav
         className="diagram-tree"
         aria-label="Project diagrams"
@@ -232,7 +262,7 @@ export function DiagramTree({
                     (active === entry.id ? " current" : "") +
                     dropClass
                   }
-                  style={{ paddingLeft: 3 + depth * 14 }}
+                  style={{ paddingLeft: 0 }}
                   onClick={(e) => {
                     if (blocked || editing) return;
                     const additive = e.ctrlKey || e.metaKey;
@@ -304,6 +334,7 @@ export function DiagramTree({
                 >
                   <button
                     className="tree-grip"
+                    style={{ marginRight: depth * 14 }}
                     type="button"
                     title={"Drag " + name}
                     aria-label={"Drag " + name}
@@ -330,7 +361,7 @@ export function DiagramTree({
                       setDrop(null);
                     }}
                   >
-                    <GripVertical size={20} />
+                    <GripVertical size={14} />
                   </button>
                   {folder && (
                     <button

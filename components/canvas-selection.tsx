@@ -39,17 +39,19 @@ export function CanvasSelection<N extends Node, E extends Edge>({
     local: Point;
     remove: boolean;
     moved: boolean;
+    groupId?: string;
     nodes: N[];
     edges: E[];
     shapes: { id: string; bounds: Area }[];
     routes: { id: string; points: Point[] }[];
   } | null>(null);
   const start = (event: PointerEvent<HTMLDivElement>) => {
+    const groupBody = event.button === 0 && event.target instanceof Element && event.target.classList.contains("summary-area");
     if (
       !enabled ||
       (event.button !== 0 && event.button !== 2) ||
       !(event.target instanceof Element) ||
-      !event.target.classList.contains("react-flow__pane")
+      (!event.target.classList.contains("react-flow__pane") && !groupBody)
     )
       return;
     event.preventDefault();
@@ -57,7 +59,10 @@ export function CanvasSelection<N extends Node, E extends Edge>({
     suppressClick.current = false;
     const bounds = event.currentTarget.getBoundingClientRect();
     const point = { x: event.clientX, y: event.clientY };
+    const groupId = groupBody ? (event.target as Element).closest(".react-flow__node")?.getAttribute("data-id") ?? undefined : undefined;
     const shapes = nodes.flatMap((node) => {
+      // The body acts as canvas space; don't select its containing group.
+      if (node.id === groupId) return [];
       const internal = flow.getInternalNode(node.id);
       if (!internal) return [];
       const p = internal.internals.positionAbsolute;
@@ -107,6 +112,7 @@ export function CanvasSelection<N extends Node, E extends Edge>({
       local: { x: point.x - bounds.left, y: point.y - bounds.top },
       remove: event.shiftKey,
       moved: false,
+      groupId,
       nodes,
       edges,
       shapes,
@@ -181,7 +187,8 @@ export function CanvasSelection<N extends Node, E extends Edge>({
     } else if (!active.moved && (event.button === 0 || event.button === 2)) {
       setNodes((values) =>
         values.map((node) =>
-          node.selected ? { ...node, selected: false } : node,
+          node.selected !== (node.id === active.groupId)
+            ? { ...node, selected: node.id === active.groupId } : node,
         ),
       );
       setEdges((values) =>
@@ -190,7 +197,7 @@ export function CanvasSelection<N extends Node, E extends Edge>({
         ),
       );
     }
-    suppressClick.current = active.moved && !cancel;
+    suppressClick.current = (active.moved || !!active.groupId) && !cancel;
     drag.current = null;
     setBox(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId))

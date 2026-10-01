@@ -1,36 +1,27 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { Point } from "@/lib/diagram-geometry";
-import { animatedDirectionMarkers, directionPhase } from "@/lib/line-direction";
+import { animatedDirectionMarkers } from "@/lib/line-direction";
 
-type Animation = { points: Point[]; phase: number };
+type Animation = { points: Point[] };
 const listeners = new Map<Animation, (seconds: number) => void>();
-let phasesDirty = true;
 let frame: number | undefined;
 let clockStart = 0;
 let elapsed = 0;
 function tick(time: number) {
   elapsed = Math.max(0, (time - clockStart) / 1000);
-  if (phasesDirty) {
-    const animations = [...listeners.keys()];
-    const routes = animations.map((animation) => animation.points);
-    animations.forEach((animation) => { animation.phase = directionPhase(animation.points, routes); });
-    phasesDirty = false;
-  }
   for (const draw of listeners.values()) draw(elapsed);
   frame = listeners.size ? requestAnimationFrame(tick) : undefined;
 }
 
-export function AnimatedLineArrows({ idPrefix, points, others, color, scale = 1 }: { idPrefix: string; points: Point[]; others: Point[][]; color: string; scale?: number }) {
+export function AnimatedLineArrows({ idPrefix, points, color, scale = 1 }: { idPrefix: string; points: Point[]; color: string; scale?: number }) {
   const arrowScale = useRef(scale);
   arrowScale.current = scale;
   const group = useRef<SVGGElement>(null);
   const horizontalGroup = useRef<SVGGElement>(null);
   const verticalGroup = useRef<SVGGElement>(null);
-  const animation = useRef<Animation>({ points, phase: 0 });
+  const animation = useRef<Animation>({ points });
   animation.current.points = points;
-  const geometry = JSON.stringify(points);
-  useEffect(() => { phasesDirty = true; }, [geometry]);
   useLayoutEffect(() => {
     const element = group.current;
     if (!element) return;
@@ -38,7 +29,7 @@ export function AnimatedLineArrows({ idPrefix, points, others, color, scale = 1 
     const born = elapsed;
     const paths: SVGPathElement[] = [];
     const draw = (seconds: number) => {
-      const markers = animatedDirectionMarkers(animation.current.points, seconds, animation.current.phase);
+      const markers = animatedDirectionMarkers(animation.current.points, seconds);
       markers.forEach((marker, index) => {
         if (!paths[index]) {
           const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -54,14 +45,11 @@ export function AnimatedLineArrows({ idPrefix, points, others, color, scale = 1 
       while (paths.length > markers.length) paths.pop()!.remove();
     };
     const state = animation.current;
-    state.phase = directionPhase(state.points, others);
     listeners.set(state, draw);
-    phasesDirty = true;
     draw(born);
     if (frame === undefined) frame = requestAnimationFrame(tick);
     return () => {
       listeners.delete(state);
-      phasesDirty = true;
       paths.forEach((path) => path.remove());
       if (!listeners.size && frame !== undefined) { cancelAnimationFrame(frame); frame = undefined; }
     };

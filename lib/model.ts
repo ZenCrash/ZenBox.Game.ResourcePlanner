@@ -50,6 +50,8 @@ export const nodeSchema = z.object({
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
   machines: z.number().finite().min(0).max(1e9),
   machineId: z.string().min(1).optional(),
+  scaleAmount: z.number().finite().positive().max(1e9).optional(),
+  scaleMachineId: z.string().min(1).optional(),
   disabledPorts: z.array(z.string().regex(/^(input|output):\d+$/)).max(1000).optional(),
   size: z
     .object({
