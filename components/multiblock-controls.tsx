@@ -5,8 +5,9 @@ import { multiblockOptions, multiblockSetup, type MultiblockConfig } from '@/lib
 import { MachineItemTooltip } from './machine-selector';
 import { MinecraftText } from './minecraft-text';
 
-function PartSelector({ label, selected, amount, options, describe, onSelect, onAmountChange }: {
+function PartSelector({ label, selected, defaultId, amount, options, describe, onSelect, onAmountChange }: {
   label: string; selected: Item; amount: number; options: Item[];
+  defaultId?: string;
   describe: (item: Item) => string; onSelect: (id: string) => void;
   onAmountChange?: (amount: number) => void;
 }) {
@@ -37,7 +38,7 @@ function PartSelector({ label, selected, amount, options, describe, onSelect, on
     <div className="machine-selector-anchor">
       <button ref={trigger} type="button" className="item-slot machine-selector" aria-label={`${label}: ${selected.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => { setDraft(String(amount)); setOpen(!open); }}>
         <span className="item-art">{selected.image ? <img src={selected.image} alt="" /> : '?'}<MachineItemTooltip item={selected} /></span>
-        <span className="stack-count">{amount}</span>
+        {amount > 1 && <span className="stack-count">{amount}</span>}
       </button>
       {open && <div className="machine-selector-menu multiblock-parts-menu nowheel" role="menu" aria-label={label}>
         {onAmountChange && <div className="machine-selector-amount">
@@ -49,7 +50,7 @@ function PartSelector({ label, selected, amount, options, describe, onSelect, on
         </div>}
         {options.map(item => <button key={item.id} type="button" role="menuitemradio" aria-checked={item.id === selected.id} onClick={() => { onSelect(item.id); setOpen(false); trigger.current?.focus(); }}>
           <span className="machine-option-icon">{item.image ? <img src={item.image} alt="" /> : '?'}<MachineItemTooltip item={item} /></span>
-          <span className="machine-option-description"><span><MinecraftText text={item.name} /></span>{describe(item) && <span className="machine-option-voltage">{describe(item)}</span>}</span>
+          <span className="machine-option-description"><span><MinecraftText text={item.name} />{item.id === defaultId && <> <span className="machine-default">(default)</span></>}</span>{describe(item) && <span className="machine-option-voltage">{describe(item)}</span>}</span>
         </button>)}
       </div>}
     </div>
@@ -62,6 +63,7 @@ export function MultiblockControls({ recipe, machineId, value, onChange }: {
 }) {
   const setup = multiblockSetup(recipe, machineId, value);
   if (!setup) return null;
+  const defaults = multiblockSetup(recipe, machineId);
   const { coils, hatches } = multiblockOptions(recipe);
   const config: MultiblockConfig = { coilId: setup.coil?.id, energyHatchId: setup.hatch.id, energyHatches: setup.count };
   const coilDescription = (item: Item) => {
@@ -77,8 +79,8 @@ export function MultiblockControls({ recipe, machineId, value, onChange }: {
     return `${next.tier} · ${next.available.toLocaleString()} EU/t available · ${next.amps} A for processing`;
   };
   return <div className="multiblock-controls nodrag nopan" onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-    {setup.coil && <PartSelector label={`${setup.profile.coils} matching coils`} selected={setup.coil} amount={setup.profile.coils} options={coils} describe={coilDescription} onSelect={coilId => onChange({ ...config, coilId })} />}
-    <PartSelector label="Energy hatches" selected={setup.hatch} amount={setup.count} options={hatches} describe={energyDescription} onSelect={energyHatchId => onChange({ ...config, energyHatchId })} onAmountChange={energyHatches => onChange({ ...config, energyHatches })} />
+    {setup.coil && <PartSelector label={`${setup.profile.coils} matching coils`} selected={setup.coil} defaultId={defaults?.coil?.id} amount={setup.profile.coils} options={coils} describe={coilDescription} onSelect={coilId => onChange({ ...config, coilId })} />}
+    <PartSelector label="Energy hatches" selected={setup.hatch} defaultId={defaults?.hatch.id} amount={setup.count} options={hatches} describe={energyDescription} onSelect={energyHatchId => onChange({ ...config, energyHatchId })} onAmountChange={energyHatches => onChange({ ...config, energyHatches })} />
     {!setup.error && <span>Usage: {setup.euPerTick.toLocaleString()} EU/t · {(setup.euPerTick / setup.voltage).toLocaleString(undefined, { maximumFractionDigits: 3 })} A required</span>}
     {setup.error && <span className="multiblock-error" role="status">{setup.error}</span>}
   </div>;
