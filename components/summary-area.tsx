@@ -1,7 +1,11 @@
 "use client";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { NodeResizer, type Node, type NodeProps } from "@xyflow/react";
-import { Plus, X, Ban, CircleCheck, Pencil, Trash2, SquareDashed } from "lucide-react";
+import { Plus, X, Palette, EyeOff, Ban, CircleCheck, Pencil, Trash2, SquareDashed } from "lucide-react";
+import { groupTheme, groupThemes, groupThemeStyle, type GroupTheme } from "@/lib/group-theme";
+import { interfaceTheme } from "@/lib/interface-theme";
+import { useDisplaySettings } from "./display-settings";
+import { IgnoredResourceIcon } from "./ignored-resource-icon";
 import { createPortal } from "react-dom";
 import type { SummaryCalculation } from "@/lib/summary-rate";
 import { summaryCalculationAvailable, TOTAL_EU_INPUT_ID } from "@/lib/summary-rate";
@@ -17,7 +21,12 @@ export function SummaryArea({
   data,
 }: NodeProps<
   Node<{
+    isContainer?: boolean;
     summary?: AreaSummary;
+    theme?: GroupTheme;
+    updateTheme?: (theme: GroupTheme) => void;
+    ignoredItems?: string[];
+    setItemIgnored?: (itemId: string, ignored: boolean) => void;
     setItemDisabled?: (itemId: string, disabled: boolean) => void;
     itemPortState?: (itemId: string) => { hasEnabled: boolean; hasDisabled: boolean };
     title?: string;
@@ -29,7 +38,14 @@ export function SummaryArea({
     updateCalculators?: (values: SummaryCalculation[]) => void;
   }>
 >) {
-  const summary = data.summary;
+  const { settings } = useDisplaySettings();
+  const theme = data.theme === "default" ? interfaceTheme(settings) : groupTheme(data.theme);
+  const defaultSelected = data.theme === "default" || ((data.theme ?? "blue") === "blue" && settings.theme === "blue");
+  const summary = data.isContainer ? undefined : data.summary;
+  const ignoredIds = data.ignoredItems ?? [];
+  const ignored = [...(summary?.inputs ?? []), ...(summary?.outputs ?? [])].filter(row => ignoredIds.includes(row.item.id));
+  const visibleInputs = summary?.inputs.filter(row => !ignoredIds.includes(row.item.id)) ?? [];
+  const visibleOutputs = summary?.outputs.filter(row => !ignoredIds.includes(row.item.id)) ?? [];
   const calculators = useMemo(() => (data.calculators ?? []).filter(calculation =>
     !summary || (
       summaryCalculationAvailable(summary, calculation)
@@ -41,6 +57,7 @@ export function SummaryArea({
     }
   }, [summary, calculators, data.calculators, data.updateCalculators]);
   const [menu, setMenu] = useState<{ itemId?: string; x: number; y: number }>();
+  const [themePicker, setThemePicker] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const rename = () => { setDraft(data.title ?? "Grouping"); setEditing(true); setMenu(undefined); };
@@ -56,18 +73,26 @@ export function SummaryArea({
     return () => { window.removeEventListener("pointerdown", close, true); window.removeEventListener("wheel", close, true); window.removeEventListener("keydown", key); };
   }, [menu]);
   return (
-    <div className={`summary-area${selected ? " selected" : ""}`} onContextMenu={event => {
+    <div className={`summary-area${selected ? " selected" : ""}`} style={groupThemeStyle(theme)} onContextMenu={event => {
       event.preventDefault(); event.stopPropagation();
-      setMenu({ x: Math.max(8, Math.min(event.clientX, window.innerWidth - 250)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 150)) });
+      setThemePicker(false);
+      setMenu({ x: Math.max(8, Math.min(event.clientX, window.innerWidth - 250)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 290)) });
     }}>
       {menu && createPortal(<div ref={menuRef} role="menu" className="diagram-selection-menu line-context-menu nodrag nopan" style={{ position: "fixed", left: menu.x, top: menu.y }} onContextMenu={e => e.preventDefault()}>
-        {menu.itemId ? <>
+        {menu.itemId ? ignoredIds.includes(menu.itemId) ? <button role="menuitem" onClick={() => { data.setItemIgnored?.(menu.itemId!, false); setMenu(undefined); }}><CircleCheck size={16} />Enable item</button> : <>
+{(summary?.inputs.some(row => row.item.id === menu.itemId) || summary?.outputs.some(row => row.item.id === menu.itemId)) && <><button role="menuitem" onClick={() => { data.setItemIgnored?.(menu.itemId!, true); setMenu(undefined); }}><EyeOff size={16} />Ignore item</button><div role="separator" className="sidebar-calculator-menu-divider" /></>}
         <button role="menuitem" disabled={menuPortState ? !menuPortState.hasEnabled : false} title="Disable every matching input and output inside this grouping. Their connections will be removed; Undo restores them." onClick={() => { data.setItemDisabled?.(menu.itemId!, true); setMenu(undefined); }}><Ban size={16} />Disable all</button>
         <button role="menuitem" disabled={menuPortState ? !menuPortState.hasDisabled : false} onClick={() => { data.setItemDisabled?.(menu.itemId!, false); setMenu(undefined); }}><CircleCheck size={16} />Enable all</button>
+        
         </> : <>
           {data.selectRecipes && <button role="menuitem" onClick={() => { data.selectRecipes?.(); setMenu(undefined); }}><SquareDashed size={16} />Select recipes in group</button>}
           <button role="menuitem" onClick={rename}><Pencil size={16} />Rename group</button>
           <button role="menuitem" onClick={() => { setMenu(undefined); data.removeArea?.(id); }}><Trash2 size={16} />Delete group</button>
+          <div className="group-theme-menu-row"><Palette size={16} aria-hidden="true" /><span>Color</span><button type="button" className="group-theme-swatch" data-transparent={data.theme === "transparent" || undefined} aria-label={"Choose group theme: " + theme.name} aria-expanded={themePicker} style={{ background: theme.color }} onClick={() => setThemePicker(value => !value)}>{data.theme === "transparent" && <Ban aria-hidden="true" />}</button></div>
+          {themePicker && <div className="group-theme-palette" role="group" aria-label="Group themes">
+            <div className="group-theme-default-row"><button type="button" className="group-theme-default-swatch" title="Default" aria-label="Default interface theme" aria-pressed={defaultSelected} style={{ background: interfaceTheme(settings).color }} onClick={() => { data.updateTheme?.("default"); setThemePicker(false); setMenu(undefined); }} /><span>Default</span></div>
+            {groupThemes.filter(theme => theme.id !== "dark-aqua" && (theme.id !== "blue" || settings.theme !== "blue")).map(theme => <button type="button" key={theme.id} data-transparent={theme.id === "transparent" || undefined} title={theme.name} aria-label={theme.name} aria-pressed={!defaultSelected && (data.theme ?? "blue") === theme.id} style={{ background: theme.color }} onClick={() => { data.updateTheme?.(theme.id); setThemePicker(false); setMenu(undefined); }}>{theme.id === "transparent" && <Ban aria-hidden="true" />}</button>)}
+          </div>}
         </>}
       </div>, document.body)}
       <NodeResizer
@@ -75,7 +100,7 @@ export function SummaryArea({
         onResizeStart={() => data.selectArea?.()}
         minWidth={380}
         minHeight={260}
-        color="#73baff"
+        color={theme.accent}
       />
       <div className="summary-area-header">
         <div className="summary-area-title">
@@ -138,11 +163,11 @@ export function SummaryArea({
                   {(
                     [
                       [
-                        ["Needed", summary.inputs.filter(({ item }) => !summary.recursiveInputIds.includes(item.id))],
-                        ["Partially supplied", summary.inputs.filter(({ item }) => summary.recursiveInputIds.includes(item.id))],
+                        ["Needed", visibleInputs.filter(({ item }) => !summary.recursiveInputIds.includes(item.id))],
+                        ["Partially supplied", visibleInputs.filter(({ item }) => summary.recursiveInputIds.includes(item.id))],
                       ],
-                      [["Produced", summary.outputs]],
-                      [["Disabled", summary.disabled]],
+                      [["Produced", visibleOutputs]],
+                      [["Disabled", summary.disabled], ["Ignored", ignored]],
                     ] as const
                   ).map(column => column.filter(([, items]) => items.length > 0))
                     .filter(column => column.length > 0).map(column => (
@@ -157,9 +182,10 @@ export function SummaryArea({
                       {items.map(({ item, rate }) => (
                             <div key={item.id}
                               title={item.name}
-                              className={`summary-flow-item${title === "Disabled" ? " summary-flow-disabled" : ""}`}
-                              onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenu({ itemId: item.id, x: Math.max(8, Math.min(event.clientX, window.innerWidth - 210)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 105)) }); }}
+                              className={`summary-flow-item${title === "Ignored" ? " summary-flow-ignored" : ""}${(title === "Disabled" || title === "Ignored") ? " summary-flow-disabled" : ""}`}
+                              onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenu({ itemId: item.id, x: Math.max(8, Math.min(event.clientX, window.innerWidth - 210)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 145)) }); }}
                             >
+                              {title === "Ignored" && <IgnoredResourceIcon size={24} produced={summary.outputs.some(row => row.item.id === item.id)} partial={summary.recursiveInputIds.includes(item.id)} />}
                               <b>
                                 {number(rate)}{" "}
                                 {item.kind === "fluid" ? "mB" : "items"}
@@ -168,7 +194,7 @@ export function SummaryArea({
                               <span className="summary-flow-icon">
                                 {item.image && <img src={item.image} alt="" />}
                               </span>
-                              <span>
+                              <span className="summary-flow-name">
                                 {item.name.replace(/§[0-9a-fk-or]/gi, "")}
                               </span>
                             </div>

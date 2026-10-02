@@ -1,3 +1,4 @@
+import { ARROW_SPACING, synchronizedArrowPhases } from "./line-direction";
 import type { Edge, ReactFlowState } from "@xyflow/react";
 import { connectionRoute, routeMidpoint, type Point } from "./diagram-geometry";
 import { RouteSpatialIndex } from "./route-spatial-index";
@@ -12,6 +13,7 @@ export class GraphGeometry {
   selected = false;
   moving = false;
   settledRevision = 0;
+  private arrowPhases?: Map<number, Map<string, number>>;
   private snapshot?: ReactFlowState;
   private hidden = new Map<boolean, Set<string>>();
   update(state: ReactFlowState) {
@@ -37,15 +39,28 @@ export class GraphGeometry {
       const previous = this.records.get(edge.id);
       const changed = !previous || geometry.some((value, i) => value !== previous.geometry[i]);
       const points = changed ? connectionRoute(start, end, data?.bend, data?.targetBendX, data?.waypoints).points : previous.points;
+      if (changed || previous?.edge.hidden !== edge.hidden || previous?.edge.data?.reference !== edge.data?.reference) this.arrowPhases = undefined;
       if (changed) this.index.set(edge.id, points);
       this.records.set(edge.id, { edge, order, points, geometry });
     });
-    for (const id of this.records.keys()) if (!keep.has(id)) { this.records.delete(id); this.index.remove(id); }
+    for (const id of this.records.keys()) if (!keep.has(id)) { this.records.delete(id); this.index.remove(id); this.arrowPhases = undefined; }
     this.obstacles = state.nodes.flatMap(node => {
       if (node.type === "summary" || node.hidden) return [];
       const internal = state.nodeLookup.get(node.id);
       return internal ? [{ ...internal.internals.positionAbsolute, width: internal.measured.width ?? node.width ?? 352, height: internal.measured.height ?? node.height ?? 240 }] : [];
     });
+  }
+  arrowPhase(id: string, spacing = ARROW_SPACING) {
+    this.arrowPhases ??= new Map();
+    let phases = this.arrowPhases.get(spacing);
+    if (!phases) {
+      phases = synchronizedArrowPhases(
+        [...this.records.values()].filter(r => !r.edge.hidden && !r.edge.data?.reference).map(r => ({ id: r.edge.id, points: r.points })),
+        points => this.index.query(points), spacing,
+      );
+      this.arrowPhases.set(spacing, phases);
+    }
+    return phases.get(id);
   }
   nearby(id: string, points: Point[]) {
     return this.index.query(points).filter(other => other !== id).map(other => this.records.get(other)!).sort((a, b) => a.order - b.order);
@@ -54,7 +69,7 @@ export class GraphGeometry {
   dependencies(id: string, overview: boolean, showOverviewItems: boolean, arrows: boolean): unknown[] {
     const record = this.records.get(id);
     if (!record) return [this.settledRevision, this.moving];
-    return [record.points, this.selected, this.moving, this.settledRevision,
+    return [record.points, arrows && this.arrowPhase(id), this.selected, this.moving, this.settledRevision,
       overview && this.hiddenItems(showOverviewItems).has(id),
       ...this.nearby(id, record.points).flatMap(other => [other.edge.id, other.points, other.edge.selected, other.edge.data?.reference]),
       ...(record.edge.data?.reference ? [...this.records.values()].flatMap(other => [other.edge.id, other.edge.hidden, other.edge.data?.reference, other.edge.style?.stroke]) : []),

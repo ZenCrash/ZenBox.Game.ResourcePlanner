@@ -57,6 +57,11 @@ public class PlannerExport {
             }
             if (world == null || player == null) return;
             if (phase == 1) {
+                if(new File(game,"planner-export.material-icons.json").isFile()){exportMaterialIcons(game);disabled=true;call(mc,"func_71400_g|shutdown");return;}
+                if(new File(game,"planner-export.more-layouts").isFile()){exportMoreLayouts();disabled=true;call(mc,"func_71400_g|shutdown");return;}
+                if(new File(game,"planner-export.layouts-only").isFile()) {
+                    exportLayouts(game,mc);disabled=true;call(mc,"func_71400_g|shutdown");return;
+                }
                 if(new File(game,"planner-export.alchemy-only").isFile()) {
                     status("capturing Alchemic Chemistry Set LP and orb requirements");
                     Object handler=Class.forName("WayofTime.alchemicalWizardry.client.nei.NEIAlchemyRecipeHandler").newInstance();
@@ -183,6 +188,7 @@ public class PlannerExport {
                 Object panel=field(Class.forName("codechicken.nei.ItemPanels"),"itemPanel");
                 Collection<?> panelItems=(Collection<?>)call(panel,"getItems");
                 if(panelItems.isEmpty()) return;
+                if(new File(game,"planner-export.tooltips-only").isFile()){exportTooltipVariants();disabled=true;call(mc,"func_71400_g|shutdown");return;}
                 status("capturing NEI visibility and recipe handlers"); phase=3;
                 // ItemList already excludes ItemInfo.isHidden stacks. The panel list
                 // additionally applies collapsed groups and the current search, so it
@@ -258,6 +264,113 @@ public class PlannerExport {
             errors.add(error.toString());error.printStackTrace(); disabled=true;
             try { write(blocksOnly?"block-errors.json":repairsOnly?"repair-errors.json":fluidsOnly?"fluid-errors.json":"errors.json",errors);status("failed: "+error); } catch(Throwable ignored) {}
         }
+    }
+
+
+
+
+    private void exportMaterialIcons(File game) throws Exception {
+        status("capturing material icon sources for project-only image repairs");
+        Object gson=Class.forName("com.google.gson.Gson").newInstance();
+        List<?> requests=(List<?>)call(gson,"fromJson",new String(Files.readAllBytes(new File(game,"planner-export.material-icons.json").toPath()),StandardCharsets.UTF_8),List.class);
+        List<Object> rows=new ArrayList<Object>();
+        Object registry=field(Class.forName("net.minecraft.item.Item"),"field_150901_e|itemRegistry");
+        for(Object request:requests) {
+            Map<?,?> input=(Map<?,?>)request;Map<String,Object> row=new LinkedHashMap<String,Object>();row.put("id",input.get("id"));
+            try {
+                Object item=call(registry,"func_82594_a|getObject",input.get("registryId"));
+                int meta=((Number)input.get("metadata")).intValue();
+                Object stack=Class.forName("net.minecraft.item.ItemStack").getConstructor(Class.forName("net.minecraft.item.Item"),int.class,int.class).newInstance(item,1,meta);
+                row.put("rgba",call(item,"getRGBa",stack));
+                Object icon=call(item,"getIcon",meta,0),overlay=call(item,"getOverlayIcon",meta,0);
+                if(icon!=null)row.put("base",call(icon,"func_94215_i|getIconName"));
+                if(overlay!=null)row.put("overlay",call(overlay,"func_94215_i|getIconName"));
+            }catch(Throwable error){row.put("error",error.toString());}
+            rows.add(row);
+        }
+        write("material-icons.json",rows);status("material icon source capture complete: "+rows.size());
+    }
+
+    private void exportTooltipVariants() throws Exception {
+        status("capturing modifier-key item tooltips");
+        java.nio.ByteBuffer keys=(java.nio.ByteBuffer)field(Class.forName("org.lwjgl.input.Keyboard"),"keyDownBuffer");
+        int[] codes={42,54,29,157,56,184};byte[] saved=new byte[codes.length];for(int i=0;i<codes.length;i++){saved[i]=keys.get(codes[i]);keys.put(codes[i],(byte)0);}
+        Map<String,Object> variants=new LinkedHashMap<String,Object>();int checked=0;
+        try {for(Object stack:(Iterable<?>)field(Class.forName("codechicken.nei.ItemList"),"items"))try {
+            for(int code:codes)keys.put(code,(byte)0);
+            String normal=String.valueOf(call(Class.forName("com.iouter.gtnhdumper.common.utils.Utils"),"getTooltip",stack));checked++;
+            if(!normal.replaceAll("§.","").toLowerCase(Locale.ROOT).matches("(?s).*(shift|ctrl|control|hold.*alt|press.*alt).*"))continue;
+            Map<String,Object> states=new LinkedHashMap<String,Object>();states.put("0",normal);
+            for(int mask=1;mask<8;mask++){keys.put(42,(byte)((mask&1)!=0?1:0));keys.put(29,(byte)((mask&2)!=0?1:0));keys.put(56,(byte)((mask&4)!=0?1:0));String text=String.valueOf(call(Class.forName("com.iouter.gtnhdumper.common.utils.Utils"),"getTooltip",stack));if(!text.equals(normal))states.put(String.valueOf(mask),text);}
+            if(states.size()>1)variants.put(addStack(stack),states);
+        }catch(Throwable e){errors.add("Tooltip: "+e);}}
+        finally {for(int i=0;i<codes.length;i++)keys.put(codes[i],saved[i]);}
+        write("tooltip-variants.json",variants);write("tooltip-errors.json",errors);status("modifier tooltips complete: "+variants.size()+" / "+checked);
+    }
+
+    private void exportMoreLayouts() throws Exception {
+        status("capturing additional recipe layouts");List<Object> rows=new ArrayList<Object>();
+        for(Object handler:(Iterable<?>)field(Class.forName("codechicken.nei.recipe.GuiUsageRecipe"),"usagehandlers"))try {
+            String name=String.valueOf(call(handler,"getRecipeName"));
+            if(!Arrays.asList("Scanner","Research Station","Tree Growth Simulator","Squeezer").contains(name))continue;
+            if(name.equals("Squeezer")) {
+                call(handler,"loadCraftingRecipes",call(handler,"getOverlayIdentifier"),new Object[0]);List<?> cached=(List<?>)field(handler,"arecipes");
+                for(int i=0;i<cached.size();i++){Object c=cached.get(i);Map<String,Object> r=new LinkedHashMap<String,Object>();r.put("handler",name);r.put("inputs",positioned(call(handler,"getIngredientStacks",i)));r.put("outputs",positioned(call(handler,"getResultStack",i)));r.put("other",positioned(call(handler,"getOtherStacks",i)));r.put("container",field(c,"containerRecipe"));r.put("time",field(c,"processingTime"));Object tank=field(c,"tank"),ts=field(tank,"tanks");List<Object> fs=new ArrayList<Object>();for(int j=0;j<Array.getLength(ts);j++){Object f=call(Array.get(ts,j),"getFluid");Map<String,Object> v=new LinkedHashMap<String,Object>();v.put("id","fluid:"+call(call(f,"getFluid"),"getName"));v.put("amount",field(f,"amount"));fs.add(v);}r.put("fluids",fs);rows.add(r);}
+            } else {
+                Object map=call(handler,"getRecipeMap"),frontend=call(map,"getFrontend"),props=call(frontend,"getNEIProperties");
+                for(Object recipe:(Iterable<?>)call(call(map,"getBackend"),"getAllRecipes")) {Map<String,Object> r=new LinkedHashMap<String,Object>();r.put("handler",name);r.put("inputs",itemArray(field(recipe,"mInputs"),recipe,false));r.put("outputs",itemArray(field(recipe,"mOutputs"),recipe,true));Object special=field(recipe,"mSpecialItems");if(special!=null && Class.forName("net.minecraft.item.ItemStack").isInstance(special))r.put("special",castingItem(special));
+                    Object getter=field(props,"itemInputsGetter");Object display=((java.util.function.Function) getter).apply(recipe);List<Object> inputs=new ArrayList<Object>();for(int j=0;j<Array.getLength(display);j++){Object st=Array.get(display,j);inputs.add(st==null?null:castingItem(st));}r.put("displayInputs",inputs);if(name.equals("Tree Growth Simulator")){List<Object> tools=new ArrayList<Object>();for(int j=0;j<4;j++){Object alt=call(recipe,"getAltRepresentativeInput",j);List<Object> variants=new ArrayList<Object>();if(alt!=null){if(alt.getClass().isArray()){for(int k=0;k<Array.getLength(alt);k++)try{variants.add(castingItem(Array.get(alt,k)));}catch(Throwable ignored){}}else try{variants.add(castingItem(alt));}catch(Throwable ignored){}}tools.add(variants);}r.put("tools",tools);}rows.add(r);}
+            }
+        }catch(Throwable e){errors.add("Additional layout: "+e+" / "+e.getCause());}
+        write("more-layouts.json",rows);List<Object> items=new ArrayList<Object>();for(Object stack:new ArrayList<Object>(stacks.values()))try{items.add(castingItem(stack));}catch(Throwable e){errors.add("Layout item: "+e);}write("more-layout-items.json",items);write("more-layout-errors.json",errors);status("additional layouts complete: "+rows.size());
+    }
+
+    private void exportLayouts(File game,Object mc) throws Exception {
+        status("capturing screenshot recipe metadata");
+        try(InputStream stream=new FileInputStream(new File(game,"planner-export.research.thaum"))) { Object research=call(Class.forName("net.minecraft.nbt.CompressedStreamTools"),"func_74796_a|readCompressed",stream);call(Class.forName("thaumcraft.common.lib.research.ResearchManager"),"loadResearchNBT",research,field(mc,"field_71439_g|thePlayer")); }
+        List<Object> rows=new ArrayList<Object>();
+        String[] classes={"com.kuba6000.mobsinfo.nei.MobHandler","crazypants.enderio.nei.SagMillRecipeHandler","tonius.neiintegration.mods.railcraft.RecipeHandlerCokeOven","ru.timeconqueror.tcneiadditions.nei.TCNAInfusionRecipeHandler"};
+        Object fbo=Class.forName("com.iouter.gtnhdumper.common.utils.FBOHelper").getConstructor(int.class).newInstance(256);
+        Object entityRenderer=field(mc,"field_71460_t|entityRenderer");for(Field f:entityRenderer.getClass().getDeclaredFields()){f.setAccessible(true);Object v=f.get(entityRenderer);if(v!=null && v.getClass().getName().equals("net.minecraft.client.renderer.texture.DynamicTexture")){int[] pixels=(int[])call(v,"func_110565_c|getTextureData");Arrays.fill(pixels,0xffffffff);call(v,"func_110564_a|updateDynamicTexture");}}
+        File portraits=new File(output,"mobs");portraits.mkdirs();
+        for(String name:classes)try {
+            if(new File(game,"planner-export.portraits-only").isFile()&&!name.contains("MobHandler"))continue;
+            if(new File(game,"planner-export.supplement-only").isFile()&&!name.contains("Infusion")&&!name.contains("MobHandler"))continue;
+            Object handler=Class.forName(name).newInstance();
+            if(name.contains("CokeOven"))call(handler,"loadAllRecipes");else call(handler,"loadCraftingRecipes",call(handler,"getOverlayIdentifier"),new Object[0]);
+            List<?> cached=(List<?>)field(handler,"arecipes");
+            for(int i=0;i<cached.size();i++)try {
+                Object c=cached.get(i);Map<String,Object> r=new LinkedHashMap<String,Object>();r.put("handler",call(handler,"getRecipeName"));
+                r.put("inputs",positioned(call(handler,"getIngredientStacks",i)));r.put("outputs",positioned(call(handler,"getResultStack",i)));r.put("other",positioned(call(handler,"getOtherStacks",i)));
+                Map<String,Object> fields=new LinkedHashMap<String,Object>();
+                for(Class<?> cl=c.getClass();cl!=null;cl=cl.getSuperclass())for(Field f:cl.getDeclaredFields()) {f.setAccessible(true);Object v=f.get(c);if(v instanceof Number || v instanceof String || v instanceof Boolean)fields.put(f.getName(),v);}
+                r.put("fields",fields);
+                if(name.contains("CokeOven")) { Object tank=field(c,"fluidOutput");Object v=tank==null?null:call(field(tank,"tank"),"getFluid");if(v!=null){Map<String,Object> fluid=new LinkedHashMap<String,Object>();fluid.put("id","fluid:"+call(call(v,"getFluid"),"getName"));fluid.put("amount",field(v,"amount"));r.put("fluid",fluid);} }
+                if(name.contains("SagMill"))r.put("outputChances",field(c,"outputChance"));
+                if(name.contains("MobHandler")) {
+                    List<Object> drops=new ArrayList<Object>();
+                    for(Object ps:(Iterable<?>)field(c,"mOutputs")) {Map<String,Object> drop=new LinkedHashMap<String,Object>();drop.put("stack",castingItem(field(ps,"item")));drop.put("chance",field(ps,"chance"));drop.put("type",String.valueOf(field(ps,"type")));drop.put("tooltip",field(ps,"extraTooltip"));drops.add(drop);}r.put("drops",drops);
+                    List<String> spawns=new ArrayList<String>();for(Object info:(Iterable<?>)field(c,"spawnList"))spawns.add(String.valueOf(call(info,"getInfo")));r.put("spawns",spawns);r.put("additionalInformation",field(c,"additionalInformation"));
+                    Object mob=field(c,"mob");String filename=(String.valueOf(field(c,"mobname"))+"_"+String.valueOf(field(c,"localizedName"))).replaceAll("[^a-zA-Z0-9_.-]","_")+".png";
+                    try {Class<?> gl=Class.forName("com.gtnewhorizons.angelica.glsm.GLStateManager");call(fbo,"begin");call(gl,"glMatrixMode",5889);call(gl,"glPushMatrix");call(gl,"glLoadIdentity");call(gl,"glOrtho",0d,256d,0d,256d,-1000d,1000d);call(gl,"glMatrixMode",5888);call(field(mc,"field_71460_t|entityRenderer"),"func_78483_a|disableLightmap",0d);call(gl,"enableColorMaterial");call(gl,"glColor4f",1f,1f,1f,1f);call(Class.forName("org.lwjgl.opengl.GL11"),"glCullFace",1029);call(Class.forName("net.minecraft.client.renderer.OpenGlHelper"),"func_77475_a|setLightmapTextureCoords",field(Class.forName("net.minecraft.client.renderer.OpenGlHelper"),"field_77476_b|lightmapTexUnit"),240f,240f);
+                        float height=((Number)field(mob,"field_70131_O|height")).floatValue(),width=((Number)field(mob,"field_70130_N|width")).floatValue();
+                        call(Class.forName("net.minecraft.client.gui.inventory.GuiInventory"),"func_147046_a|drawEntityOnScreen",128,230,(int)(190/Math.max(1,Math.max(height,width))),-20f,0f,mob);
+                        call(gl,"glMatrixMode",5889);call(gl,"glPopMatrix");call(gl,"glMatrixMode",5888);call(fbo,"end");javax.imageio.ImageIO.write((java.awt.image.BufferedImage)call(fbo,"saveToImage"),"png",new File(portraits,filename));call(fbo,"restoreTexture");r.put("portrait",filename);
+                    }catch(Throwable e){errors.add("Portrait "+filename+": "+e+" / "+e.getCause());try {Class<?> gl=Class.forName("com.gtnewhorizons.angelica.glsm.GLStateManager");call(gl,"glMatrixMode",5889);call(gl,"glPopMatrix");call(gl,"glMatrixMode",5888);call(fbo,"end");}catch(Throwable ignored){}}
+                }
+                rows.add(r);
+            }catch(Throwable e){errors.add(name+" row "+i+": "+e);}
+        }catch(Throwable e){errors.add(name+": "+e);}
+        if(new File(game,"planner-export.portraits-only").isFile()){write("portrait-recipes.json",rows);write("portrait-errors.json",errors);status("portrait capture complete");return;}
+        if(new File(game,"planner-export.supplement-only").isFile()){
+            Object map=field(Class.forName("gregtech.api.recipe.RecipeMaps"),"assemblylineVisualRecipes");for(Object recipe:(Iterable<?>)call(call(map,"getBackend"),"getAllRecipes")){Map<String,Object> r=new LinkedHashMap<String,Object>();r.put("handler","Assemblyline Process");r.put("inputs",itemArray(field(recipe,"mInputs"),recipe,false));r.put("outputs",itemArray(field(recipe,"mOutputs"),recipe,true));Object special=field(recipe,"mSpecialItems");if(special!=null && Class.forName("net.minecraft.item.ItemStack").isInstance(special))r.put("research",castingItem(special));rows.add(r);}
+            write("layout-supplement.json",rows);write("layout-supplement-errors.json",errors);status("layout supplement complete");return;
+        }
+        write("layout-recipes.json",rows);write("layout-errors.json",errors);
+        status("rendering layout item icons");List<Object> items=new ArrayList<Object>();for(Object stack:new ArrayList<Object>(stacks.values()))items.add(castingItem(stack));write("layout-items.json",items);
+        Object renderer=call(Class.forName("net.minecraft.client.renderer.entity.RenderItem"),"getInstance");File icons=new File(output,"layout-icons");icons.mkdirs();Map<String,String> rendered=new LinkedHashMap<String,String>();
+        for(Map.Entry<String,Object> entry:stacks.entrySet())try {Class<?> dumper=Class.forName("com.iouter.gtnhdumper.common.dumper.ItemIconDumper");String filename=(String)call(dumper,"getIconFileName",entry.getValue());javax.imageio.ImageIO.write((java.awt.image.BufferedImage)call(dumper,"renderItem",entry.getValue(),fbo,renderer,1f,null),"png",new File(icons,filename));call(fbo,"restoreTexture");rendered.put(entry.getKey(),filename);}catch(Throwable e){errors.add("Item "+entry.getKey()+": "+e);}
+        write("layout-icons.json",rendered);write("layout-errors.json",errors);status("layout metadata capture complete: "+rows.size());
     }
 
     private Map<String,Object> castingItem(Object stack) throws Exception {

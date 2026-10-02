@@ -1,3 +1,4 @@
+import { groupThemeIds } from "./group-theme";
 import { z } from "zod";
 export type Item = {
   id: string;
@@ -40,6 +41,7 @@ export type Recipe = {
   details: string;
   ingredients: Ingredient[];
   craftingMachines?: Item[];
+  multiblockParts?: Item[];
   smeltingFuel?: Item;
   bottlerFluid?: { item: Item; amount: number };
 };
@@ -50,6 +52,11 @@ export const nodeSchema = z.object({
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
   machines: z.number().finite().min(0).max(1e9),
   machineId: z.string().min(1).optional(),
+  multiblock: z.object({
+    coilId: z.string().min(1).optional(),
+    energyHatchId: z.string().min(1).optional(),
+    energyHatches: z.number().int().min(1).max(2).optional(),
+  }).optional(),
   scaleAmount: z.number().finite().positive().max(1e9).optional(),
   scaleMachineId: z.string().min(1).optional(),
   disabledPorts: z.array(z.string().regex(/^(input|output):\d+$/)).max(1000).optional(),
@@ -115,6 +122,8 @@ export const diagramSchema = z.object({
         width: z.number().finite().min(380).max(100000),
         height: z.number().finite().min(260).max(100000),
         title: z.string().max(120).optional(),
+        theme: z.preprocess(value => value === "dark-gray" ? "gray" : value, z.enum(groupThemeIds).optional()),
+        ignoredItems: z.array(z.string()).optional(),
         calculators: z
           .array(
             z.object({
@@ -309,10 +318,17 @@ export function applyVariants(
 }
 /** Validate locked choices and reconcile inputs with their actual connected output.
  * One input cannot simultaneously consume two different concrete variants. */
-export function resolveDiagramVariants(
+export function resolveDiagramVariants(document: DiagramDocument, recipes: Recipe[]): DiagramDocument {
+  const work = resolveDiagramVariantsSteps(document, recipes);
+  let result = work.next();
+  while (!result.done) result = work.next();
+  return result.value;
+}
+
+export function* resolveDiagramVariantsSteps(
   document: DiagramDocument,
   recipes: Recipe[],
-): DiagramDocument {
+): Generator<void, DiagramDocument> {
   const recipeMap = new Map(recipes.map((recipe) => [recipe.id, recipe]));
   const nodes = document.nodes.map((node) => ({
     ...node,
@@ -320,6 +336,7 @@ export function resolveDiagramVariants(
   }));
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
   for (const node of nodes) {
+    yield;
     const recipe = recipeMap.get(node.recipeId);
     if (!recipe) throw new Error("Unknown recipe");
     if (recipe.sourceItemId !== node.itemId)
@@ -336,6 +353,7 @@ export function resolveDiagramVariants(
   }
   const supplied = new Map<string, string>();
   for (const edge of document.edges) {
+    yield;
     const source = nodeMap.get(edge.source),
       target = nodeMap.get(edge.target);
     const output =

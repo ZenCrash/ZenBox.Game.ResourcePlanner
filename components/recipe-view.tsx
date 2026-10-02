@@ -10,10 +10,12 @@ import {
 } from "@/lib/model";
 import type { Item, Recipe } from "@/lib/model";
 import { MinecraftText } from "./minecraft-text";
+import { ItemTooltipLines } from "./item-tooltip-lines";
 import { ItemTooltip } from "./item-tooltip";
 import { useDisplaySettings } from "./display-settings";
 import { PortItemOutline, usePortItemHighlight } from "./port-item-highlight";
 import { recipePowerInfo } from "@/lib/recipe-power";
+import { gameRecipeLayout, gameRecipeGeometry, type GameRecipeLayout } from "@/lib/game-recipe-layout";
 import { isCombustionFuelHandler } from "@/lib/recipe-handlers";
 import { machineTiers, tierColors } from "@/lib/machine-selection";
 import {
@@ -83,8 +85,8 @@ export function ItemSlot({
   groupExpanded,
   groupTitle,
   onAddItem,
-  nativeTooltip,
   tooltipAtPointer,
+  extraTooltip,
   ingredient,
   onItemDragStart,
   onItemDragEnd,
@@ -98,11 +100,11 @@ export function ItemSlot({
   groupExpanded?: boolean;
   groupTitle?: string;
   onAddItem?: (item: Item) => void;
-  nativeTooltip?: boolean;
   tooltipAtPointer?: boolean;
   ingredient?: Ingredient;
   onItemDragStart?: (item: Item, event: DragEvent<HTMLButtonElement>) => void;
   onItemDragEnd?: () => void;
+  extraTooltip?: string[];
 }) {
   const { settings } = useDisplaySettings();
   const accepted = ingredient?.direction === "input"
@@ -115,10 +117,6 @@ export function ItemSlot({
       : item.kind === "fluid"
         ? fluidSlotAmount(amount)
         : `${amount}`;
-  let lines: string[] = [];
-  try {
-    lines = JSON.parse(item.tooltip);
-  } catch {}
   return (
     <button
       className="item-slot nodrag"
@@ -141,11 +139,6 @@ export function ItemSlot({
         onBrowse?.(item, "uses");
       }}
       aria-label={`${item.name}${amountLabel !== undefined ? ` × ${amountLabel}` : ""}`}
-      title={
-        nativeTooltip
-          ? [item.name, ...lines].join("\n").replace(/§[0-9a-fk-or]/gi, "")
-          : undefined
-      }
       aria-expanded={groupExpanded}
     >
       {highlight.itemId === item.id && <PortItemOutline />}
@@ -178,18 +171,8 @@ export function ItemSlot({
         {item.kind === "fluid" && amount !== undefined && (
           <FluidTooltipAmount amount={amount} />
         )}
-        {!groupTitle &&
-          lines
-            .filter(
-              (line, i) =>
-                i !== 0 ||
-                line.replace(/§./g, "") !== item.name.replace(/§./g, ""),
-            )
-            .map((line, i) => (
-              <span key={i}>
-                <MinecraftText text={line} />
-              </span>
-            ))}
+        {!groupTitle && <ItemTooltipLines item={item} />}
+        {extraTooltip?.map((line, index) => <span key={"extra" + index}><MinecraftText text={line} /></span>)}
         {!groupTitle && settings.showItemIds && (
           <small>
             {item.registryId}:{item.metadata}
@@ -216,6 +199,7 @@ export function ItemSlot({
 
 export function CyclingRecipe({
   recipe,
+  headerTier,
   onBrowse,
   onSelect,
   disabled,
@@ -224,6 +208,7 @@ export function CyclingRecipe({
 }: {
   recipe: Recipe;
   onBrowse: Browse;
+  headerTier?: string;
   onSelect: (variants: VariantSelection, keepOpen: boolean) => void;
   disabled: boolean;
   pager?: ReactNode;
@@ -264,6 +249,7 @@ export function CyclingRecipe({
     >
       <RecipeView
         recipe={applyVariants(recipe, variants)}
+        headerTier={headerTier}
         belowTitle={pager}
         navigation={navigation}
         onBrowse={onBrowse}
@@ -298,6 +284,7 @@ export function CyclingRecipe({
 }
 export function RecipeView({
   recipe,
+  headerTier,
   referenceRecipe,
   referenceTimeTicks,
   machineCount = 1,
@@ -310,6 +297,7 @@ export function RecipeView({
   navigation,
 }: {
   recipe: Recipe;
+  headerTier?: string;
   referenceRecipe?: Recipe;
   referenceTimeTicks?: number;
   machineCount?: number;
@@ -348,7 +336,7 @@ export function RecipeView({
     >
       <div className="recipe-title">
         {navigation?.previous}
-        <span>{recipe.handler}</span>
+        <span>{recipe.handler}{headerTier && <> <span style={{ whiteSpace: "nowrap" }}>(<span style={{ color: tierColors[headerTier] ?? "#fff" }}>{headerTier}</span>)</span></>}</span>
         {navigation?.next}
       </div>
       {belowTitle}
@@ -882,9 +870,7 @@ function SmeltingLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-          <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-        </svg>
+        <PlainRecipeArrow />
       </CategorySymbol>
       <div
         className="smelting-output"
@@ -945,9 +931,7 @@ function CarpenterLayout({
       />
     );
   const arrow = (
-    <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-      <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-    </svg>
+    <PlainRecipeArrow />
   );
   return (
     <div className="carpenter-layout">
@@ -995,7 +979,7 @@ function CarpenterLayout({
       >
         {arrow}
       </CategorySymbol>
-      <FluidTank fluid={fluid} onBrowse={onBrowse} />
+      <FluidTank fluid={fluid} onBrowse={onBrowse} capacity={64000} />
     </div>
   );
 }
@@ -1022,9 +1006,7 @@ function BottlerLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-          <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-        </svg>
+        <PlainRecipeArrow />
       </CategorySymbol>
       <div className="bottler-containers">
         {(["input", "output"] as const).map((direction) => {
@@ -1126,7 +1108,7 @@ function DistillationTowerLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        <img src="/ui/distillery-progress.svg" alt="" aria-hidden="true" />
+        <img className="faithful-recipe-symbol" src="/ui/faithful/arrow_multiple.png" alt="" aria-hidden="true" />
       </CategorySymbol>
       <div
         className="tower-outputs"
@@ -1293,7 +1275,7 @@ function MachineRecipeLayout({
                         />
                       )}
                       {abs && ingredient && !ingredient.consumed && (
-                        <span className="tic-extruding-nc" aria-label="Not consumed">NC</span>
+                        <span className="tic-extruding-nc" aria-label="Not consumed">{recipe.handler === "Milling" && /ball/i.test(ingredient.item.name) ? "NC*" : "NC"}</span>
                       )}
                       {autoclave && ingredient && direction === "output" && ingredient.chance < 1 && (
                         <span className="blast-furnace-chance" aria-label={`${ingredient.chance * 100}% chance`}>
@@ -1319,23 +1301,22 @@ function MachineRecipeLayout({
         recipe={recipe}
         onBrowse={onBrowse}
       >
-        {abs || semifluidFuel ? <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-          <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-        </svg> : autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
+        {abs || semifluidFuel ? <PlainRecipeArrow /> : autoclave ? <PlainRecipeArrow /> : mixer || multiblockMixer ? <MixerRecipeSymbol /> : <img
+          className="faithful-recipe-symbol"
           src={
-            canner
-              ? "/ui/fluid-canner-progress.svg"
+            rockBreaker ? "/ui/faithful/macerate.png" : compressor ? "/ui/faithful/compress.png" : canner
+              ? "/ui/faithful/canner.png"
               : fluidExtractor || electrolyzer
-                ? "/ui/fluid-extractor-progress.svg"
+                ? "/ui/faithful/extract.png"
                 : plant || mixer || multiblockMixer
-                  ? "/ui/chemical-plant-progress.svg"
+                  ? "/ui/faithful/mixer.png"
                   : distillery || chemical || largeChemical || vat || fermenter || brewery
-                    ? "/ui/distillery-progress.svg"
+                    ? "/ui/faithful/arrow_multiple.png"
                     : press
-                      ? "/ui/forming-press-progress.svg"
+                      ? "/ui/faithful/compress.png"
                       : circuit
-                        ? "/ui/circuit-assembler-progress.svg"
-                        : "/ui/assembler-progress.svg"
+                        ? "/ui/faithful/circuit_assembler.png"
+                        : "/ui/faithful/assemble.png"
           }
           alt=""
           aria-hidden="true"
@@ -1345,39 +1326,35 @@ function MachineRecipeLayout({
   );
 }
 
-function PlainRecipeArrow() {
+function GameDefinedRecipeLayout({ recipe, definition, onBrowse }: { recipe: Recipe; definition: GameRecipeLayout; onBrowse?: Browse }) {
+  const geometry = gameRecipeGeometry(definition, recipe.ingredients);
   return (
-    <svg width="40" height="36" viewBox="0 0 40 36" aria-hidden="true">
-      <path fill="#373737" d="M25 3 40 18 25 33V21H0v-6h25Z" />
-      <path fill="#fff" d="m40 18-15 15v-1l14-14ZM0 20h26v12h-1V21H0Z" />
-      <path fill="#8b8b8b" d="m26 5 13 13-13 13V20H1v-4h25Z" />
-    </svg>
+    <div className="game-defined-recipe-layout" style={{ width: geometry.width, height: geometry.height }} aria-label={recipe.handler + " recipe layout"}>
+      {geometry.slots.map(({ ingredient, kind, direction, index, x, y, overlay }) => (
+        <div className={"game-defined-slot " + kind} key={direction + kind + index}
+          style={{ left: (x - 16) * 2, top: (y - 6) * 2, ...(overlay ? { "--game-slot-overlay": 'url("/ui/faithful/slot-' + overlay + '.png")' } : {}) } as React.CSSProperties}>
+          {ingredient ? <ItemSlot ingredient={ingredient} item={ingredient.item} amount={ingredient.amount} onBrowse={onBrowse} />
+            : <span className="item-slot empty-recipe-slot" role="img" aria-label={"Empty " + kind + " " + direction + " slot"} />}
+          {ingredient && !ingredient.consumed && <span className="tic-extruding-nc" aria-label="Not consumed">NC</span>}
+          {ingredient && direction === "output" && ingredient.chance < 1 && <span className="blast-furnace-chance" aria-label={ingredient.chance * 100 + "% chance"}>{Number((ingredient.chance * 100).toFixed(2))}%</span>}
+        </div>
+      ))}
+      <CategorySymbol className="game-defined-progress" recipe={recipe} onBrowse={onBrowse}>
+        <img className="faithful-recipe-symbol" src={"/ui/faithful/" + definition.texture + ".png"} alt="" aria-hidden="true" />
+      </CategorySymbol>
+      {definition.decorations.map((decoration, index) => <img key={index} className="game-defined-decoration"
+        src={"/ui/faithful/" + decoration.texture + ".png"} alt="" aria-hidden="true"
+        style={{ left: (decoration.x - 16) * 2, top: (decoration.y - 6) * 2, width: decoration.width * 2, height: decoration.height * 2 }} />)}
+    </div>
   );
 }
 
+function PlainRecipeArrow() {
+  return <img className="faithful-recipe-symbol" src="/ui/faithful/arrow.png" width="40" height="36" alt="" aria-hidden="true" />;
+}
+
 function MixerRecipeSymbol() {
-  return (
-    <svg width="36" height="36" viewBox="14 2 76 72" aria-hidden="true">
-      {[0, 90, 180, 270].map((angle) => (
-        <g key={angle} transform={`rotate(${angle} 52 38)`}>
-          <path
-            fill="#8b8b8b"
-            stroke="#555"
-            strokeWidth="2"
-            strokeLinejoin="miter"
-            d="M21 21 33 9H41V5H46L55 14 43 26H39V21H35L27 29H23L21 27Z"
-          />
-          <path
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2"
-            strokeLinejoin="miter"
-            d="M33 9 21 21V27L23 29H27L35 21"
-          />
-        </g>
-      ))}
-    </svg>
-  );
+  return <img className="faithful-recipe-symbol" src="/ui/faithful/mixer.png" width="40" height="36" alt="" aria-hidden="true" />;
 }
 
 function CategorySymbol({
@@ -1426,13 +1403,15 @@ function CategorySymbol({
 function FluidTank({
   fluid,
   onBrowse,
+  capacity = 10000,
 }: {
   fluid?: { item: Item; amount: number };
   onBrowse?: Browse;
+  capacity?: number;
 }) {
   const highlight = usePortItemHighlight();
   const fill = fluid
-    ? Math.min(100, Math.max(0, (fluid.amount / 10000) * 100))
+    ? Math.min(100, Math.max(0, (fluid.amount / capacity) * 100))
     : 0;
   return (
     <button
@@ -1521,13 +1500,7 @@ const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrow
             recipe={recipe}
             onBrowse={onBrowse}
           >
-            <svg
-              viewBox="0 0 24 18"
-              aria-hidden="true"
-              shapeRendering="crispEdges"
-            >
-              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-            </svg>
+            <PlainRecipeArrow />
           </CategorySymbol>
           <div
             className="crafting-output"
@@ -1549,9 +1522,13 @@ const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrow
             )}
           </div>
         </div>
+      ) : ["Shaped A.Worktable", "Shapeless A.Worktable", "Arcane Infusion", "Crucible", "SAG Mill", "Assemblyline Process", "Mob Info", "Research Station", "Scanner", "Space Mining", "Tree Growth Simulator", "Squeezer", "Brewing"].includes(recipe.handler) ? (
+        <ScreenshotRecipeLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : recipe.handler === "Coke Oven" && !layout.slotCounts ? (
+        <CokeOvenLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Alchemic Chemistry Set" ? (
         <AlchemicChemistryLayout recipe={recipe} onBrowse={onBrowse} />
-      ) : recipe.handler === "Smelting" ? (
+      ) : ["Smelting", "Blasting"].includes(recipe.handler) ? (
         <SmeltingLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Casting Table" ? (
         <CastingTableLayout recipe={recipe} onBrowse={onBrowse} />
@@ -1563,6 +1540,7 @@ const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrow
         recipe.handler === "Alloy Smelter Recycling" ? (
         <TwoInputMachineLayout recipe={recipe} onBrowse={onBrowse} />
       ) : recipe.handler === "Fluid Solidifier" ||
+        recipe.handler === "TiC Bolt Molding" ||
         recipe.handler === "Large Boiler" ||
         isCombustionFuelHandler(recipe.handler) ||
         recipe.handler.startsWith("Magic Energy Absorber Fu") ? (
@@ -1600,12 +1578,12 @@ const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrow
         recipe.handler === "Compressor" ||
         recipe.handler === "Rock Breaker" ? (
         <MachineRecipeLayout recipe={recipe} onBrowse={onBrowse} />
+      ) : gameRecipeLayout(recipe.handler) ? (
+        <GameDefinedRecipeLayout recipe={recipe} definition={gameRecipeLayout(recipe.handler)!} onBrowse={onBrowse} />
       ) : (
         <div className="recipe-process default-recipe-process">
           <CategorySymbol className="default-recipe-arrow" recipe={recipe} onBrowse={onBrowse}>
-            <svg viewBox="0 0 24 18" aria-hidden="true" shapeRendering="crispEdges">
-              <path d="M0 7H14V0L23 9L14 18V11H0Z" fill="#8b8b8b" />
-            </svg>
+            <PlainRecipeArrow />
           </CategorySymbol>
           {(["input", "output"] as const).map((direction) => (
             <div className={`recipe-slot-side recipe-slot-side-${direction}`} key={direction}>
@@ -1658,3 +1636,129 @@ const RecipeProcessContent = memo(function RecipeProcessContent({ recipe, onBrow
       )}
 </>;
 });
+
+type ScreenshotMetadata = {
+  specialItem?: Item;
+  toolItems?: Item[][];
+  instability?: number;
+  energy?: number;
+  researchItem?: Item;
+  mob?: { name: string; mod: string; health: number; infernal: number; image?: string; spawns: string[]; groups: Record<string, number[]>; dropTooltips?: string[][]; dropDurability?: (number | null)[]; additionalInformation?: string[]; spawnItem?: Item; usage?: number; seconds?: number };
+};
+function ScreenshotRecipeLayout({ recipe, onBrowse }: { recipe: Recipe; onBrowse?: Browse }) {
+  const metadata: ScreenshotMetadata = JSON.parse(recipe.layout);
+  const h = recipe.handler;
+  if (["Research Station", "Scanner", "Space Mining", "Tree Growth Simulator", "Squeezer", "Brewing"].includes(h)) return <AdditionalRecipeLayout recipe={recipe} metadata={metadata} onBrowse={onBrowse} />;
+  const isThaum = ["Shaped A.Worktable", "Shapeless A.Worktable", "Arcane Infusion", "Crucible"].includes(h);
+  const slot = (ingredient: Ingredient | undefined, x: number, y: number, key: string, plain = false) => <div key={key} className={"screenshot-slot" + (plain ? " plain" : "") + (ingredient?.item.kind === "fluid" || key.startsWith("fluid") ? " fluid" : "")} style={{ left: x * 2, top: y * 2 }}>
+    {ingredient ? <ItemSlot ingredient={ingredient} item={ingredient.item} amount={ingredient.amount} onBrowse={onBrowse} /> : <span className="item-slot empty-recipe-slot" />}
+    {ingredient && ingredient.direction === "output" && ingredient.chance < 1 && <span className="blast-furnace-chance">{Number((ingredient.chance * 100).toFixed(2))}%</span>}
+  </div>;
+  const art = (name: string, x: number, y: number, width: number, height: number, category = false) => category
+    ? <CategorySymbol key={name} className="screenshot-art" recipe={recipe} onBrowse={onBrowse}><img src={`/ui/recipe-layouts/${name}.png`} style={{ width: width * 2, height: height * 2 }} alt="" /></CategorySymbol>
+    : <img key={name} className="screenshot-art" src={`/ui/recipe-layouts/${name}.png`} style={{ left: x * 2, top: y * 2, width: width * 2, height: height * 2 }} alt="" />;
+  if (h === "Mob Info") return <MobInfoLayout recipe={recipe} metadata={metadata.mob} onBrowse={onBrowse} />;
+  if (h === "Assemblyline Process") {
+    const inputs = recipe.ingredients.filter(i => i.direction === "input" && i.item.kind !== "fluid");
+    const fluids = recipe.ingredients.filter(i => i.direction === "input" && i.item.kind === "fluid");
+    const outputs = recipe.ingredients.filter(i => i.direction === "output");
+    return <div className="screenshot-recipe-layout" style={{ width: 288, height: Math.max(144, Math.ceil(inputs.length / 4) * 36, fluids.length * 36) }} aria-label={h + " recipe layout"}>
+      {art('assembly-1', 72, 0, 17, 72)}{art('assembly-2', 108, 0, 18, 72)}{art('assembly-3', 130, 18, 10, 18)}
+      {Array.from({ length: Math.max(16, inputs.length) }, (_, i) => slot(inputs[i], i % 4 * 18, Math.floor(i / 4) * 18, 'in' + i))}
+      {Array.from({ length: Math.max(4, fluids.length) }, (_, i) => slot(fluids[i], 90, i * 18, 'fluid' + i))}
+      {slot(outputs[0], 126, 0, 'out')}
+      {metadata.researchItem ? <div className="screenshot-slot" style={{ left: 252, top: 72 }}><ItemSlot item={metadata.researchItem} onBrowse={onBrowse} /></div> : slot(undefined, 126, 36, "research")}
+      <CategorySymbol className="assembly-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol>
+    </div>;
+  }
+  if (h === "SAG Mill") return <div className="screenshot-recipe-layout" style={{ width: 332, height: 130 }} aria-label={h + " recipe layout"}>
+    {art('sag', 0, 0, 166, 65)}
+    {recipe.ingredients.map((i, n) => slot(i, i.x ?? 74, i.y ?? 2, String(n), true))}
+    {metadata.energy != null && <span className="screenshot-energy" style={{ left: 192, top: 66 }}>{metadata.energy.toLocaleString('en-US')} RF</span>}
+    <CategorySymbol className="sag-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol>
+  </div>;
+  if (isThaum) {
+    const infusion = h === 'Arcane Infusion', crucible = h === 'Crucible';
+    const height = Math.max(crucible ? 270 : infusion ? 294 : 280, ...recipe.ingredients.map(i => ((i.y ?? 0) + 18) * 2));
+    return <div className="screenshot-recipe-layout thaum-layout" style={{ width: 332, height }} aria-label={h + " recipe layout"}>
+      {infusion ? <>{art('rune', 69, -5, 28, 30)}{art('infusion', 34, 28.25, 98, 77)}</> : crucible ? <>{art('rune', 65, 3, 28, 30)}{art('crucible', 30, 48.5, 98, 84)}{art('crucible-arrow', 66.75, 34.5, 19.25, 22.75)}</> : <>{art('arcane-grid', 37.4, 24.1, 88.4, 88.4)}{art('rune', 68, -3.1, 27.2, 27.2)}{art('wand', 4, height / 2 - 24, 24, 24)}</>}
+      {recipe.ingredients.map((i, n) => slot(i, i.x ?? 0, infusion && i.item.name.startsWith("Aspect:") ? Math.max(129, i.y ?? 129) : i.y ?? 0, String(n), true))}
+      {infusion && metadata.instability != null && <span className="infusion-instability" style={{ top: 234 }}>Instability: {metadata.instability}</span>}
+    </div>;
+  }
+  return null;
+}
+function CokeOvenLayout({ recipe, onBrowse }: { recipe: Recipe; onBrowse?: Browse }) {
+  const input = recipe.ingredients.find(i => i.direction === 'input');
+  const output = recipe.ingredients.find(i => i.direction === 'output' && i.item.kind !== 'fluid');
+  const fluid = recipe.ingredients.find(i => i.direction === 'output' && i.item.kind === 'fluid');
+  return <div className="coke-oven-layout" aria-label="Coke Oven recipe layout">
+    <div className="coke-input"><img className="coke-flames" src="/ui/smelting-flames.svg" alt="" />{input && <ItemSlot ingredient={input} item={input.item} amount={input.amount} onBrowse={onBrowse} />}</div>
+    <CategorySymbol className="coke-arrow" recipe={recipe} onBrowse={onBrowse}><PlainRecipeArrow /></CategorySymbol>
+    <span className="coke-time">{recipe.durationTicks} ticks</span>
+    <div className="coke-output">{output && <ItemSlot ingredient={output} item={output.item} amount={output.amount} onBrowse={onBrowse} />}</div>
+    <FluidTank fluid={fluid} onBrowse={onBrowse} />
+  </div>;
+}
+function MobInfoLayout({ recipe, metadata, onBrowse }: { recipe: Recipe; metadata?: ScreenshotMetadata['mob']; onBrowse?: Browse }) {
+  if (!metadata) return <div className="mob-info-layout"><p>Mob details have not been exported for this recipe.</p><CategorySymbol className="mob-category" recipe={recipe} onBrowse={onBrowse}><img src="/ui/recipe-layouts/mob-sword.png" width={28} height={28} alt="" /></CategorySymbol></div>;
+  const outputs = recipe.ingredients.filter(i => i.direction === 'output');
+  const input = metadata.spawnItem ?? recipe.ingredients.find(i => i.direction === 'input')?.item;
+  return <div className="mob-info-layout">
+    <div className="mob-info-top"><div><div className="mob-portrait">{metadata.image ? <img src={metadata.image} alt={metadata.name} /> : <span className="mob-portrait-unavailable">Portrait unavailable</span>}{input && <div className="mob-spawn-item"><ItemSlot item={input} onBrowse={onBrowse} /></div>}</div><div className="mob-tools"><CategorySymbol className="mob-category" recipe={recipe} onBrowse={onBrowse}><img src="/ui/recipe-layouts/mob-sword.png" width={28} height={28} alt="" /></CategorySymbol><span tabIndex={0}><img src="/ui/recipe-layouts/mob-info.png" width={17} height={28} alt="Drop information" /><ItemTooltip compact><span>Drop chances and sizes are averages across all possibilities. A 100% chance does not always guarantee a drop: equal chances of 0, 1, or 2 items average to 1 item per drop (100%).</span></ItemTooltip></span></div></div>
+      <div className="mob-description"><strong>{metadata.name}</strong><span>Mod: {metadata.mod}</span><span>Max health: {metadata.health}</span>{metadata.infernal > 0 && <span className="mob-infernal">Can spawn infernal</span>}<span className="mob-spawns" tabIndex={0}>Spawns in {metadata.spawns.length} places…<ItemTooltip compact><div className="mob-spawn-list">{metadata.spawns.map((s, i) => <div key={i}>{s}</div>)}</div></ItemTooltip></span>{metadata.additionalInformation?.map((text, i) => <span key={i}><MinecraftText text={text} /></span>)}{metadata.usage != null && <span>Usage: {metadata.usage} EU/t</span>}{metadata.seconds != null && <span>Time: {metadata.seconds} secs</span>}</div>
+    </div>
+    {['Normal', 'Rare', 'Additional', 'Infernal'].map(name => { const indices = metadata.groups[name] ?? [];return indices.length ? <section key={name}><h4>{name} drops</h4><div className="mob-drops">{indices.map(index => { const i=outputs[index];return i ? <div key={index}><ItemSlot ingredient={i} item={i.item} amount={i.amount} onBrowse={onBrowse} extraTooltip={metadata.dropTooltips?.[index]} />{metadata.dropDurability?.[index] != null && <small>{metadata.dropDurability[index]}%</small>}</div> : null; })}</div></section> : null; })}
+  </div>;
+}
+
+// Native NEI/ModularUI positions, in game pixels displayed at 2x.
+function AdditionalRecipeLayout({ recipe, metadata, onBrowse }: { recipe: Recipe; metadata: ScreenshotMetadata; onBrowse?: Browse }) {
+  const h = recipe.handler;
+  const ingredients = [...recipe.ingredients].sort((a,b) => (a.slot ?? 0) - (b.slot ?? 0));
+  const inputs = ingredients.filter(i => i.direction === "input" && i.item.kind !== "fluid");
+  const outputs = ingredients.filter(i => i.direction === "output" && i.item.kind !== "fluid");
+  const fluids = (side: "input" | "output") => ingredients.filter(i => i.direction === side && i.item.kind === "fluid");
+  const slot = (i: Ingredient | undefined, x: number, y: number, key: string, plain = false) => <div key={key} className={"screenshot-slot" + (plain ? " plain" : "") + (key.startsWith("fluid") ? " fluid" : "")} style={{left:x*2,top:y*2}}>
+    {i ? <ItemSlot ingredient={i} item={i.item} amount={i.amount} onBrowse={onBrowse} /> : <span className="item-slot empty-recipe-slot" />}
+    {i && !i.consumed && <span className="tic-extruding-nc">NC</span>}
+    {i && i.direction === "output" && i.chance < 1 && <span className="blast-furnace-chance">{Number((i.chance*100).toFixed(2))}%</span>}
+  </div>;
+  const special = (x: number,y: number,nc = false) => <div className="screenshot-slot" style={{left:x*2,top:y*2}}>{metadata.specialItem ? <ItemSlot item={metadata.specialItem} onBrowse={onBrowse} /> : <span className="item-slot empty-recipe-slot" />}{nc && metadata.specialItem && <span className="tic-extruding-nc">NC</span>}</div>;
+  const art = (name: string,x: number,y: number,w: number,ht: number) => <img className="screenshot-art" src={`/ui/recipe-layouts/${name}.png`} style={{left:x*2,top:y*2,width:w*2,height:ht*2}} alt="" />;
+  const arrow = (x: number,y: number) => <div style={{position:"absolute",left:x*2,top:y*2}}><CategorySymbol className="additional-category-symbol" recipe={recipe} onBrowse={onBrowse}><PlainRecipeArrow /></CategorySymbol></div>;
+  const frame = (w: number,ht: number,content: ReactNode) => <div className={"screenshot-recipe-layout additional-layout " + (h === "Squeezer" ? "squeezer-layout" : "")} style={{width:w*2,height:ht*2}} aria-label={h+" recipe layout"}>{content}</div>;
+  if (h === "Research Station") return frame(126,74,<>
+    {art("heat_sink",0,6,84,60)}{art("rack_large",22,16,40,40)}
+    {art("research-1",62,34,25,5)}{art("research-2",105,34,11,5)}{art("research-3",109,38,10,18)}
+    {slot(inputs[0],33,27,"input")}{slot(outputs[0],87,27,"output")}{special(105,56)}
+    <div style={{position:"absolute",left:124,top:54}}><CategorySymbol className="research-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol></div>
+  </>);
+  if (h === "Scanner") return frame(126,74,<>{slot(inputs[0],18,18,"input")}{arrow(44,18)}{slot(outputs[0],72,18,"output")}{slot(fluids("input")[0],18,56,"fluid-input")}{special(90,56)}</>);
+  if (h === "Tree Growth Simulator") return frame(108,63,<>
+    {special(45,0,true)}{arrow(44,36)}
+    {Array.from({length:4},(_,n) => <div className="screenshot-slot" key={n} style={{left:n%2*36,top:(27+Math.floor(n/2)*18)*2}}>{metadata.toolItems?.[n]?.[0] ? <ItemSlot item={metadata.toolItems[n][0]} ingredient={{itemId:metadata.toolItems[n][0].id,item:metadata.toolItems[n][0],direction:"input",amount:1,chance:1,consumed:false,slot:n,x:null,y:null,alternatives:JSON.stringify(metadata.toolItems[n].map(i=>i.id)),alternativeItems:metadata.toolItems[n]}} onBrowse={onBrowse} /> : <span className="item-slot empty-recipe-slot" />}</div>)}
+    {Array.from({length:4},(_,n)=>slot(outputs.find(i=>i.slot===n),72+n%2*18,27+Math.floor(n/2)*18,"out"+n))}
+  </>);
+  if (h === "Space Mining") return frame(151,72,<>
+    {art("space-mining",36,0,23,63)}
+    {slot(inputs[0],133,9,"drone")}
+    {Array.from({length:4},(_,n)=>slot(inputs[n+1],n%2*18,Math.floor(n/2)*18,"in"+n))}
+    {Array.from({length:2},(_,n)=>slot(fluids("input")[n],n*18,45,"fluid"+n))}
+    {Array.from({length:Math.max(16,outputs.length)},(_,n)=>slot(outputs.find(i=>i.slot===n),59+n%4*18,Math.floor(n/4)*18,"out"+n))}
+    <div style={{position:"absolute",left:72,top:0}}><CategorySymbol className="space-mining-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol></div>
+  </>);
+  if (h === "Brewing") return frame(66,58,<>
+    {art("brewing",0,0,66,58)}
+    {ingredients.map(i=>slot(i,(i.x ?? 74)-50,(i.y ?? 6)-3,i.direction+":"+i.slot,true))}
+    <div style={{position:"absolute",left:90,top:0}}><CategorySymbol className="brewing-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol></div>
+  </>);
+  const fluid = fluids("output")[0];
+  return frame(166,68,<>
+    {art("squeezer",0,0,166,68)}
+    {inputs.map(i=>slot(i,(i.x ?? 12)-1,(i.y ?? 10)-1,i.direction+":"+i.slot,true))}
+    {outputs.map(i=>slot(i,91,48,i.direction+":"+i.slot,true))}
+    <div className="squeezer-fluid"><FluidTank fluid={fluid} onBrowse={onBrowse} /></div>
+    <div style={{position:"absolute",left:140,top:60}}><CategorySymbol className="squeezer-category-hit" recipe={recipe} onBrowse={onBrowse}><span /></CategorySymbol></div>
+  </>);
+}

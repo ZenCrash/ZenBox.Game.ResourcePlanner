@@ -14,7 +14,7 @@ import { CornerDownRight, Minus, Plus, Factory, Eye, EyeOff } from "lucide-react
 import { crossingPath } from "@/lib/line-crossings";
 import { GraphGeometry } from "@/lib/graph-geometry";
 import { useStableValues } from "./use-stable-values";
-import { lineDirectionColor, animatedDirectionMarkers } from "@/lib/line-direction";
+import { lineDirectionColor, lineDirectionMarkers } from "@/lib/line-direction";
 import type { Item } from "@/lib/model";
 import { ItemTooltip } from "./item-tooltip";
 import { useDisplaySettings } from "./display-settings";
@@ -202,20 +202,22 @@ export const GridEdge = memo(function GridEdge({
   const nearby = useStableValues(scene.nearby(id, route.points), (a, b) => a.edge.id === b.edge.id && a.points === b.points &&
     a.edge.selected === b.edge.selected && a.edge.data?.reference === b.edge.data?.reference);
   const midpoint = data?.imagePosition ?? routeMidpoint(route.points);
-  const showOverviewItem = overview && (data?.showOverviewCard ?? settings.overviewLineItems) && !scene.hiddenItems(settings.overviewLineItems).has(id);
+  const itemAnimation = settings.animatedArrows && settings.animatedItemImages && !settings.disableArrows;
+  const showOverviewItem = !itemAnimation && overview && (data?.showOverviewCard ?? settings.overviewLineItems) && !scene.hiddenItems(settings.overviewLineItems).has(id);
   const anySelected = scene.selected;
-  const crossing = useMemo(() => !settings.crossingBridges || data?.reference || selected || anySelected
+  const crossing = useMemo(() => !settings.crossingBridges || selected || anySelected
     ? { path: route.path, underpasses: [], junctions: [] }
     : crossingPath(route.points, nearby.filter(other => !other.edge.selected).map(other => other.points),
-      nearby.filter(other => !other.edge.selected && !other.edge.data?.reference).map(other => other.points)),
+      data?.reference ? [] : nearby.filter(other => !other.edge.selected && !other.edge.data?.reference).map(other => other.points)),
     [route.path, nearby, settings.crossingBridges, data?.reference, selected, anySelected]);
   const otherRoutes = nearby.map(other => ({ id: other.edge.id, points: other.points }));
 
+  const arrowPhase = scene.arrowPhase(id, itemAnimation ? settings.animatedItemSpacing : undefined);
   const staticArrows = useMemo(() => {
     if (settings.disableArrows || settings.animatedArrows || data?.reference) return [];
     const length = route.points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point.x - route.points[i].x, point.y - route.points[i].y), 0);
-    return length < 40 ? [] : animatedDirectionMarkers(route.points, 0);
-  }, [route.path, settings.disableArrows, settings.animatedArrows, data?.reference]);
+    return length < 40 ? [] : lineDirectionMarkers(route.points, arrowPhase).map(marker => ({ ...marker, opacity: 1 }));
+  }, [route.path, arrowPhase, settings.disableArrows, settings.animatedArrows, data?.reference]);
   const foregroundArrows = otherRoutes.flatMap((other) => {
     const axes = new Set<string>();
     for (let index = 1; index < other.points.length; index++) {
@@ -383,7 +385,7 @@ export const GridEdge = memo(function GridEdge({
           {[overview].map(isOverview => {
             const visible = isOverview ? (data?.showOverviewCard ?? settings.overviewLineItems) : (data?.showLineCard ?? settings.detailLineItems);
             const Icon = visible ? EyeOff : Eye;
-            return <button key={String(isOverview)} role="menuitem" type="button" onClick={() => { data?.setCardVisible?.(isOverview, !visible); setMenu(null); }}><Icon size={16} />{visible ? "Hide" : "Show"} line card</button>;
+            return <button key={String(isOverview)} role="menuitem" type="button" disabled={isOverview && itemAnimation} onClick={() => { data?.setCardVisible?.(isOverview, !visible); setMenu(null); }}><Icon size={16} />{visible ? "Hide" : "Show"} line card</button>;
           })}
           {!data?.readOnlyMachines && <>
           {data?.catchup && <>
@@ -573,53 +575,6 @@ export const GridEdge = memo(function GridEdge({
             interactionWidth={20}
           />
         </g>
-        <g mask={crossing.underpasses.length ? `url(#${crossingId}-mask)` : undefined}>
-        <g id={`${crossingId}-arrows`}>
-        {settings.disableArrows || data?.reference ? null : settings.animatedArrows ? (
-          <AnimatedLineArrows idPrefix={`connection-arrows-${id}`} points={route.points} scale={arrowScale} color={lineDirectionColor(String(style?.stroke ?? "#ffffff"))} />
-        ) : ["horizontal", "vertical"].map((axis) => <g key={axis} id={`connection-arrows-${id}-${axis}`}>
-        {staticArrows.filter((marker) => (Math.abs(marker.angle) % 180 === 0) === (axis === "horizontal")).map((marker, index) => (
-          <path
-            key={`direction-${index}`}
-            d="M8,0 L-6,-9 L-6,9 Z"
-            transform={`translate(${marker.x},${marker.y}) rotate(${marker.angle}) scale(${arrowScale})`}
-            fill={lineDirectionColor(String(style?.stroke ?? "#ffffff"))}
-            stroke="#242424"
-            strokeWidth={1}
-            strokeLinejoin="round"
-            pointerEvents="none"
-          />
-        ))}</g>)}
-        </g>
-        <g mask={`url(#${crossingId}-shadow-shape)`} pointerEvents="none">
-        {crossing.underpasses.map((point, index) => (
-          <path
-            key={`crossing-shadow-${index}`}
-            d={`M${point.x},${point.y - 11 * arrowScale} V${point.y + 11 * arrowScale}`}
-            stroke={`url(#${crossingId}-shadow-${index})`}
-            strokeWidth={20 * arrowScale}
-            fill="none"
-            pointerEvents="none"
-          />
-        ))}
-        {crossing.junctions.map((point, index) => (
-          <path key={`junction-shadow-${index}`}
-            d={`M${point.x + point.dx * 3 * arrowScale},${point.y + point.dy * 3 * arrowScale} L${point.x + point.dx * 11 * arrowScale},${point.y + point.dy * 11 * arrowScale}`}
-            stroke={`url(#${crossingId}-junction-${index})`} strokeWidth={20 * arrowScale} fill="none" pointerEvents="none" />
-        ))}
-        </g>
-        </g>
-        {data?.reference && !settings.disableArrows && (
-          <g mask={`url(#${crossingId}-arrow-overlay)`} pointerEvents="none">
-            {edges.filter((edge) => !edge.hidden && !edge.data?.reference).flatMap((edge) =>
-              ["horizontal", "vertical"].map((axis) => (
-                <use key={`${edge.id}-${axis}`} href={`#connection-arrows-${edge.id}-${axis}`}
-                  fill={lineDirectionColor(String(edge.style?.stroke ?? "#ffffff"))}
-                  stroke="#242424" strokeWidth={1} strokeLinejoin="round" />
-              )),
-            )}
-          </g>
-        )}
         {segments.map((segment) => {
           const key = segment.indexes.join("-");
           return (
@@ -683,6 +638,53 @@ export const GridEdge = memo(function GridEdge({
             />
           );
         })}
+        <g mask={crossing.underpasses.length ? `url(#${crossingId}-mask)` : undefined}>
+        <g id={`${crossingId}-arrows`}>
+        {settings.disableArrows || data?.reference ? null : settings.animatedArrows ? (
+          <AnimatedLineArrows item={itemAnimation ? data?.item : undefined} idPrefix={`connection-arrows-${id}`} points={route.points} phase={arrowPhase} scale={arrowScale} color={lineDirectionColor(String(style?.stroke ?? "#ffffff"))} />
+        ) : ["horizontal", "vertical"].map((axis) => <g key={axis} id={`connection-arrows-${id}-${axis}`}>
+        {staticArrows.filter((marker) => (Math.abs(marker.angle) % 180 === 0) === (axis === "horizontal")).map((marker, index) => (
+          <path
+            key={`direction-${index}`}
+            d="M8,0 L-6,-9 L-6,9 Z"
+            transform={`translate(${marker.x},${marker.y}) rotate(${marker.angle}) scale(${arrowScale})`}
+            fill={lineDirectionColor(String(style?.stroke ?? "#ffffff"))}
+            stroke="#242424"
+            strokeWidth={1}
+            strokeLinejoin="round"
+            pointerEvents="none"
+          />
+        ))}</g>)}
+        </g>
+        <g mask={`url(#${crossingId}-shadow-shape)`} pointerEvents="none">
+        {crossing.underpasses.map((point, index) => (
+          <path
+            key={`crossing-shadow-${index}`}
+            d={`M${point.x},${point.y - 11 * arrowScale} V${point.y + 11 * arrowScale}`}
+            stroke={`url(#${crossingId}-shadow-${index})`}
+            strokeWidth={20 * arrowScale}
+            fill="none"
+            pointerEvents="none"
+          />
+        ))}
+        {crossing.junctions.map((point, index) => (
+          <path key={`junction-shadow-${index}`}
+            d={`M${point.x + point.dx * 3 * arrowScale},${point.y + point.dy * 3 * arrowScale} L${point.x + point.dx * 11 * arrowScale},${point.y + point.dy * 11 * arrowScale}`}
+            stroke={`url(#${crossingId}-junction-${index})`} strokeWidth={20 * arrowScale} fill="none" pointerEvents="none" />
+        ))}
+        </g>
+        </g>
+        {data?.reference && !settings.disableArrows && (
+          <g mask={`url(#${crossingId}-arrow-overlay)`} pointerEvents="none">
+            {edges.filter((edge) => !edge.hidden && !edge.data?.reference).flatMap((edge) =>
+              ["horizontal", "vertical"].map((axis) => (
+                <use key={`${edge.id}-${axis}`} href={`#connection-arrows-${edge.id}-${axis}`}
+                  fill={lineDirectionColor(String(edge.style?.stroke ?? "#ffffff"))}
+                  stroke="#242424" strokeWidth={1} strokeLinejoin="round" />
+              )),
+            )}
+          </g>
+        )}
       </g>
       <EdgeLabelRenderer>
         {label != null && (

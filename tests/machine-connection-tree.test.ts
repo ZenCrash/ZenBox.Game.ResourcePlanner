@@ -18,3 +18,43 @@ test("outside connections are excluded and duplicate connections collapse", () =
   assert.equal(graph.lines[0].data?.reference,true);
   assert.equal(graph.order.length,3);
 });
+
+
+test("independent recipe copies and separate connected pairs retain their own rows", () => {
+  const ids = ['original-canner', 'original-mixer', 'copied-canner', 'paired-canner', 'paired-mixer'];
+  const graph = machineConnectionTree(ids, [
+    {source:'original-canner',target:'original-mixer'},
+    {source:'paired-canner',target:'paired-mixer'},
+  ]);
+  assert.deepEqual(new Set(graph.order),new Set(ids));
+  assert.equal(graph.order.length,5);
+  assert.equal(graph.lines.length,2);
+  assert(!graph.lines.some(line=>line.source==='copied-canner'||line.target==='copied-canner'));
+  assert(graph.lines.some(line=>line.source==='paired-canner'&&line.target==='paired-mixer'));
+});
+
+
+test("unconnected machines stay at the bottom, including alongside recycling networks", () => {
+  const graph = machineConnectionTree(['isolated-first','B','isolated-middle','A','C','isolated-last'], [
+    {source:'A',target:'B'}, {source:'B',target:'C'}, {source:'C',target:'A'},
+  ]);
+  assert.deepEqual(graph.order.slice(-3), ['isolated-first','isolated-middle','isolated-last']);
+  assert(graph.lines.every(line => line.from < 3 && line.to < 3));
+  assert.deepEqual(machineConnectionTree(['B','A'], []).order, ['B','A']);
+});
+
+
+test("separate networks remain contiguous after the main network despite interleaved recipe order", () => {
+  const graph = machineConnectionTree(['pair-output','main-output','solo','main-input','pair-input','main-middle'], [
+    {source:'main-input',target:'main-middle'}, {source:'main-middle',target:'main-output'},
+    {source:'pair-input',target:'pair-output'},
+  ]);
+  assert.deepEqual(graph.order,['main-input','main-middle','main-output','pair-input','pair-output','solo']);
+});
+
+test("separate networks do not interrupt a recycling network", () => {
+  const graph = machineConnectionTree(['A','X','B','Y','C'], [
+    {source:'A',target:'B'}, {source:'B',target:'C'}, {source:'C',target:'A'}, {source:'X',target:'Y'},
+  ]);
+  assert.deepEqual(graph.order,['A','B','C','X','Y']);
+});

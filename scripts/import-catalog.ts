@@ -152,6 +152,7 @@ async function main() {
           const { ingredients, ...fields } = recipe;
           const record = {
             ...fields,
+            enabled: fields.enabled,
             layout: JSON.stringify(fields.layout),
             details: JSON.stringify(fields.details),
           };

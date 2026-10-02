@@ -1,0 +1,101 @@
+[
+  {
+    "name": "research-1",
+    "source": "assets/tectech/textures/gui/progressbar/research_station_1.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 25,
+      "height": 5
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "research-2",
+    "source": "assets/tectech/textures/gui/progressbar/research_station_2.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 11,
+      "height": 5
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "research-3",
+    "source": "assets/tectech/textures/gui/progressbar/research_station_3.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 10,
+      "height": 18
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "heat_sink",
+    "source": "assets/tectech/textures/gui/picture/heat_sink.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 84,
+      "height": 60
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "rack_large",
+    "source": "assets/tectech/textures/gui/picture/rack_large.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 40,
+      "height": 40
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "space-mining",
+    "source": "assets/gtnhintergalactic/textures/gui/progressbar/space_mining_module_arrow.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 23,
+      "height": 63
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "hammer-recycling-tab",
+    "source": "assets/gregtech/textures/gui/picture/forge_hammer_recycling.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    },
+    "archive": "Faithful"
+  },
+  {
+    "name": "squeezer",
+    "source": "assets/forestry/textures/gui/squeezersocket.png",
+    "rect": {
+      "left": 10,
+      "top": 22,
+      "width": 332,
+      "height": 136
+    },
+    "archive": "Faithful"
+  },
+  {
+    "name": "brewing",
+    "source": "assets/minecraft/textures/gui/container/brewing_stand.png",
+    "rect": {
+      "left": 108,
+      "top": 26,
+      "width": 132,
+      "height": 116
+    },
+    "archive": "Faithful"
+  }
+]

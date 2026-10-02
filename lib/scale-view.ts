@@ -4,15 +4,15 @@ import { overclockRecipe } from "./recipe-overclock";
 import { selectedMachine } from "./machine-selection";
 import { connectedMachines, networkMachineCounts } from "./network-ratio";
 
-type ScaleNode = Node<{ recipe: Recipe; variants: VariantSelection; machines: number; machineId?: string; scaleAmount?: number; scaleMachineId?: string }>;
+type ScaleNode = Node<{ recipe: Recipe; variants: VariantSelection; machines: number; machineId?: string; multiblock?: import("./multiblock").MultiblockConfig; scaleAmount?: number; scaleMachineId?: string }>;
 export function scaleDiagram<N extends ScaleNode>(nodes: N[], edges: Edge[]) {
-  const recipes = new Map(nodes.filter(node => node.type === "recipe").map(node => [node.id, overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.scaleMachineId ?? node.data.machineId)]));
+  const recipes = new Map(nodes.filter(node => node.type === "recipe").map(node => [node.id, overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.scaleMachineId ?? node.data.machineId, node.data.multiblock)]));
   const counts = new Map<string, number>(), scaled = new Set<string>(), failed = new Set<string>(), proportional = new Set<string>(), visited = new Set<string>();
   for (const node of nodes) {
     if (node.type !== "recipe" || node.data.recipe.sourceItemId || !node.data.scaleMachineId) continue;
     const base = applyVariants(node.data.recipe, node.data.variants);
     if (selectedMachine(base, node.data.machineId)?.id === selectedMachine(base, node.data.scaleMachineId)?.id) continue;
-    const original = overclockRecipe(base, node.data.machineId), selected = recipes.get(node.id)!;
+    const original = overclockRecipe(base, node.data.machineId, node.data.multiblock), selected = recipes.get(node.id)!;
     if (!hasRecipeTiming(original) || !hasRecipeTiming(selected)) continue;
     const speed = (recipe: Recipe) => (recipe.parallel ?? 1) / (recipe.cycleDurationTicks ?? recipe.durationTicks);
     const amount = node.data.machines * speed(original) / speed(selected);
@@ -40,7 +40,7 @@ export function scaleDiagram<N extends ScaleNode>(nodes: N[], edges: Edge[]) {
       // An unbalanced network can still be scaled in its existing proportions.
       // Adjust the baseline counts for any tier speed changes first.
       const baseline = Object.fromEntries(nodes.filter(value => ids.has(value.id) && value.type === "recipe" && !value.data.recipe.sourceItemId).map(value => {
-        const original = overclockRecipe(applyVariants(value.data.recipe, value.data.variants), value.data.machineId);
+        const original = overclockRecipe(applyVariants(value.data.recipe, value.data.variants), value.data.machineId, value.data.multiblock);
         const selected = recipes.get(value.id)!;
         const speed = (recipe: Recipe) => (recipe.parallel ?? 1) / (recipe.cycleDurationTicks ?? recipe.durationTicks);
         const adjustment = hasRecipeTiming(original) && hasRecipeTiming(selected) ? speed(original) / speed(selected) : 1;
@@ -75,7 +75,7 @@ export function createScaleCalculator(calculate: typeof scaleDiagram = scaleDiag
     const sameNodes = previousNodes?.length === nodes.length && nodes.every((node, i) => {
       const previous = previousNodes![i], a = node.data, b = previous.data;
       return node.id === previous.id && node.type === previous.type && a.recipe === b.recipe && a.variants === b.variants &&
-        a.machines === b.machines && a.machineId === b.machineId && a.scaleAmount === b.scaleAmount && a.scaleMachineId === b.scaleMachineId;
+        a.machines === b.machines && a.machineId === b.machineId && a.multiblock === b.multiblock && a.scaleAmount === b.scaleAmount && a.scaleMachineId === b.scaleMachineId;
     });
     const sameEdges = previousEdges?.length === edges.length && edges.every((edge, i) => {
       const previous = previousEdges![i];

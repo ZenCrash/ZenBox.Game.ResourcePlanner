@@ -2,6 +2,7 @@ import { catalog } from "./db";
 import { acceptedItemIds, type Recipe } from "./model";
 import { bottlerFluids, hydrateFluidContents } from "./fluid-containers";
 import { smeltingRuntime } from "./smelting-runtime";
+import { multiblockPartIds, multiblockProfile } from './multiblock';
 
 export function machineIds(recipe: Recipe): string[] {
   // Et Futurum registers this catalyst through IMC rather than NEI's CSV.
@@ -10,7 +11,9 @@ export function machineIds(recipe: Recipe): string[] {
       ? ["etfuturum:blast_furnace"]
       : recipe.handler === "Blast Furnace"
         ? ["gregtech:gt.blockmachines:1000", "gregtech:gt.blockmachines:15412"]
-        : [];
+        : recipe.handler === "Space Mining"
+          ? ["gregtech:gt.blockmachines:14007", "gregtech:gt.blockmachines:14008", "gregtech:gt.blockmachines:14009"]
+          : [];
   try {
     const ids = JSON.parse(recipe.layout).machineIds;
     return [
@@ -51,7 +54,8 @@ export async function hydrateRecipeVariants(
       recipes.flatMap((recipe) => [
         ...recipe.ingredients.flatMap(acceptedItemIds),
         ...machineIds(recipe),
-        ...(recipe.handler === "Smelting" ? ["minecraft:coal"] : []),
+        ...multiblockPartIds,
+        ...(["Smelting", "Blasting"].includes(recipe.handler) ? ["minecraft:coal"] : []),
       ]),
     ),
   ].filter((id) => !known.has(id));
@@ -63,7 +67,7 @@ export async function hydrateRecipeVariants(
   }
   return hydrateFluidContents(recipes.map((recipe) => ({
     ...smeltingRuntime(recipe),
-    ...(recipe.handler === "Smelting"
+    ...(["Smelting", "Blasting"].includes(recipe.handler)
       ? { smeltingFuel: known.get("minecraft:coal") }
       : {}),
     ...(tankFluids.has(recipe.id)
@@ -72,6 +76,8 @@ export async function hydrateRecipeVariants(
     craftingMachines: machineIds(recipe).flatMap((id) =>
       known.has(id) ? [known.get(id)!] : [],
     ),
+    multiblockParts: machineIds(recipe).some(id => multiblockProfile({ ...recipe, craftingMachines: known.has(id) ? [known.get(id)!] : [] }, id))
+      ? multiblockPartIds.flatMap(id => known.has(id) ? [known.get(id)!] : []) : undefined,
     ingredients: recipe.ingredients.map((i) => ({
       ...i,
       alternativeItems: acceptedItemIds(i).flatMap((id) =>

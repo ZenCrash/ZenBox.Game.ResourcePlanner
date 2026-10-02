@@ -1,6 +1,7 @@
+import neiOrder from "./nei-handler-order.json";
 import { canonicalRecipeHandler } from "./recipe-handlers";
 
-// Priorities inferred from observed in-game tab sequences, with gaps for future
+// Tie-break priorities inferred from observed in-game tab sequences, with gaps for future
 // observations. The relative order between separate observed sequences is provisional.
 export const RECIPE_TAB_PRIORITIES: Readonly<Record<string, number>> = {
   "Shaped Crafting": 100,
@@ -58,10 +59,17 @@ function tabOrder(handler: string) {
   };
 }
 
+export function neiRecipePriority(handler: string): number {
+  const name = canonicalRecipeHandler(handler);
+  const id = (neiOrder.handlers as Record<string, string>)[name] ?? name;
+  return (neiOrder.priorities as Record<string, number>)[id] ?? 0;
+}
+
 export function compareRecipeHandlers(a: string, b: string) {
   const left = tabOrder(a),
     right = tabOrder(b);
   return (
+    neiRecipePriority(a) - neiRecipePriority(b) ||
     left.priority - right.priority ||
     left.base.localeCompare(right.base) ||
     left.variant - right.variant ||

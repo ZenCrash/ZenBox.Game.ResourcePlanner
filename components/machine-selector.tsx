@@ -2,6 +2,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { Item, Recipe } from "@/lib/model";
+import { ItemTooltipLines } from "./item-tooltip-lines";
 import { ItemTooltip } from "./item-tooltip";
 import { MinecraftText } from "./minecraft-text";
 import { useDisplaySettings } from "./display-settings";
@@ -15,28 +16,12 @@ import {
 
 export function MachineItemTooltip({ item }: { item: Item }) {
   const { settings } = useDisplaySettings();
-  let lines: string[] = [];
-  try {
-    const parsed: unknown = JSON.parse(item.tooltip);
-    if (Array.isArray(parsed))
-      lines = parsed.filter((line): line is string => typeof line === "string");
-  } catch {}
   return (
     <ItemTooltip followPointer>
       <strong>
         <MinecraftText text={item.name} />
       </strong>
-      {lines
-        .filter(
-          (line, index) =>
-            index !== 0 ||
-            line.replace(/§./g, "") !== item.name.replace(/§./g, ""),
-        )
-        .map((line, index) => (
-          <span key={index}>
-            <MinecraftText text={line} />
-          </span>
-        ))}
+      <ItemTooltipLines item={item} />
       {settings.showItemIds && <small>
         {item.registryId}:{item.metadata}
       </small>}

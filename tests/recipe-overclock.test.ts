@@ -160,8 +160,8 @@ test("connections and summaries use the same overclocked rates and energy", () =
   const recipe = overclockRecipe(base, "MV");
   const input = { ...ingredient, direction: "input" };
   const connection = connectionSummary(ingredient, recipe, 2, input, base, 1);
-  assert.equal(connection.from, "0.8 items/s");
-  assert.equal(connection.target, "0.2 items/s");
+  assert.equal(connection.from, `${(0.8).toLocaleString()} items/s`);
+  assert.equal(connection.target, `${(0.2).toLocaleString()} items/s`);
   const summary = summarizeArea(
     { position: { x: 0, y: 0 }, width: 500, height: 500 },
     [

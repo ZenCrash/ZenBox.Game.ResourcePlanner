@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareRecipeHandlers } from "../lib/recipe-order";
+import { compareRecipeHandlers, neiRecipePriority } from "../lib/recipe-order";
 
 test("truncated combustion category retains its fuel tab order", () => {
   const sequence = ["Large Boiler", "Combustion Generator Fue...", "Semifluid Generator Fuels", "Fluid Canner"];
@@ -68,14 +68,14 @@ for (const sequence of [
     "Fluid Canner",
   ],
 ]) {
-  test(`preserves observed sequence beginning with ${sequence[0]}`, () => {
+  test(`uses NEI priorities then observed ties beginning with ${sequence[0]}`, () => {
     assert.deepEqual(
       [...sequence].reverse().sort(compareRecipeHandlers),
-      sequence,
+      [...sequence].sort((a, b) => neiRecipePriority(a) - neiRecipePriority(b)),
     );
   });
 }
-test("keeps multiblock variants after their base machine", () => {
+test("NEI priority overrides the former multiblock order", () => {
   assert.deepEqual(
     [
       "Large Chemical Reactor",
@@ -84,10 +84,22 @@ test("keeps multiblock variants after their base machine", () => {
       "Unknown Machine",
     ].sort(compareRecipeHandlers),
     [
-      "Compressor",
-      "Chemical Reactor",
       "Large Chemical Reactor",
+      "Chemical Reactor",
+      "Compressor",
       "Unknown Machine",
     ],
   );
+});
+
+test("NEI priorities cover processing, fuel, recycling and unlisted categories", () => {
+  assert.equal(neiRecipePriority("Oil Cracker"), -11);
+  assert.equal(neiRecipePriority("Large Chemical Reactor"), -10);
+  assert.equal(neiRecipePriority("Chemical Reactor"), -5);
+  assert.equal(neiRecipePriority("Electrolyzer"), 30);
+  assert.equal(neiRecipePriority("ABS Non-Alloy Recipes"), 40);
+  assert.equal(neiRecipePriority("Macerator Recycling"), 40);
+  assert.equal(neiRecipePriority("Fluid Canner"), 100);
+  assert.equal(neiRecipePriority("Unknown Machine"), 0);
+  assert.equal(neiRecipePriority("Combustion Generator Fue..."), 5);
 });

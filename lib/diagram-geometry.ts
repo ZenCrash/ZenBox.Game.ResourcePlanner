@@ -207,11 +207,10 @@ export function draggableRouteSegments(
       previous.indexes.push(index);
     } else segments.push({ start, end, indexes: [index], vertical });
   });
-  // Merge visually continuous sections before excluding the two sections
-  // touching recipe ports, including routes with collapsed/zero-length legs.
-  return segments
-    .slice(1, -1)
-    .filter(({ start, end }) => start.x !== end.x || start.y !== end.y);
+  // Horizontal port legs can move by adding an orthogonal approach at the port.
+  return segments.filter((segment, index) =>
+    !segment.vertical || (index > 0 && index < segments.length - 1),
+  );
 }
 
 export function moveRouteSegment(
@@ -220,6 +219,24 @@ export function moveRouteSegment(
   point: Point,
 ) {
   const snapped = snapPoint(point);
+  const source = route.points[0], target = route.points.at(-1)!;
+  const touchesSource = segment.start.x === source.x && segment.start.y === source.y;
+  const touchesTarget = segment.end.x === target.x && segment.end.y === target.y;
+  if (!segment.vertical && (touchesSource || touchesTarget)) {
+    const first = segment.indexes[0], last = segment.indexes.at(-1)! + 1;
+    // Preserve horizontal port approaches while moving the rest of the section.
+    const stub = Math.min(GRID_SIZE, Math.abs(segment.end.x - segment.start.x) / 3);
+    const direction = Math.sign(segment.end.x - segment.start.x);
+    const startX = touchesSource ? source.x + direction * stub : segment.start.x;
+    const endX = touchesTarget ? target.x - direction * stub : segment.end.x;
+    const points = [
+      ...(touchesSource ? [source, { x: startX, y: source.y }] : route.points.slice(0, first)),
+      { x: startX, y: snapped.y },
+      { x: endX, y: snapped.y },
+      ...(touchesTarget ? [{ x: endX, y: target.y }, target] : route.points.slice(last + 1)),
+    ];
+    return { bend: route.middle, targetBendX: route.points[3]?.x ?? target.x, waypoints: points.slice(1, -1) };
+  }
   if (route.custom) {
     const points = route.points.map((p) => ({ ...p }));
     for (const index of segment.indexes) {

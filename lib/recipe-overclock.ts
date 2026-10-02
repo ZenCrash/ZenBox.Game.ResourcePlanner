@@ -1,5 +1,6 @@
 import type { Recipe } from "./model";
 import { smeltingRuntime } from "./smelting-runtime";
+import { configuredMultiblockRecipe, type MultiblockConfig } from './multiblock';
 import {
   selectedMachine,
   machineTier,
@@ -9,7 +10,9 @@ import {
 } from "./machine-selection";
 
 /** Derive runtime values without changing the catalog recipe saved by the diagram. */
-export function overclockRecipe(recipe: Recipe, machineId?: string): Recipe {
+export function overclockRecipe(recipe: Recipe, machineId?: string, multiblock?: MultiblockConfig): Recipe {
+  const configured = configuredMultiblockRecipe(recipe, machineId, multiblock);
+  if (configured) return configured;
   recipe = recipeMachineBaseline(recipe, machineId);
   if (recipe.euPerTick <= 0 || recipe.durationTicks <= 0) return recipe;
   const machine = selectedMachine(recipe, machineId);

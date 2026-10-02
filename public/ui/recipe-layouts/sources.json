@@ -1,0 +1,156 @@
+[
+  {
+    "name": "rune",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 40,
+      "top": 6,
+      "width": 32,
+      "height": 32
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "arcane-grid",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 224,
+      "top": 30,
+      "width": 104,
+      "height": 104
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "wand",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 136,
+      "top": 152,
+      "width": 24,
+      "height": 24
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "infusion",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 400,
+      "top": 154,
+      "width": 112,
+      "height": 88
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "crucible",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 0,
+      "top": 40,
+      "width": 112,
+      "height": 96
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "crucible-arrow",
+    "source": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png",
+    "rect": {
+      "left": 200,
+      "top": 168,
+      "width": 22,
+      "height": 26
+    },
+    "archive": "Thaumcraft"
+  },
+  {
+    "name": "sag",
+    "source": "assets/enderio/textures/gui/nei/crusher.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 332,
+      "height": 130
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "assembly-1",
+    "source": "assets/gregtech/textures/gui/progressbar/assemblyline_1.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 34,
+      "height": 144
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "assembly-2",
+    "source": "assets/gregtech/textures/gui/progressbar/assemblyline_2.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 36,
+      "height": 144
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "assembly-3",
+    "source": "assets/gregtech/textures/gui/progressbar/assemblyline_3.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 20,
+      "height": 36
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "bolt-tab",
+    "source": "assets/gregtech/textures/gui/picture/tic_bolt_molding.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 16,
+      "height": 16
+    },
+    "archive": "GregTech"
+  },
+  {
+    "name": "mob-sword",
+    "source": "assets/mobsinfo/textures/gui/MobHandler.png",
+    "rect": {
+      "left": 14,
+      "top": 124,
+      "width": 32,
+      "height": 34
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "mob-info",
+    "source": "assets/mobsinfo/textures/gui/MobHandler.png",
+    "rect": {
+      "left": 54,
+      "top": 124,
+      "width": 20,
+      "height": 34
+    },
+    "archive": "GTNH-Faithful-x32.v2.1.4.zip"
+  },
+  {
+    "name": "godforge",
+    "source": "assets/tectech/textures/gui/progressbar/godforge_plasma.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 20,
+      "height": 18
+    },
+    "archive": "GregTech"
+  }
+]

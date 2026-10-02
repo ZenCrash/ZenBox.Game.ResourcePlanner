@@ -1,0 +1,3124 @@
+{
+  "date": "2026-10-02",
+  "scope": "116 enabled recipe categories still using the generic display. Source/asset discovery only; not implementation or a claim that every pixel coordinate has been ported.",
+  "rows": [
+    {
+      "handler": "Acclimatiser",
+      "count": 12,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/AcclimatiserRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/acclimatiser.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/acclimatiser.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Acid Generator",
+      "count": 12,
+      "handlerId": "bw.fuels.acidgens",
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Alchemic Calcinator",
+      "count": 15,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "WayofTime/alchemicalWizardry/client/nei/NEICalcinatorHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "BloodMagic-1.7.52.jar",
+          "path": "assets/alchemicalwizardry/gui/nei/calcinator.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Analyzer",
+      "count": 13,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/AnalyserRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/analyser.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/analyser.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Animal Trap Drops",
+      "count": 3,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/pam/harvestcraft/AnimalTrapRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "harvestcraft-1.3.2-GTNH.jar",
+          "path": "assets/harvestcraft/textures/gui/animaltrap.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Arcane Infusion",
+      "count": 1982,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/djgiannuzz/thaumcraftneiplugin/nei/recipehandler/InfusionRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Thaumcraft-1.7.10-4.2.3.5a.jar",
+          "path": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png"
+        }
+      ],
+      "note": "Handler draws content without a dedicated GUI texture; do not assume a middle arrow.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Aspect Combination",
+      "count": 63,
+      "handlerId": "ru.timeconqueror.tcneiadditions.nei.AspectCombinationHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "ru/timeconqueror/tcneiadditions/nei/AspectCombinationHandler.class"
+      ],
+      "artwork": [],
+      "note": "getGuiTexture returns null. Aspect icons/text and layout are drawn by AspectCombinationHandler and its cached recipe; no missing middle-shape file.",
+      "status": "Procedural drawing; no dedicated GUI texture"
+    },
+    {
+      "handler": "Assemblyline Process",
+      "count": 483,
+      "handlerId": "gt.recipe.fakeAssemblylineProcess",
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/AssemblyLineFrontend",
+        "counts": [
+          16,
+          1,
+          4,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/AssemblyLineFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Baryonic Perfection",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitParticleExtractorFrontend",
+        "counts": [
+          2,
+          2,
+          1,
+          2
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitParticleExtractorFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "BetterQuesting",
+      "count": 3,
+      "handlerId": "bq_quest",
+      "recipeMap": null,
+      "sourceClasses": [
+        "bq_standard/integration/nei/QuestRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/bq_standard/textures/gui/nei.png"
+        },
+        {
+          "source": "BetterQuesting-3.7.15-GTNH.jar",
+          "path": "assets/bq_standard/textures/gui/nei.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Binding Ritual",
+      "count": 19,
+      "handlerId": "WayofTime.alchemicalWizardry.client.nei.NEIBindingRitualHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "WayofTime/alchemicalWizardry/client/nei/NEIBindingRitualHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "BloodMagic-1.7.52.jar",
+          "path": "assets/alchemicalwizardry/gui/nei/bindingRitual.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Bio Lab",
+      "count": 111,
+      "handlerId": "bw.recipe.biolab",
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          2,
+          1,
+          0
+        ],
+        "texture": "arrow_multiple",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Blasting",
+      "count": 5740,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "ganymedes01/etfuturum/compat/nei/BlastFurnaceRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/furnace.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Brewing",
+      "count": 194,
+      "handlerId": "codechicken.nei.recipe.BrewingRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "codechicken/nei/recipe/BrewingRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/brewing_stand.png"
+        },
+        {
+          "source": "etfuturum-2.6.2.25-GTNH.jar",
+          "path": "assets/etfuturum/textures/gui/container/brewing_stand.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Circuit Assembly Line",
+      "count": 71,
+      "handlerId": "bw.recipe.cal",
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          1,
+          1,
+          0
+        ],
+        "texture": "circuit_assembler",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/circuit_assembler.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/circuit_assembler.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Circuit Assembly Line Imprinting",
+      "count": 35,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "gregtech/nei/GTNEIImprintHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Clarifier",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitClarifierFrontend",
+        "counts": [
+          1,
+          4,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitClarifierFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Coke Oven",
+      "count": 1275,
+      "handlerId": "tonius.neiintegration.mods.railcraft.RecipeHandlerCokeOven",
+      "recipeMap": null,
+      "sourceClasses": [
+        "tonius/neiintegration/mods/railcraft/RecipeHandlerCokeOven.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/railcraft/textures/gui/gui_coke_oven.png"
+        },
+        {
+          "source": "Railcraft-9.16.33.jar",
+          "path": "assets/railcraft/textures/gui/gui_coke_oven.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/neiintegration/textures/overlays.png"
+        },
+        {
+          "source": "NEIIntegration-1.5.0.jar",
+          "path": "assets/neiintegration/textures/overlays.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Cold Trap",
+      "count": 2,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          2,
+          9,
+          1,
+          1
+        ],
+        "texture": "sift",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/sift.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/sift.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Component Assembly Line",
+      "count": 142,
+      "handlerId": "gg.recipe.componentassemblyline",
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "goodgenerator/api/recipe/ComponentAssemblyLineFrontend",
+        "counts": [
+          12,
+          1,
+          12,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "goodgenerator/api/recipe/ComponentAssemblyLineFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Crucible",
+      "count": 1758,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/djgiannuzz/thaumcraftneiplugin/nei/recipehandler/CrucibleRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Thaumcraft-1.7.10-4.2.3.5a.jar",
+          "path": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png"
+        }
+      ],
+      "note": "Handler draws content without a dedicated GUI texture; do not assume a middle arrow.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "DTPF",
+      "count": 83,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/LargeNEIFrontend",
+        "counts": [
+          9,
+          9,
+          9,
+          9
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/LargeNEIFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Decayables",
+      "count": 4,
+      "handlerId": "gtPlusPlus.nei.DecayableRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "gtPlusPlus/nei/DecayableRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/miscutils/textures/gui/nei/decayables.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/miscutils/textures/gui/nei/decayables.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Degassing",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          0,
+          3,
+          1,
+          2
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Digester",
+      "count": 34,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "texture": "arrow_multiple",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Dissolution Tank",
+      "count": 33,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          2,
+          3,
+          2,
+          1
+        ],
+        "texture": "arrow_multiple",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Draconic Evolution Fusion ...",
+      "count": 11,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "kubatech/loaders/DEFCRecipes.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          9,
+          1,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false
+      },
+      "sourceClasses": [
+        "kubatech/loaders/DEFCRecipes.class",
+        "kubatech/api/gui/KubaTechUITextures.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard recipe map: 9 item inputs, 1 item output, 1 fluid input, 1 fluid output; custom fusion-crafter slot overlay. Verified in DEFCRecipes static initializer.",
+      "status": "Shared arrow and recipe-map definition located"
+    },
+    {
+      "handler": "Electric Implosion Compres...",
+      "count": 308,
+      "handlerId": "gt.recipe.electricimplosioncompressor",
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          2,
+          1,
+          1
+        ],
+        "texture": "compress",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/compress.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/compress.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Enchanter",
+      "count": 28,
+      "handlerId": "crazypants.enderio.nei.EnchanterRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "crazypants/enderio/nei/EnchanterRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/enderio/textures/gui/23/enchanter.png"
+        },
+        {
+          "source": "EnderIO-2.9.28.jar",
+          "path": "assets/enderio/textures/gui/23/enchanter.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Extreme Heat Exchanger",
+      "count": 115,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "goodgenerator/api/recipe/ExtremeHeatExchangerFrontend",
+        "counts": [
+          0,
+          0,
+          2,
+          3
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "goodgenerator/api/recipe/ExtremeHeatExchangerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Eye of Harmony",
+      "count": 40,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "tectech/recipe/EyeOfHarmonyFrontend",
+        "counts": [
+          1,
+          81,
+          0,
+          18
+        ],
+        "texture": "hammer",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "tectech/recipe/EyeOfHarmonyFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/hammer.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/hammer.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Fireworks",
+      "count": 19,
+      "handlerId": "codechicken.nei.recipe.FireworkRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "codechicken/nei/recipe/FireworkRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Fish Trap Drops",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/pam/harvestcraft/FishTrapRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "harvestcraft-1.3.2-GTNH.jar",
+          "path": "assets/harvestcraft/textures/gui/fishtrap.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Flocculation",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitFlocculatorFrontend",
+        "counts": [
+          0,
+          3,
+          2,
+          2
+        ],
+        "texture": "bath",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitFlocculatorFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/bath.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/bath.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Forge Hammer Recycling",
+      "count": 190,
+      "handlerId": "gt.recipe.category.forge_hammer_recycling",
+      "recipeMap": null,
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeCategories.class",
+        "gregtech/common/config/Client$NEI$RecipeCategories.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/hammer.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/hammer_base.png"
+        }
+      ],
+      "note": "RecipeCategories explicitly binds this category to RecipeMaps.hammerRecipes. Reuse the Forge Hammer geometry, hammer symbol, and base; tab icon is separate.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Garden Drops",
+      "count": 13,
+      "handlerId": "com.pam.harvestcraft.GardenRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/pam/harvestcraft/GardenRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/harvestcraft/textures/gui/gardenNEI.png"
+        },
+        {
+          "source": "harvestcraft-1.3.2-GTNH.jar",
+          "path": "assets/harvestcraft/textures/gui/gardenNEI.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Gene Database",
+      "count": 2,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/DatabaseRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/database.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/database.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Genepool",
+      "count": 12,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/GenepoolRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/genepool.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/genepool.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Godforge Upgrades",
+      "count": 7,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "tectech/recipe/GodforgeUpgradeCostFrontend",
+        "counts": [
+          12,
+          2,
+          0,
+          2
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "tectech/recipe/GodforgeUpgradeCostFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Helioflux Melting Core",
+      "count": 1308,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          6,
+          1,
+          2
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Heliofusion Exoticizer",
+      "count": 2,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "tectech/recipe/GodforgeExoticFrontend",
+        "counts": [
+          1,
+          1,
+          2,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "tectech/recipe/GodforgeExoticFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Heliothermal Plasma Fabric...",
+      "count": 217,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "tectech/recipe/GodforgePlasmaFrontend",
+        "counts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "tectech/recipe/GodforgePlasmaFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "High Energy Laser Treatm...",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitLaserFrontend",
+        "counts": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitLaserFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "High Temperature Gas-coo...",
+      "count": 3,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Imbuing Station",
+      "count": 7,
+      "handlerId": "lumien.randomthings.Handler.ModCompability.NEI.ImbuingStationRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "lumien/randomthings/Handler/ModCompability/NEI/ImbuingStationRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "RandomThings-2.6.6.jar",
+          "path": "assets/randomthings/textures/gui/imbuingStation.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Incubator",
+      "count": 157,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/IncubatorRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/incubator.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/incubator.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Inoculator",
+      "count": 8,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/InoculatorRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/inoculator.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/inoculator.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Inscriber",
+      "count": 12,
+      "handlerId": "appeng.integration.modules.NEIHelpers.NEIInscriberRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "appeng/integration/modules/NEIHelpers/NEIInscriberRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/appliedenergistics2/textures/guis/inscriber.png"
+        },
+        {
+          "source": "appliedenergistics2-rv3-beta-695-GTNH.jar",
+          "path": "assets/appliedenergistics2/textures/guis/inscriber.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Isolator",
+      "count": 12,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/IsolatorRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/isolator.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/isolator.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Isotope Decay",
+      "count": 4,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/IsotopeDecayFrontend",
+        "counts": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/IsotopeDecayFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Kettle",
+      "count": 38,
+      "handlerId": "alkalus.main.nei.NEI_Handler_Kettle",
+      "recipeMap": null,
+      "sourceClasses": [
+        "alkalus/main/nei/NEI_Handler_Kettle.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "LFTR Gas Sparging",
+      "count": 3,
+      "handlerId": "gtpp.recipe.lftr.sparging",
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/SpargeTowerFrontend",
+        "counts": [
+          0,
+          0,
+          9,
+          9
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/SpargeTowerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Large Naquadah Reactor",
+      "count": 9,
+      "handlerId": "gg.recipe.naquadah_reactor",
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "LootBag",
+      "count": 51,
+      "handlerId": "enhancedlootbags",
+      "recipeMap": null,
+      "sourceClasses": [
+        "eu/usrv/enhancedlootbags/integration/nei/LootBagRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/bq_standard/textures/gui/nei.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/enhancedlootbags/textures/gui/nei.png"
+        },
+        {
+          "source": "BetterQuesting-3.7.15-GTNH.jar",
+          "path": "assets/bq_standard/textures/gui/nei.png"
+        },
+        {
+          "source": "EnhancedLootBags-1.2.8.jar",
+          "path": "assets/enhancedlootbags/textures/gui/nei.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Lumbermill",
+      "count": 92,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/extratrees/nei/NEIHandlerLumbermill.class"
+      ],
+      "artwork": [
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/extratrees/textures/gui/nei/lumbermill.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Manipulator Upgrades",
+      "count": 9,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/recursive_pineapple/matter_manipulator/client/nei/UpdateRecipeNEIHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Meteor Ritual",
+      "count": 54,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "WayofTime/alchemicalWizardry/client/nei/NEIMeteorRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "BloodMagic-1.7.52.jar",
+          "path": "assets/alchemicalwizardry/gui/nei/meteor.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Milling",
+      "count": 200,
+      "handlerId": "gtpp.recipe.oremill",
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/MillingFrontend",
+        "counts": [
+          3,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/MillingFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Mob Info",
+      "count": 400,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/kuba6000/mobsinfo/nei/MobHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/mobsinfo/textures/gui/MobHandler.png"
+        },
+        {
+          "source": "mobsinfo-0.5.6-GTNH.jar",
+          "path": "assets/mobsinfo/textures/gui/MobHandler.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Moistener",
+      "count": 49,
+      "handlerId": "forestry.factory.recipes.nei.NEIHandlerMoistener",
+      "recipeMap": null,
+      "sourceClasses": [
+        "forestry/factory/recipes/nei/NEIHandlerMoistener.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/forestry/textures/gui/moistener.png"
+        },
+        {
+          "source": "Forestry-4.10.17.jar",
+          "path": "assets/forestry/textures/gui/moistener.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Molecular Transformer",
+      "count": 18,
+      "handlerId": "advsolar.client.nei.MTRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "advsolar/client/nei/MTRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/advancedsolarpanel/textures/gui/guiMolecularTransformer_nei.png"
+        },
+        {
+          "source": "AdvancedSolarPanel-1.7.10-3.5.1a.jar",
+          "path": "assets/advancedsolarpanel/textures/gui/guiMolecularTransformer_nei.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Multiblock Dehydrator",
+      "count": 88,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/LargeNEIFrontend",
+        "counts": [
+          6,
+          9,
+          3,
+          3
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gregtech/api/recipe/maps/LargeNEIFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Nano Forge",
+      "count": 12,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          2,
+          3,
+          0
+        ],
+        "texture": "assemble",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/assemble.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/assemble.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Naquadah Fuel Refinery",
+      "count": 9,
+      "handlerId": "gg.recipe.naquadah_fuel_refine_factory",
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          0,
+          4,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Neutron Activator",
+      "count": 12,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          9,
+          9,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Neutronium Compressor",
+      "count": 71,
+      "handlerId": "fox.spiteful.avaritia.compat.nei.CompressionHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "fox/spiteful/avaritia/compat/nei/CompressionHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/avaritia/textures/gui/compressor.png"
+        },
+        {
+          "source": "Avaritia-1.77.jar",
+          "path": "assets/avaritia/textures/gui/compressor.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Nuclear Fission",
+      "count": 33,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Nuclear Salt Processing P...",
+      "count": 8,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/LargeNEIFrontend",
+        "counts": [
+          1,
+          6,
+          2,
+          3
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gregtech/api/recipe/maps/LargeNEIFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Ozonation",
+      "count": 4,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitOzonationFrontend",
+        "counts": [
+          0,
+          4,
+          2,
+          1
+        ],
+        "texture": "bath",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitOzonationFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/bath.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/bath.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "PCB Factory",
+      "count": 105,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          6,
+          9,
+          3,
+          0
+        ],
+        "texture": "assemble",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/assemble.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/assemble.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Polymeriser",
+      "count": 3,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/PolymeriserRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/polymeriser.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/polymeriser.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Precise Assembler",
+      "count": 16,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "frontend": "goodgenerator/api/recipe/PreciseAssemblerFrontend",
+        "counts": [
+          4,
+          1,
+          4,
+          0
+        ],
+        "texture": "arrow_multiple",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "goodgenerator/api/recipe/GoodGeneratorRecipeMaps.class",
+        "goodgenerator/api/recipe/PreciseAssemblerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Printer",
+      "count": 5,
+      "handlerId": "gt.recipe.printer",
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "QC Components",
+      "count": 27,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/QuantumComputerFrontend",
+        "counts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/QuantumComputerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "QED Recipes",
+      "count": 7,
+      "handlerId": "com.rwtema.extrautils.nei.EnderConstructorHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/rwtema/extrautils/nei/EnderConstructorHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/extrautils/textures/guiQED_NEI.png"
+        },
+        {
+          "source": "extrautilities-1.2.12.jar",
+          "path": "assets/extrautils/textures/guiQED_NEI.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Quantum Force Transform...",
+      "count": 29,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/QuantumForceTransformerFrontend",
+        "counts": [
+          6,
+          6,
+          6,
+          6
+        ],
+        "texture": "arrow_multiple",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/QuantumForceTransformerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Radio Hatch Material List",
+      "count": 104,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "frontend": "bartworks/API/recipe/RadioHatchFrontend",
+        "counts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "bartworks/API/recipe/BartWorksRecipeMaps.class",
+        "bartworks/API/recipe/RadioHatchFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Reactor",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/brandon3055/draconicevolution/integration/nei/ReactorNEIHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Draconic-Evolution-1.4.27-GTNH.jar",
+          "path": "assets/draconicevolution/textures/gui/nei/reactor.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Reactor Processing Unit",
+      "count": 6,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          2,
+          9,
+          1,
+          1
+        ],
+        "texture": "sift",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/sift.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/sift.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Replicator",
+      "count": 92,
+      "handlerId": "gt.recipe.replicator",
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          0,
+          1,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Research Station",
+      "count": 304,
+      "handlerId": "gt.recipe.researchStation",
+      "recipeMap": {
+        "classPath": "tectech/recipe/TecTechRecipeMaps.class",
+        "frontend": "tectech/recipe/ResearchStationFrontend",
+        "counts": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "tectech/recipe/TecTechRecipeMaps.class",
+        "tectech/recipe/ResearchStationFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "SAG Mill",
+      "count": 1665,
+      "handlerId": "crazypants.enderio.nei.SagMillRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "crazypants/enderio/nei/SagMillRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/enderio/textures/gui/nei/crusher.png"
+        },
+        {
+          "source": "EnderIO-2.9.28.jar",
+          "path": "assets/enderio/textures/gui/nei/crusher.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Scanner",
+      "count": 292,
+      "handlerId": "gt.recipe.scanner",
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Sequencer",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/SequencerRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/sequencer.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/sequencer.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Shaped A.Worktable",
+      "count": 2183,
+      "handlerId": "ru.timeconqueror.tcneiadditions.nei.arcaneworkbench.ArcaneCraftingShapedHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "ru/timeconqueror/tcneiadditions/nei/arcaneworkbench/ArcaneCraftingShapedHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Thaumcraft-1.7.10-4.2.3.5a.jar",
+          "path": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Shaped IC2 Crafting",
+      "count": 1,
+      "handlerId": "ic2.neiIntegration.core.recipehandler.AdvRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "ic2/neiIntegration/core/recipehandler/AdvRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Shaped Orb Crafting",
+      "count": 61,
+      "handlerId": "WayofTime.alchemicalWizardry.client.nei.NEIBloodOrbShapedHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "WayofTime/alchemicalWizardry/client/nei/NEIBloodOrbShapedHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Shapeless A.Worktable",
+      "count": 38,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "com/djgiannuzz/thaumcraftneiplugin/nei/recipehandler/ArcaneShapelessRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Thaumcraft-1.7.10-4.2.3.5a.jar",
+          "path": "assets/thaumcraft/textures/gui/gui_researchbook_overlay.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Shapeless Orb Crafting",
+      "count": 5,
+      "handlerId": "WayofTime.alchemicalWizardry.client.nei.NEIBloodOrbShapelessHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "WayofTime/alchemicalWizardry/client/nei/NEIBloodOrbShapelessHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Slice'N'Splice",
+      "count": 7,
+      "handlerId": "crazypants.enderio.nei.SliceAndSpliceRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "crazypants/enderio/nei/SliceAndSpliceRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/enderio/textures/gui/23/sliceAndSplice.png"
+        },
+        {
+          "source": "EnderIO-2.9.28.jar",
+          "path": "assets/enderio/textures/gui/23/sliceAndSplice.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Smoking",
+      "count": 63,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "ganymedes01/etfuturum/compat/nei/SmokerRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/furnace.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Solar Factory",
+      "count": 25,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          9,
+          1,
+          3,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Solar Tower",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/FluidOnlyFrontend",
+        "counts": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gregtech/api/recipe/maps/FluidOnlyFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Soul Binder",
+      "count": 8,
+      "handlerId": "crazypants.enderio.nei.SoulBinderRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "crazypants/enderio/nei/SoulBinderRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/enderio/textures/gui/23/soulFuser.png"
+        },
+        {
+          "source": "EnderIO-2.9.28.jar",
+          "path": "assets/enderio/textures/gui/23/soulFuser.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Source Chamber",
+      "count": 4,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "frontend": "gtnhlanth/common/tileentity/recipe/beamline/SourceChamberFrontend",
+        "counts": [
+          1,
+          2,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "gtnhlanth/common/tileentity/recipe/beamline/SourceChamberFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Space Assembler",
+      "count": 23,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhintergalactic/recipe/IGRecipeMaps.class",
+        "frontend": "gtnhintergalactic/recipe/maps/SpaceAssemblerFrontend",
+        "counts": [
+          16,
+          1,
+          4,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhintergalactic/recipe/IGRecipeMaps.class",
+        "gtnhintergalactic/recipe/maps/SpaceAssemblerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Space Mining",
+      "count": 225,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhintergalactic/recipe/IGRecipeMaps.class",
+        "frontend": "gtnhintergalactic/recipe/maps/SpaceMiningFrontend",
+        "counts": [
+          5,
+          16,
+          2,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhintergalactic/recipe/IGRecipeMaps.class",
+        "gtnhintergalactic/recipe/maps/SpaceMiningFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Space Projects",
+      "count": 2,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/SpaceProjectFrontend",
+        "counts": [
+          12,
+          0,
+          4,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/SpaceProjectFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Spinning Wheel",
+      "count": 9,
+      "handlerId": "witchinggadgets.client.nei.NEISpinningWheelHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "witchinggadgets/client/nei/NEISpinningWheelHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "WitchingGadgets-1.7.25-GTNH.jar",
+          "path": "assets/witchinggadgets/textures/gui/nei/spinningwheel.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Splicer",
+      "count": 8,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "binnie/genetics/nei/SplicerRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/genetics/textures/gui/nei/splicer.png"
+        },
+        {
+          "source": "binnie-mods-2.5.24.jar",
+          "path": "assets/genetics/textures/gui/nei/splicer.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Squeezer",
+      "count": 277,
+      "handlerId": "forestry.factory.recipes.nei.NEIHandlerSqueezer",
+      "recipeMap": null,
+      "sourceClasses": [
+        "forestry/factory/recipes/nei/NEIHandlerSqueezer.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/forestry/textures/gui/squeezersocket.png"
+        },
+        {
+          "source": "Forestry-4.10.17.jar",
+          "path": "assets/forestry/textures/gui/squeezersocket.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Target Chamber",
+      "count": 107,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "frontend": "gtnhlanth/common/tileentity/recipe/beamline/TargetChamberFrontend",
+        "counts": [
+          3,
+          4,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtnhlanth/api/recipe/LanthanidesRecipeMaps.class",
+        "gtnhlanth/common/tileentity/recipe/beamline/TargetChamberFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Temperature Fluctuation",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitPlasmaHeaterFrontend",
+        "counts": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "texture": "boiler_heat",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitPlasmaHeaterFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/boiler_heat.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/boiler_heat.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Thermal Boiler",
+      "count": 4,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/ThermalBoilerFrontend",
+        "counts": [
+          0,
+          9,
+          2,
+          3
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/ThermalBoilerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Thermionic Fabricator",
+      "count": 93,
+      "handlerId": "forestry.factory.recipes.nei.NEIHandlerFabricator",
+      "recipeMap": null,
+      "sourceClasses": [
+        "forestry/factory/recipes/nei/NEIHandlerFabricator.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/forestry/textures/gui/fabricator.png"
+        },
+        {
+          "source": "Forestry-4.10.17.jar",
+          "path": "assets/forestry/textures/gui/fabricator.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "TiC Bolt Molding",
+      "count": 27367,
+      "handlerId": null,
+      "recipeMap": null,
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeCategories.class",
+        "gregtech/common/config/Client$NEI$RecipeCategories.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "RecipeCategories explicitly binds this category to RecipeMaps.fluidSolidifierRecipes. Reuse the Fluid Solidifier geometry and arrow; tab icon is separate.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Tool Casting Machine",
+      "count": 38,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "ggfab/api/GGFabRecipeMaps.class",
+        "frontend": "gregtech/api/recipe/RecipeMapFrontend",
+        "counts": [
+          1,
+          4,
+          1,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "ggfab/api/GGFabRecipeMaps.class",
+        "gregtech/api/recipe/RecipeMapFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Standard layout; slot capacities found.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Transcendent Plasma Mixer",
+      "count": 8,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/TranscendentPlasmaMixerFrontend",
+        "counts": [
+          1,
+          0,
+          20,
+          1
+        ],
+        "texture": "arrow",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/TranscendentPlasmaMixerFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Tree Growth Simulator",
+      "count": 250,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/TGSFrontend",
+        "counts": [
+          null,
+          null,
+          0,
+          0
+        ],
+        "texture": "arrow",
+        "specialSlot": true,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/TGSFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/arrow.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry. Includes a special slot.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Vat",
+      "count": 8,
+      "handlerId": "crazypants.enderio.nei.VatRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "crazypants/enderio/nei/VatRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/enderio/textures/gui/23/vat.png"
+        },
+        {
+          "source": "EnderIO-2.9.28.jar",
+          "path": "assets/enderio/textures/gui/23/vat.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Witch's Cauldron",
+      "count": 26,
+      "handlerId": "alkalus.main.nei.NEI_Handler_Cauldron",
+      "recipeMap": null,
+      "sourceClasses": [
+        "alkalus/main/nei/NEI_Handler_Cauldron.class"
+      ],
+      "artwork": [
+        {
+          "source": "witchery-1.7.10-0.24.1.jar",
+          "path": "assets/witchery/textures/gui/witchesCauldron.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Witches Oven",
+      "count": 9,
+      "handlerId": "alkalus.main.nei.NEI_Handler_Oven",
+      "recipeMap": null,
+      "sourceClasses": [
+        "alkalus/main/nei/NEI_Handler_Oven.class"
+      ],
+      "artwork": [
+        {
+          "source": "witchery-1.7.10-0.24.1.jar",
+          "path": "assets/witchery/textures/gui/witchesOven.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Xtreme Crafting",
+      "count": 130,
+      "handlerId": "fox.spiteful.avaritia.compat.nei.ExtremeShapedRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "fox/spiteful/avaritia/compat/nei/ExtremeShapedRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/avaritia/textures/gui/extreme_nei.png"
+        },
+        {
+          "source": "Avaritia-1.77.jar",
+          "path": "assets/avaritia/textures/gui/extreme_nei.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Xtreme Shapeless",
+      "count": 3,
+      "handlerId": "fox.spiteful.avaritia.compat.nei.ExtremeShapelessRecipeHandler",
+      "recipeMap": null,
+      "sourceClasses": [
+        "fox/spiteful/avaritia/compat/nei/ExtremeShapelessRecipeHandler.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/avaritia/textures/gui/extreme_nei.png"
+        },
+        {
+          "source": "Avaritia-1.77.jar",
+          "path": "assets/avaritia/textures/gui/extreme_nei.png"
+        },
+        {
+          "source": "Faithful",
+          "path": "assets/minecraft/textures/gui/container/crafting_table.png"
+        }
+      ],
+      "note": "Handler found; layout/texture coordinates are in its drawing code and cached recipe classes.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "Zhuhai - Fishing Port",
+      "count": 3,
+      "handlerId": "gtpp.recipe.fishpond",
+      "recipeMap": {
+        "classPath": "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "frontend": "gtPlusPlus/api/recipe/ZhuhaiFrontend",
+        "counts": [
+          1,
+          25,
+          0,
+          0
+        ],
+        "texture": "fishing",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gtPlusPlus/api/recipe/GTPPRecipeMaps.class",
+        "gtPlusPlus/api/recipe/ZhuhaiFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/fishing.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    },
+    {
+      "handler": "pH Neutralization",
+      "count": 1,
+      "handlerId": null,
+      "recipeMap": {
+        "classPath": "gregtech/api/recipe/RecipeMaps.class",
+        "frontend": "gregtech/api/recipe/maps/PurificationUnitPhAdjustmentFrontend",
+        "counts": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "texture": "mixer",
+        "specialSlot": false,
+        "progressDisabled": false
+      },
+      "sourceClasses": [
+        "gregtech/api/recipe/RecipeMaps.class",
+        "gregtech/api/recipe/maps/PurificationUnitPhAdjustmentFrontend.class"
+      ],
+      "artwork": [
+        {
+          "source": "Faithful",
+          "path": "assets/gregtech/textures/gui/progressbar/mixer.png"
+        },
+        {
+          "source": "gregtech-5.09.51.482.jar",
+          "path": "assets/gregtech/textures/gui/progressbar/mixer.png"
+        }
+      ],
+      "note": "Custom/shared frontend located; port its geometry.",
+      "status": "Texture files located"
+    }
+  ]
+}

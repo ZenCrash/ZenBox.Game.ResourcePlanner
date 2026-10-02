@@ -1,33 +1,47 @@
 "use client";
 
 import {
+  createContext,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 
+import { tooltipModifierMask } from '@/lib/item-tooltip-variants';
+export const TooltipModifierContext = createContext(0);
+
 export function ItemTooltip({
   children,
+  anchorRef,
+  pointerPosition,
+  anchorContainerSelector,
   followPointer = true,
   compact = false,
   tight = false,
   placement = "side-right",
 }: {
   children: ReactNode;
+  pointerPosition?: { x: number; y: number } | null;
+  anchorRef?: RefObject<SVGGElement | null>;
+  anchorContainerSelector?: string;
   followPointer?: boolean;
   compact?: boolean;
   tight?: boolean;
-  placement?: "left" | "top-right" | "side-left" | "side-right";
+  placement?: "left" | "top-right" | "side-left" | "side-right" | "top-end";
 }) {
+  const [modifierMask, setModifierMask] = useState(0);
   const anchor = useRef<HTMLSpanElement>(null);
   const tooltip = useRef<HTMLSpanElement>(null);
-  const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
+  const [hoverPoint, setPoint] = useState<{ x: number; y: number } | null>(null);
+  const point = pointerPosition !== undefined ? pointerPosition : hoverPoint;
 
   useEffect(() => {
-    const button = anchor.current?.parentElement;
+    if (pointerPosition !== undefined) return;
+    const button = anchorRef?.current ?? anchor.current?.parentElement;
     if (!button) return;
     const showAtItem = () => {
       const bounds = button.getBoundingClientRect();
@@ -40,7 +54,9 @@ export function ItemTooltip({
           : { x: bounds.right - 20, y: bounds.top - 8 },
       );
     };
-    const move = (event: PointerEvent) => {
+    const move = (inputEvent: Event) => {
+      const event = inputEvent as PointerEvent;
+      setModifierMask(tooltipModifierMask(event));
       if (event.pointerType === "touch") return;
       if (followPointer) setPoint({ x: event.clientX, y: event.clientY });
       else showAtItem();
@@ -69,12 +85,35 @@ export function ItemTooltip({
       button.removeEventListener("dragstart", hide);
       window.removeEventListener("scroll", hide, true);
     };
-  }, [followPointer, placement]);
+  }, [followPointer, placement, anchorRef, pointerPosition]);
+
+  const visible = !!point;
+  useEffect(() => {
+    if (!visible) return;
+    const update = (event: KeyboardEvent | PointerEvent) => setModifierMask(tooltipModifierMask(event));
+    const reset = () => setModifierMask(0);
+    window.addEventListener('keydown', update);
+    window.addEventListener('keyup', update);
+    window.addEventListener('pointermove', update);
+    window.addEventListener('blur', reset);
+    return () => { window.removeEventListener('keydown', update); window.removeEventListener('keyup', update); window.removeEventListener('pointermove', update); window.removeEventListener('blur', reset); };
+  }, [visible]);
 
   useLayoutEffect(() => {
     if (!point || !tooltip.current) return;
     const element = tooltip.current;
+    const trigger = anchorRef?.current ?? anchor.current?.parentElement;
+    const container = anchorContainerSelector ? trigger?.closest(anchorContainerSelector) : trigger;
     const position = () => {
+      if (placement === "top-end" && container) {
+        const area = container.getBoundingClientRect();
+        element.style.maxWidth = Math.max(0, Math.min(area.right - 16, window.innerWidth - 16)) + "px";
+        element.style.maxHeight = Math.max(0, area.top - 16) + "px";
+        const size = element.getBoundingClientRect();
+        element.style.left = Math.max(8, area.right - size.width - 8) + "px";
+        element.style.top = Math.max(8, area.top - size.height - 8) + "px";
+        return;
+      }
       const bounds = element.getBoundingClientRect();
       const right = point.x + 14;
       const left = point.x - bounds.width - 14;
@@ -92,15 +131,16 @@ export function ItemTooltip({
     position();
     const observer = new ResizeObserver(position);
     observer.observe(element);
+    if (container && placement === "top-end") observer.observe(container);
     window.addEventListener("resize", position);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", position);
     };
-  }, [point, children, followPointer, placement]);
+  }, [point, children, followPointer, placement, anchorRef, anchorContainerSelector]);
   return (
     <>
-      <span ref={anchor} hidden />
+      {!anchorRef && <span ref={anchor} hidden />}
       {point &&
         createPortal(
           <span
@@ -108,7 +148,7 @@ export function ItemTooltip({
             role="tooltip"
             className={`item-tooltip foreground-item-tooltip${compact ? " compact-item-tooltip" : ""}${tight ? " tight-item-tooltip" : ""}`}
           >
-            {children}
+            <TooltipModifierContext.Provider value={modifierMask}>{children}</TooltipModifierContext.Provider>
           </span>,
           document.body,
         )}

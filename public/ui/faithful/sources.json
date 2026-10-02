@@ -1,0 +1,325 @@
+{
+  "resourcePack": "GTNH-Faithful-x32.v2.1.4.zip",
+  "textures": [
+    {
+      "file": "arrow.png",
+      "source": "assets/gregtech/textures/gui/progressbar/arrow.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "arrow_multiple.png",
+      "source": "assets/gregtech/textures/gui/progressbar/arrow_multiple.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "assemble.png",
+      "source": "assets/gregtech/textures/gui/progressbar/assemble.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "circuit_assembler.png",
+      "source": "assets/gregtech/textures/gui/progressbar/circuit_assembler.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "compress.png",
+      "source": "assets/gregtech/textures/gui/progressbar/compress.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "extract.png",
+      "source": "assets/gregtech/textures/gui/progressbar/extract.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "canner.png",
+      "source": "assets/gregtech/textures/gui/progressbar/canner.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "mixer.png",
+      "source": "assets/gregtech/textures/gui/progressbar/mixer.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "macerate.png",
+      "source": "assets/gregtech/textures/gui/progressbar/macerate.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "extrude.png",
+      "source": "assets/gregtech/textures/gui/progressbar/extrude.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "bath.png",
+      "source": "assets/gregtech/textures/gui/progressbar/bath.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "sift.png",
+      "source": "assets/gregtech/textures/gui/progressbar/sift.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "magnet.png",
+      "source": "assets/gregtech/textures/gui/progressbar/magnet.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "wiremill.png",
+      "source": "assets/gregtech/textures/gui/progressbar/wiremill.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "bending.png",
+      "source": "assets/gregtech/textures/gui/progressbar/bending.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "lathe.png",
+      "source": "assets/gregtech/textures/gui/progressbar/lathe.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "cut.png",
+      "source": "assets/gregtech/textures/gui/progressbar/cut.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "slice.png",
+      "source": "assets/gregtech/textures/gui/progressbar/slice.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "hammer.png",
+      "source": "assets/gregtech/textures/gui/progressbar/hammer.png",
+      "frame": "Top half (idle), native 40 x 36 pixels"
+    },
+    {
+      "file": "slot-compressor.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/compressor.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-extruder_shape.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/extruder_shape.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-furnace.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/furnace.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-mold.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/mold.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-crushed_ore.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/crushed_ore.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-dust.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/dust.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-centrifuge.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/centrifuge.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-press_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/press_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-press_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/press_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-press_3.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/press_3.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-lens.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/lens.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-gem.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/gem.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-canister.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/canister.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-cauldron.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/cauldron.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-heater_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/heater_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-heater_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/heater_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-beaker_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/beaker_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-beaker_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/beaker_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-box.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/box.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-boxed.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/boxed.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-centrifuge_fluid.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/centrifuge_fluid.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-charger.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/charger.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-charger_fluid.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/charger_fluid.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-implosion.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/implosion.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-explosive.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/explosive.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-molecular_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/molecular_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-molecular_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/molecular_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-vial_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/vial_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-molecular_3.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/molecular_3.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-vial_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/vial_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-wiremill.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/wiremill.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-bender.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/bender.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-circuit.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/circuit.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-canner.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/canner.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-rod_1.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/rod_1.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-rod_2.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/rod_2.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-cutter_sliced.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/cutter_sliced.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-square.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/square.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-slice_shape.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/slice_shape.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-slicer_sliced.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/slicer_sliced.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-hammer.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/hammer.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-uua.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/uua.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "slot-uum.png",
+      "source": "assets/gregtech/textures/gui/overlay_slot/uum.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "lathe_base.png",
+      "source": "assets/gregtech/textures/gui/progressbar/lathe_base.png",
+      "frame": "Original complete texture"
+    },
+    {
+      "file": "hammer_base.png",
+      "source": "assets/gregtech/textures/gui/progressbar/hammer_base.png",
+      "frame": "Original complete texture"
+    }
+  ]
+}

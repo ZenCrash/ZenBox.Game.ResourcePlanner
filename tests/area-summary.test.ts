@@ -305,3 +305,13 @@ test("ratio calculator reordering moves before/after targets and preserves value
   assert.equal(moveSummaryCalculation(rows, "missing", "b", "before"), rows);
   assert.deepEqual(rows.map(row => row.id), ["a", "b", "c"]);
 });
+
+
+test("group ignored items survive document validation without disabling ports", () => {
+  const document = diagramSchema.parse({ ...blankDiagram(), areas: [{
+    id: 'e8f6e0cc-cda8-4c24-9f74-d68a5be01dcc', position: {x:0,y:0}, width:640,height:480,
+    ignoredItems:['hydrogen','oil'],
+  }] });
+  assert.deepEqual(document.areas?.[0].ignoredItems,['hydrogen','oil']);
+  assert.deepEqual(diagramSchema.parse(JSON.parse(JSON.stringify(document))).areas?.[0].ignoredItems,['hydrogen','oil']);
+});

@@ -206,7 +206,7 @@ test("machine uses start with processing tabs and retain ingredient uses", async
   const recipes: Recipe[] = await response.json();
   // Recycling is now a supported processing category too, and its explicit
   // tab-order rank precedes the unranked main Arc Furnace category.
-  assert.equal(recipes[0]?.handler, "Arc Furnace Recycling");
+  assert.equal(recipes[0]?.handler, "Arc Furnace");
   assert(recipes.some((recipe) => recipe.handler === "Arc Furnace"));
   assert(recipes.some((recipe) => recipe.handler === "Arc Furnace Recycling"));
   const isProcessing = (recipe: Recipe) =>

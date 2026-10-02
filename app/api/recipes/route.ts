@@ -4,6 +4,8 @@ import { hydrateRecipeVariants } from "@/lib/recipe-data";
 import { fluidLookupItems } from "@/lib/fluid-containers";
 import type { Recipe } from "@/lib/model";
 import { compareRecipeHandlers } from "@/lib/recipe-order";
+import { machineTier } from "@/lib/machine-selection";
+import { comparePickerRecipes, recipeTier } from "@/lib/recipe-picker-order";
 export async function GET(request: Request) {
   if (!isGtnhInstalled())
     return Response.json(
@@ -64,14 +66,20 @@ export async function GET(request: Request) {
   const availabilityOnly = url.searchParams.get("availability") === "1";
   if (!matchingIds.length && !machineHandlers.length)
     return Response.json(availabilityOnly ? { exists: false } : []);
+  const excludedMachineRecipes = new Set<string>();
   if (machineHandlers.length) {
+    const machine = await catalog.item.findUnique({ where: { id: item! } });
+    const exactTier = machine ? machineTier(machine) : undefined;
     const machineRecipes = await catalog.recipe.findMany({
       where: { enabled: true, handler: { in: machineHandlers } },
-      select: { id: true },
+      select: { id: true, handler: true, euPerTick: true, details: true },
     });
-    matchingIds.push(...machineRecipes.map((recipe) => recipe.id));
+    for (const recipe of machineRecipes) {
+      if (exactTier && recipeTier(recipe) !== exactTier) excludedMachineRecipes.add(recipe.id);
+      else matchingIds.push(recipe.id);
+    }
   }
-  const uniqueIds = [...new Set(matchingIds)];
+  const uniqueIds = [...new Set(matchingIds)].filter(id => !excludedMachineRecipes.has(id));
   if (availabilityOnly) {
     for (let start = 0; start < uniqueIds.length; start += 300) {
       const match = await catalog.recipe.findFirst({
@@ -99,12 +107,13 @@ export async function GET(request: Request) {
     );
   }
   // The browser creates tabs and selects its initial tab in response order.
-  // Machine lookups prioritize supported categories, then use observed tab order.
+  // Machine lookups prioritize supported categories, then use NEI tab priorities.
   const preferred = new Set(machineHandlers);
   recipes.sort(
     (a, b) =>
       Number(preferred.has(b.handler)) - Number(preferred.has(a.handler)) ||
       compareRecipeHandlers(a.handler, b.handler) ||
+      comparePickerRecipes(a, b) ||
       (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   );
   return Response.json(await hydrateRecipeVariants(recipes));

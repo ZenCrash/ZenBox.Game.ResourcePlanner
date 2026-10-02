@@ -1,0 +1,1693 @@
+{
+  "source": "gregtech-5.09.51.482.jar: RecipeMaps, GTPPRecipeMaps, UIHelper, RecipeMapFrontend, LargeNEIFrontend, FluidOnlyFrontend",
+  "layouts": {
+    "Ore Washer": {
+      "id": "gt.recipe.orewasher",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 3,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "bath",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "crushed_ore"
+        ],
+        "itemOutputs": [
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Thermal Centrifuge": {
+      "id": "gt.recipe.thermalcentrifuge",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 3,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "crushed_ore"
+        ],
+        "itemOutputs": [
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Compressor": {
+      "id": "gt.recipe.compressor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "compress",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "compressor"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Extractor": {
+      "id": "gt.recipe.extractor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "centrifuge"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Rock Breaker": {
+      "id": "gt.recipe.rockbreaker",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "macerate",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "dust",
+          "dust"
+        ],
+        "itemOutputs": [
+          "crushed_ore"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Plasma Arc Furnace": {
+      "id": "gt.recipe.plasmaarcfurnace",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 9,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Arc Furnace": {
+      "id": "gt.recipe.arcfurnace",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 9,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Sifter": {
+      "id": "gt.recipe.sifter",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 9,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "sift",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Forming Press": {
+      "id": "gt.recipe.press",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "compress",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "press_1",
+          "press_2",
+          "press_2",
+          "press_2",
+          "press_2",
+          "press_2"
+        ],
+        "itemOutputs": [
+          "press_3"
+        ],
+        "fluidInputs": [
+          "press_1"
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Laser Engraver": {
+      "id": "gt.recipe.laserengraver",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 4,
+        "itemOutputs": 4,
+        "fluidInputs": 2,
+        "fluidOutputs": 2
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null,
+          "lens",
+          "lens",
+          "lens"
+        ],
+        "itemOutputs": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "fluidInputs": [
+          null,
+          null
+        ],
+        "fluidOutputs": [
+          null,
+          null
+        ]
+      }
+    },
+    "Mixer": {
+      "id": "gt.recipe.mixer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 4,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "mixer",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "dust",
+          "dust",
+          "dust",
+          "dust",
+          "dust",
+          "dust",
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "itemOutputs": [
+          "dust",
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Autoclave": {
+      "id": "gt.recipe.autoclave",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 4,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "dust",
+          "dust"
+        ],
+        "itemOutputs": [
+          "gem",
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Electromagnetic Separator": {
+      "id": "gt.recipe.electromagneticseparator",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 3,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "magnet",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "crushed_ore"
+        ],
+        "itemOutputs": [
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Electromagnetic Polarizer": {
+      "id": "gt.recipe.polarizer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "magnet",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Macerator": {
+      "id": "gt.recipe.macerator",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 4,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "macerate",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "crushed_ore"
+        ],
+        "itemOutputs": [
+          "dust",
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Chemical Bath": {
+      "id": "gt.recipe.chemicalbath",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 3,
+        "fluidInputs": 2,
+        "fluidOutputs": 2
+      },
+      "texture": "bath",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Fluid Canner": {
+      "id": "gt.recipe.fluidcanner",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "canner",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "canister"
+        ],
+        "itemOutputs": [
+          "canister"
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Brewery": {
+      "id": "gt.recipe.brewer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "cauldron"
+        ],
+        "itemOutputs": [],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Fluid Heater": {
+      "id": "gt.recipe.fluidheater",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          "heater_1"
+        ],
+        "fluidOutputs": [
+          "heater_2"
+        ]
+      }
+    },
+    "Distillery": {
+      "id": "gt.recipe.distillery",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          "beaker_1"
+        ],
+        "fluidOutputs": [
+          "beaker_2"
+        ]
+      }
+    },
+    "Fermenter": {
+      "id": "gt.recipe.fermenter",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Fluid Solidifier": {
+      "id": "gt.recipe.fluidsolidifier",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "mold"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Fluid Extractor": {
+      "id": "gt.recipe.fluidextractor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 1
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "centrifuge"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Packager": {
+      "id": "gt.recipe.packager",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null,
+          "box"
+        ],
+        "itemOutputs": [
+          "boxed"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Unpackager": {
+      "id": "gt.recipe.unpackager",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 2,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "boxed"
+        ],
+        "itemOutputs": [
+          null,
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Fusion Reactor": {
+      "id": "gt.recipe.fusionreactor",
+      "frontend": "FluidOnlyFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 2,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Centrifuge": {
+      "id": "gt.recipe.centrifuge",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 6,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "centrifuge",
+          "canister"
+        ],
+        "itemOutputs": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fluidInputs": [
+          "centrifuge_fluid"
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Electrolyzer": {
+      "id": "gt.recipe.electrolyzer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 6,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "charger",
+          "canister"
+        ],
+        "itemOutputs": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fluidInputs": [
+          "charger_fluid"
+        ],
+        "fluidOutputs": [
+          null
+        ]
+      }
+    },
+    "Bricked Blast Furnace": {
+      "id": "gt.recipe.primitiveblastfurnace",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 3,
+        "itemOutputs": 3,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Implosion Compressor": {
+      "id": "gt.recipe.implosioncompressor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 2,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "compress",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "implosion",
+          "explosive"
+        ],
+        "itemOutputs": [
+          null,
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Vacuum Freezer": {
+      "id": "gt.recipe.vacuumfreezer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 2,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Chemical Reactor": {
+      "id": "gt.recipe.chemicalreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 2,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "molecular_1",
+          "molecular_2"
+        ],
+        "itemOutputs": [
+          "vial_1",
+          "vial_1"
+        ],
+        "fluidInputs": [
+          "molecular_3"
+        ],
+        "fluidOutputs": [
+          "vial_2"
+        ]
+      }
+    },
+    "Large Chemical Reactor": {
+      "id": "gt.recipe.largechemicalreactor",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 6,
+        "fluidInputs": 6,
+        "fluidOutputs": 6
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Oil Cracker": {
+      "id": "gt.recipe.craker",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 2,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Pyrolyse Oven": {
+      "id": "gt.recipe.pyro",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Wiremill": {
+      "id": "gt.recipe.wiremill",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "wiremill",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "wiremill",
+          "wiremill"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Bending Machine": {
+      "id": "gt.recipe.metalbender",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "bending",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "bender",
+          "bender"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Alloy Smelter": {
+      "id": "gt.recipe.alloysmelter",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "furnace",
+          "furnace"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Assembler": {
+      "id": "gt.recipe.assembler",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "assemble",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Circuit Assembler": {
+      "id": "gt.recipe.circuitassembler",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "circuit_assembler",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit",
+          "circuit"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Canner": {
+      "id": "gt.recipe.canner",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 2,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "canner",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "canner",
+          "canister"
+        ],
+        "itemOutputs": [
+          null,
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Lathe": {
+      "id": "gt.recipe.lathe",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 2,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "lathe",
+      "decorations": [
+        {
+          "x": 98,
+          "y": 24,
+          "width": 5,
+          "height": 18,
+          "texture": "lathe_base"
+        }
+      ],
+      "overlays": {
+        "itemInputs": [
+          "rod_1"
+        ],
+        "itemOutputs": [
+          "rod_2",
+          "dust"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Cutting Machine": {
+      "id": "gt.recipe.cuttingsaw",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 4,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "cut",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "box",
+          "box"
+        ],
+        "itemOutputs": [
+          "cutter_sliced",
+          "dust",
+          "dust",
+          "dust"
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "Slicer": {
+      "id": "gt.recipe.slicer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "slice",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "square",
+          "slice_shape"
+        ],
+        "itemOutputs": [
+          "slicer_sliced"
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Extruder": {
+      "id": "gt.recipe.extruder",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "extrude",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null,
+          "extruder_shape"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [],
+        "fluidOutputs": []
+      }
+    },
+    "Forge Hammer": {
+      "id": "gt.recipe.hammer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 2,
+        "fluidInputs": 2,
+        "fluidOutputs": 2
+      },
+      "texture": "hammer",
+      "decorations": [
+        {
+          "x": 78,
+          "y": 42,
+          "width": 20,
+          "height": 6,
+          "texture": "hammer_base"
+        }
+      ],
+      "overlays": {
+        "itemInputs": [
+          "hammer",
+          "hammer"
+        ],
+        "itemOutputs": [
+          null,
+          null
+        ],
+        "fluidInputs": [
+          null,
+          null
+        ],
+        "fluidOutputs": [
+          null,
+          null
+        ]
+      }
+    },
+    "Matter Amplifier": {
+      "id": "gt.recipe.uuamplifier",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 0,
+        "fluidInputs": 0,
+        "fluidOutputs": 1
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "centrifuge"
+        ],
+        "itemOutputs": [],
+        "fluidInputs": [],
+        "fluidOutputs": [
+          "uua"
+        ]
+      }
+    },
+    "Mass Fabrication": {
+      "id": "gt.recipe.massfab",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          null
+        ],
+        "itemOutputs": [],
+        "fluidInputs": [
+          "uua"
+        ],
+        "fluidOutputs": [
+          "uum"
+        ]
+      }
+    },
+    "Combustion Generator Fuels": {
+      "id": "gt.recipe.dieselgeneratorfuel",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Extreme Diesel Engine Fuel": {
+      "id": "gt.recipe.extremedieselgeneratorfuel",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Gas Turbine Fuel": {
+      "id": "gt.recipe.gasturbinefuel",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Thermal Generator Fuels": {
+      "id": "gt.recipe.thermalgeneratorfuel",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 4,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Plasma Generator Fuels": {
+      "id": "gt.recipe.plasmageneratorfuels",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Magic Energy Absorber Fu...": {
+      "id": "gt.recipe.magicfuels",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Naquadah Reactor MkI": {
+      "id": "gt.recipe.smallnaquadahreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Naquadah Reactor MkII": {
+      "id": "gt.recipe.largenaquadahreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Naquadah Reactor MkIII": {
+      "id": "gt.recipe.fluidnaquadahreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Naquadah Reactor MkIV": {
+      "id": "gt.recipe.hugenaquadahreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Naquadah Reactor MkV": {
+      "id": "gt.recipe.extrahugenaquadahreactor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Matter Fabricator": {
+      "id": "gtpp.recipe.matterfab2",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Rocket Engine Fuel": {
+      "id": "gtpp.recipe.rocketenginefuel",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Dehydrator": {
+      "id": "gtpp.recipe.chemicaldehydrator",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 9,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "sift",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Vacuum Furnace": {
+      "id": "gtpp.recipe.vacfurnace",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 9,
+        "fluidInputs": 3,
+        "fluidOutputs": 3
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Alloy Blast Smelter": {
+      "id": "gtpp.recipe.alloyblastsmelter",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 9,
+        "fluidInputs": 3,
+        "fluidOutputs": 3
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Liquid Fluoride Thorium Re...": {
+      "id": "gtpp.recipe.lftr",
+      "frontend": "FluidOnlyFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 6,
+        "fluidOutputs": 6
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Nuclear Fuel Processing": {
+      "id": "gtpp.recipe.fissionfuel",
+      "frontend": "FluidOnlyFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 6,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Simple Dust Washer": {
+      "id": "gtpp.recipe.simplewasher",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow_multiple",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "cauldron"
+        ],
+        "itemOutputs": [
+          null
+        ],
+        "fluidInputs": [
+          null
+        ],
+        "fluidOutputs": []
+      }
+    },
+    "RTG": {
+      "id": "gtpp.recipe.RTGgenerators",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 0,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "COMET - Compact Cyclotron": {
+      "id": "gtpp.recipe.cyclotron",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 9,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Cryogenic Freezer": {
+      "id": "gtpp.recipe.cryogenicfreezer",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 2,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Multiblock Centrifuge": {
+      "id": "gtpp.recipe.multicentrifuge",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 6,
+        "fluidInputs": 6,
+        "fluidOutputs": 6
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Multiblock Electrolyzer": {
+      "id": "gtpp.recipe.multielectro",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 6,
+        "fluidInputs": 6,
+        "fluidOutputs": 6
+      },
+      "texture": "extract",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Multiblock Mixer": {
+      "id": "gtpp.recipe.multimixer",
+      "frontend": "LargeNEIFrontend",
+      "counts": {
+        "itemInputs": 9,
+        "itemOutputs": 9,
+        "fluidInputs": 6,
+        "fluidOutputs": 6
+      },
+      "texture": "mixer",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Semifluid Generator Fuels": {
+      "id": "gtpp.recipe.semifluidgeneratorfuels",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 0,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Flotation Cell": {
+      "id": "gtpp.recipe.flotationcell",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 0,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Helioflux Melting Core": {
+      "id": "gt.recipe.fog_molten",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 6,
+        "fluidInputs": 1,
+        "fluidOutputs": 2
+      },
+      "texture": "godforge",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Electric Implosion Compres...": {
+      "id": "gt.recipe.electricimplosioncompressor",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 6,
+        "itemOutputs": 2,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "compress",
+      "decorations": [],
+      "overlays": {
+        "itemInputs": [
+          "implosion",
+          "implosion",
+          "implosion",
+          "implosion",
+          "implosion",
+          "implosion"
+        ]
+      }
+    },
+    "Heliothermal Plasma Fabric...": {
+      "id": "gt.recipe.fog_plasma",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 1,
+        "itemOutputs": 1,
+        "fluidInputs": 1,
+        "fluidOutputs": 1
+      },
+      "texture": "godforge",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Milling": {
+      "id": "gtpp.recipe.oremill",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 3,
+        "itemOutputs": 1,
+        "fluidInputs": 0,
+        "fluidOutputs": 0
+      },
+      "texture": "arrow",
+      "decorations": [],
+      "overlays": {}
+    },
+    "Forge Hammer Recycling": {
+      "id": "gt.recipe.category.forge_hammer_recycling",
+      "frontend": "RecipeMapFrontend",
+      "counts": {
+        "itemInputs": 2,
+        "itemOutputs": 2,
+        "fluidInputs": 2,
+        "fluidOutputs": 2
+      },
+      "texture": "hammer",
+      "decorations": [
+        {
+          "x": 78,
+          "y": 42,
+          "width": 20,
+          "height": 6,
+          "texture": "hammer_base"
+        }
+      ],
+      "overlays": {
+        "itemInputs": [
+          "hammer",
+          "hammer"
+        ],
+        "itemOutputs": [
+          null,
+          null
+        ],
+        "fluidInputs": [
+          null,
+          null
+        ],
+        "fluidOutputs": [
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "skipped": [
+    {
+      "id": "ic.recipe.recycler",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.furnace",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.microwave",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.scanner",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.quantumcomputer",
+      "frontend": "QuantumComputerFrontend"
+    },
+    {
+      "id": "gt.recipe.replicator",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.fakeAssemblylineProcess",
+      "frontend": "AssemblyLineFrontend"
+    },
+    {
+      "id": "gt.recipe.printer",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.transcendentplasmamixerrecipes",
+      "frontend": "TranscendentPlasmaMixerFrontend"
+    },
+    {
+      "id": "gt.recipe.fakespaceprojects",
+      "frontend": "SpaceProjectFrontend"
+    },
+    {
+      "id": "gt.recipe.distillationtower",
+      "frontend": "DistillationTowerFrontend"
+    },
+    {
+      "id": "gt.recipe.semifluidboilerfuels",
+      "frontend": "RecipeMapFrontend"
+    },
+    {
+      "id": "gt.recipe.largeboilerfakefuels",
+      "frontend": "LargeBoilerFuelFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantclarifier",
+      "frontend": "PurificationUnitClarifierFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantozonation",
+      "frontend": "PurificationUnitOzonationFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantflocculation",
+      "frontend": "PurificationUnitFlocculatorFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantphadjustment",
+      "frontend": "PurificationUnitPhAdjustmentFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantplasmaheating",
+      "frontend": "PurificationUnitPlasmaHeaterFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantuvtreatment",
+      "frontend": "PurificationUnitLaserFrontend"
+    },
+    {
+      "id": "gt.recipe.purificationplantquarkextractor",
+      "frontend": "PurificationUnitParticleExtractorFrontend"
+    },
+    {
+      "id": "gt.recipe.isotope-decay",
+      "frontend": "IsotopeDecayFrontend"
+    },
+    {
+      "id": "gtpp.recipe.quantumforcesmelter",
+      "frontend": "QuantumForceTransformerFrontend"
+    },
+    {
+      "id": "gtpp.recipe.oremill",
+      "frontend": "MillingFrontend"
+    },
+    {
+      "id": "gtpp.recipe.fluidchemicaleactor",
+      "frontend": "ChemicalPlantFrontend"
+    },
+    {
+      "id": "gtpp.recipe.thermalgeneratorfuel",
+      "frontend": "ThermalBoilerFrontend"
+    },
+    {
+      "id": "gtpp.recipe.fishpond",
+      "frontend": "ZhuhaiFrontend"
+    },
+    {
+      "id": "gtpp.recipe.lftr.sparging",
+      "frontend": "SpargeTowerFrontend"
+    },
+    {
+      "id": "gtpp.recipe.treefarm",
+      "frontend": "TGSFrontend"
+    },
+    {
+      "id": "gt.recipe.multiblockrockbreaker",
+      "frontend": "RecipeMapFrontend"
+    }
+  ]
+}

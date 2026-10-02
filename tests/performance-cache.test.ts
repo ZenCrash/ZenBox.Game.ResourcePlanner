@@ -91,3 +91,23 @@ test("unrelated lines keep their render dependencies during dragging, then refre
   assert.notDeepEqual(scene.dependencies("cd", false, true, true), before);
   assert.equal(scene.moving, false);
 });
+
+
+test("arrow synchronization refreshes when overlapping lines are added, moved, hidden or removed", () => {
+  const internal = (id: string, x: number) => ({ id, measured: { width: 100, height: 100 }, internals: {
+    positionAbsolute: { x, y: 0 }, handleBounds: { source: [{ id: "out", x: 100, y: 50, width: 12, height: 12 }], target: [{ id: "in", x: 0, y: 50, width: 12, height: 12 }] },
+  } });
+  const edge = (id: string, source: string, target: string) => ({ id, source, target, sourceHandle: "out", targetHandle: "in" });
+  let state = { nodes: [], edges: [edge('a','a0','a1')], nodeLookup: new Map([internal('a0',0),internal('a1',800),internal('b0',50),internal('b1',800)].map(n=>[n.id,n])) } as unknown as ReactFlowState;
+  const scene = new GraphGeometry(); scene.update(state);
+  assert.equal(scene.arrowPhase('a'),80);
+  state={...state,edges:[...state.edges,edge('b','b0','b1')]};scene.update(state);
+  assert.equal(scene.arrowPhase('b'),30);
+  state={...state,nodeLookup:new Map(state.nodeLookup)};
+  state.nodeLookup.set('b0',internal('b0',70) as never);scene.update(state);
+  assert.equal(scene.arrowPhase('b'),10);
+  state={...state,edges:state.edges.map(e=>e.id==='a'?{...e,hidden:true}:e)};scene.update(state);
+  assert.equal(scene.arrowPhase('b'),80);
+  state={...state,edges:state.edges.filter(e=>e.id==='b')};scene.update(state);
+  assert.equal(scene.arrowPhase('b'),80);
+});

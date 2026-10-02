@@ -20,6 +20,7 @@ export type SummaryRecipe = SummaryBounds & {
   recipe: Recipe;
   machines: number;
   machineId?: string;
+  multiblock?: import("./multiblock").MultiblockConfig;
   disabledPorts?: string[];
   utilization?: number;
   variants: VariantSelection;
@@ -50,6 +51,7 @@ export function summarizeArea(area: SummaryBounds, recipes: SummaryRecipe[]) {
     const recipe = overclockRecipe(
       applyVariants(node.recipe, node.variants),
       node.machineId,
+      node.multiblock,
     );
     const chosenMachine = selectedMachine(node.recipe, node.machineId);
     const activeMachines = node.machines * (node.utilization ?? 1);

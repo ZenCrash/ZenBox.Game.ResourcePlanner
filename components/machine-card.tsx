@@ -12,6 +12,8 @@ import { PortItemHighlight } from "./port-item-highlight";
 import { RecipePorts } from "./recipe-ports";
 import { ItemSlot, RecipeView, type Browse } from "./recipe-view";
 import { useRecipeCardWidth } from "./use-recipe-card-width";
+import { MultiblockControls } from "./multiblock-controls";
+import type { MultiblockConfig } from "@/lib/multiblock";
 import { MachineSelector } from "./machine-selector";
 import { RecipeChevron } from "./recipe-chevron";
 import { ItemTooltip } from "./item-tooltip";
@@ -21,6 +23,7 @@ export type RecipeNode = Node<
     recipe: Recipe;
     machines: number;
     machineId?: string;
+    multiblock?: MultiblockConfig;
     originalMachines?: number;
     originalMachineId?: string;
     scaleAmount?: number;
@@ -28,6 +31,8 @@ export type RecipeNode = Node<
     variants: VariantSelection;
     portRows?: PortRows;
     disabledPorts?: string[];
+    theme?: import("@/lib/group-theme").GroupTheme;
+    ignoredItems?: string[];
     calculators?: SummaryCalculation[];
     title?: string;
     text?: string;
@@ -41,6 +46,7 @@ export const EditorContext = createContext<{
   browse: Browse;
   count: (id: string, value: number) => void;
   selectMachine: (id: string, machineId: string) => void;
+  configureMultiblock: (id: string, config: MultiblockConfig) => void;
   color: (itemId: string) => string;
   connected: Set<string>;
   utilization: Map<string, number>;
@@ -56,6 +62,7 @@ export const EditorContext = createContext<{
   browse: () => {},
   count: () => {},
   selectMachine: () => {},
+  configureMultiblock: () => {},
   color: itemColor,
   connected: new Set(),
   utilization: new Map(),
@@ -95,11 +102,12 @@ const MachineCardContent = memo(function MachineCardContent({ id, data, selected
       movePorts,
       togglePort,
       remove,
+      configureMultiblock,
       selectedConnections,
       disconnect,
     } = useContext(EditorContext),
     baseRecipe = useMemo(() => applyVariants(data.recipe, data.variants), [data.recipe, data.variants]),
-    recipe = useMemo(() => overclockRecipe(baseRecipe, data.machineId), [baseRecipe, data.machineId]);
+    recipe = useMemo(() => overclockRecipe(baseRecipe, data.machineId, data.multiblock), [baseRecipe, data.machineId, data.multiblock]);
   useRecipeCardWidth(cardRef, data, deferBody, `${!!scaleView}/${!!scaled?.has(id)}`, settings.guiScale);
   const ports = (
     <RecipePorts
@@ -251,6 +259,7 @@ const MachineCardContent = memo(function MachineCardContent({ id, data, selected
         }
       >
         {deleteButton}
+        <MultiblockControls recipe={baseRecipe} machineId={data.machineId} value={data.multiblock} onChange={config => configureMultiblock(id, config)} />
       </RecipeView>
       <div className="machine-overview-image" aria-hidden={!overview}>
         <div className="machine-overview-header">

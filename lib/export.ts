@@ -1,3 +1,5 @@
+import { groupHierarchy } from "./group-hierarchy";
+import { groupTheme } from "./group-theme";
 import {
   createPortColorResolver,
   port,
@@ -56,6 +58,7 @@ export async function exportDiagram(
       overclockRecipe(
         applyVariants(baseRecipes.get(node.recipeId)!, node.variants),
         node.machineId,
+        node.multiblock,
       ),
     ]),
   );
@@ -81,11 +84,12 @@ export async function exportDiagram(
   const utilization = productionRates(doc.nodes.map(node => ({
     id: node.id, recipe: map.get(node.id)!, machines: node.machines, disabledPorts: node.disabledPorts,
   })), doc.edges.map(edge => ({ ...edge, data: { reference: edge.reference } })));
-  const summaries = (doc.areas ?? []).map((area) => ({
+  const groupingTree = groupHierarchy(doc.areas ?? []);
+  const summaries = [...(doc.areas ?? [])].sort((a,b) => groupingTree.depth.get(a.id)! - groupingTree.depth.get(b.id)!).map((area) => ({
     area,
     summary: summarizeArea(
       area,
-      doc.nodes.map((node) => ({
+      (groupingTree.children.get(area.id)?.length ? [] : doc.nodes).map((node) => ({
         position: node.position,
         width: node.size?.width ?? 340,
         height: node.size?.height ?? 240,
@@ -186,10 +190,11 @@ export async function exportDiagram(
   let body = `<rect width="100%" height="100%" fill="#171c19"/>${text(30, 32, `${name} · GTNH 2.8.4`, "#b8d8bd", 18)}<g transform="translate(${-minX},${-minY + 50})">`;
   for (const { area, summary } of summaries) {
     const { x, y } = area.position;
+    const theme = groupTheme(area.theme);
     const number = (value: number) =>
       value.toLocaleString("en-US", { maximumFractionDigits: 3 });
-    body += `<rect x="${x}" y="${y}" width="${area.width}" height="${area.height}" rx="8" fill="#173c64" fill-opacity="0.6" stroke="#488bc3" stroke-width="2"/>`;
-    body += `<path d="M ${x + 8} ${y} H ${x + area.width - 8} Q ${x + area.width} ${y} ${x + area.width} ${y + 8} V ${y + 44} H ${x} V ${y + 8} Q ${x} ${y} ${x + 8} ${y} Z" fill="#153959"/>`;
+    body += `<rect x="${x}" y="${y}" width="${area.width}" height="${area.height}" rx="8" fill="${theme.body}" fill-opacity="0.6" stroke="${theme.border}" stroke-width="2"/>`;
+    body += `<path d="M ${x + 8} ${y} H ${x + area.width - 8} Q ${x + area.width} ${y} ${x + area.width} ${y + 8} V ${y + 44} H ${x} V ${y + 8} Q ${x} ${y} ${x + 8} ${y} Z" fill="${theme.header}"/>`;
     body += text(x + 12, y + 35, area.title?.trim() || "Grouping", "#e8f4ff", 30);
     if (!summary.recipeCount) continue;
     body += text(

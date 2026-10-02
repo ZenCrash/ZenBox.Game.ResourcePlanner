@@ -13,7 +13,7 @@ export class AreaSummaryCache {
     if (cached && cached.members.length === members.length && members.every((node, i) => {
       const old = cached.members[i];
       return node.recipe === old.recipe && node.machines === old.machines && node.machineId === old.machineId &&
-        node.variants === old.variants && node.disabledPorts === old.disabledPorts &&
+        node.variants === old.variants && node.multiblock === old.multiblock && node.disabledPorts === old.disabledPorts &&
         node.utilization === old.utilization;
     })) return cached.summary;
     const summary = summarizeArea(area, members);

@@ -105,3 +105,51 @@ Block and machine icons can be re-rendered at 256×256 from the isolated GTNH 2.
 5. Run `node scripts/upgrade-block-icons.mjs --install`. This validates image dimensions/transparency, backs up the originals under `data/block-icon-backup`, and replaces only matching block icon files. The completed request is renamed so later normal exports are unaffected.
 
 No images are downloaded from another planner. Original mod texture resolutions remain unchanged; the higher resolution improves the rendered block geometry and machine details.
+
+## Screenshot layout and Mob Info supplement
+
+The shared recipe renderer now uses the original Thaumcraft research-book textures,
+Faithful SAG Mill and assembly-line textures, and the TecTech Godforge idle symbol.
+No research controls, navigation controls, or mod logos are part of these layouts.
+`node scripts/extract-screenshot-recipe-textures.mjs` reproduces the crops; their
+archive paths and crop rectangles are recorded in `public/ui/recipe-layouts/sources.json`.
+
+The focused exporter uses `planner-export.layouts-only` in the isolated extraction
+copy. It captures Mob Info drops, per-drop tooltips and spawning locations, SAG
+Mill outputs/chances/energy, and Railcraft Coke Oven tanks. The additional marker
+`planner-export.supplement-only` captures TCNA's extended infusion handler and
+assembly-line research stacks. `planner-export.portraits-only` refreshes entity
+portraits without regenerating item variants. Complete one mode before selecting
+another, and rename/remove the active markers after capture.
+
+`node scripts/install-screenshot-recipe-data.mjs` installs the captured data;
+`node scripts/verify-screenshot-recipe-data.mjs` validates drop indices, tooltip
+coverage, tanks, tab icons and Blasting availability. Instability matches preserve
+NBT-sensitive recipes; the revolver's randomly displayed durability is ignored
+only when the full ingredient combination and instability value agree. Skeleton
+and Wither Skeleton are distinct catalog entries despite sharing an entity ID.
+Blasting remains enabled and uses the furnace-style layout.
+
+Mob portraits use the game's renderer, not spawn-item icons. Unsupported entity
+renders remain explicitly unavailable and are listed in the generated
+`gtnh-2.8.4.screenshot-layout-report.json`; their recipe/drop data remains usable.
+
+The second screenshot batch adds Blasting, Electric Implosion Compressor, Research
+Station, Scanner, Squeezer, Tree Growth Simulator, Space Mining, Heliothermal Plasma
+Fabricator, Milling, Brewing and Forge Hammer Recycling. Original artwork is
+extracted by `scripts/extract-additional-recipe-textures.mjs`; source rectangles
+are recorded in `public/ui/recipe-layouts/additional-sources.json`.
+
+The isolated exporter marker `planner-export.more-layouts` captures special data
+items, saplings, tool alternatives and Squeezer tank fluids into `more-layouts.json`.
+Run `scripts/install-additional-recipe-data.mjs` to apply that capture, restore
+Blasting, and register all three Space Mining modules. Validate with
+`scripts/verify-additional-recipe-data.mjs`. Special items retain their native
+metadata and reuse the matching catalog item's artwork.
+
+Modifier-key tooltips are captured with `planner-export.tooltips-only` in the
+isolated game copy. The exporter samples Shift, Ctrl, Alt and their combinations,
+restoring the keyboard state in a finally block. Install `tooltip-variants.json`
+with `scripts/install-tooltip-variants.mjs`. The optional `ItemTooltipVariant`
+catalog table travels with portable game packs; older packs fall back to ordinary
+text. The UI fetches variants only for an open tooltip and caches up to 256 items.

@@ -1,6 +1,10 @@
 "use client";
+import { FrozenGroupingSidebar } from "./frozen-grouping-sidebar";
+import { GroupHierarchyCache, reorderSiblingGroups } from "@/lib/group-hierarchy";
 import { machineAmountRatio } from "@/lib/perfect-ratio";
 import Link from "next/link";
+import { runCooperatively, mapCooperatively, yieldToBrowser } from "@/lib/cooperative-work";
+import { DiagramLoadingProgress } from "./diagram-loading-progress";
 import { DiagramTree } from "./diagram-tree";
 import { ResizableSidebar } from "./resizable-sidebar";
 import { DisplaySettingsProvider, DisplaySettingsPanel, useDisplaySettings } from "./display-settings";
@@ -34,6 +38,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft,
+  Info,
   ChevronLeft,
   ChevronRight,
   Save,
@@ -67,7 +72,7 @@ import {
   itemSourceRecipe,
   recipeTabIcon,
   applyVariants,
-  resolveDiagramVariants,
+  resolveDiagramVariantsSteps,
   type VariantSelection,
   type DiagramDocument,
   type Item,
@@ -101,7 +106,7 @@ import { SidebarGroupSummary } from "./sidebar-group-summary";
 import { AutoRecipePlanner, type PlannedGraph } from "./auto-recipe-planner";
 
 import { overclockRecipe } from "@/lib/recipe-overclock";
-import { selectedMachine, machineOptions } from "@/lib/machine-selection";
+import { selectedMachine, machineOptions, machineTier } from "@/lib/machine-selection";
 import { ItemTooltip } from "./item-tooltip";
 import { recipeCategoryMod } from "@/lib/recipe-handlers";
 import { summaryRecipe } from "@/lib/area-summary";
@@ -208,7 +213,6 @@ function Editor({ project }: { project: Project }) {
     [busy, setBusy] = useState(false);
   const [diagramLoading, setDiagramLoading] = useState(project.diagrams.length > 0);
   const [diagramLoadStage, setDiagramLoadStage] = useState("Loading diagram…");
-  const [diagramLoadPercent, setDiagramLoadPercent] = useState(0);
   const loadMeasurement = useRef<{ started: number; initial: ReturnType<typeof catalogCacheDiagnostics> } | null>(null);
   const [loadMetrics, setLoadMetrics] = useState<{ ms: number; persistentHits: number; networkBatches: number } | null>(null);
   useEffect(() => {
@@ -338,6 +342,7 @@ function Editor({ project }: { project: Project }) {
             : {}),
           machines: n.data.machines,
           machineId: n.data.machineId,
+          multiblock: n.data.multiblock,
           scaleAmount: n.data.scaleAmount,
           scaleMachineId: n.data.scaleMachineId,
           ...(n.measured?.width && n.measured?.height
@@ -357,6 +362,8 @@ function Editor({ project }: { project: Project }) {
           width: n.width ?? 640,
           height: n.height ?? 480,
           calculators: n.data.calculators,
+          ignoredItems: n.data.ignoredItems,
+          theme: n.data.theme,
           title: n.data.title,
         })),
       edges: edges.map((e) => ({
@@ -451,7 +458,7 @@ function Editor({ project }: { project: Project }) {
       loadMeasurement.current = { started: performance.now(), initial: catalogCacheDiagnostics() };
       setLoadMetrics(null);
       setDiagramLoading(true);
-      setDiagramLoadPercent(0);
+
       setDiagramLoadStage("Loading diagram…");
       setReady(false);
       setError("");
@@ -460,33 +467,31 @@ function Editor({ project }: { project: Project }) {
         const catalogData = catalogForDiagram(doc.catalogRevision ?? crypto.randomUUID());
         if (epoch.current !== token) return;
         setDiagramLoadStage("Loading recipes and items…");
-        setDiagramLoadPercent(10);
+
         const unique = [
           ...new Set(doc.nodes.filter((n) => !n.itemId).map((n) => n.recipeId)),
         ];
         const itemIds = [
           ...new Set(doc.nodes.flatMap((n) => (n.itemId ? [n.itemId] : []))),
         ];
-        let recipesDone = 0, itemsDone = 0;
-        const progress = () => {
-          if (epoch.current === token) setDiagramLoadPercent(10 + Math.round(80 * (recipesDone + itemsDone) / Math.max(1, unique.length + itemIds.length)));
-        };
         const [recipes, items] = await Promise.all([
-          catalogData.recipes.get(unique, completed => { recipesDone = completed; progress(); }),
-          catalogData.items.get(itemIds, completed => { itemsDone = completed; progress(); }),
+          catalogData.recipes.get(unique),
+          catalogData.items.get(itemIds),
         ]);
         const loaded = [...recipes, ...items.map(itemSourceRecipe)];
         if (epoch.current !== token) return;
-        setDiagramLoadPercent(90);
+
         setDiagramLoadStage("Preparing diagram…");
-        doc = resolveDiagramVariants(doc, loaded);
+        await yieldToBrowser();
+        const cancelled = () => epoch.current !== token;
+        doc = await runCooperatively(resolveDiagramVariantsSteps(doc, loaded), cancelled);
         const map = new Map(loaded.map((r) => [r.id, r]));
         if (doc.nodes.some((n) => !map.has(n.recipeId)))
           throw new Error(
             "This diagram references recipes missing from the installed catalog. Restore its catalog before editing.",
           );
-        setNodes([
-          ...doc.nodes.map((n): RecipeNode => ({
+        const preparedNodes: RecipeNode[] = [
+          ...await mapCooperatively(doc.nodes, (n): RecipeNode => ({
             id: n.id,
             type: "recipe",
             position: n.position,
@@ -494,13 +499,14 @@ function Editor({ project }: { project: Project }) {
               recipe: map.get(n.recipeId)!,
               machines: Math.max(1, n.machines),
               machineId: n.machineId,
+              multiblock: n.multiblock,
               scaleAmount: n.scaleAmount,
               scaleMachineId: n.scaleMachineId,
               variants: n.variants,
               portRows: n.portRows,
               disabledPorts: n.disabledPorts,
             },
-          })),
+          }), cancelled),
           ...(doc.labels ?? []).map((label): RecipeNode => ({ id: label.id, type: "label", position: label.position, zIndex: 3500, data: { recipe: summaryRecipe, machines: 0, variants: {}, text: label.text, fontSize: label.fontSize, textColor: label.textColor, backgroundColor: label.backgroundColor } })),
           ...(doc.areas ?? []).map((area): RecipeNode => ({
             id: area.id,
@@ -515,12 +521,13 @@ function Editor({ project }: { project: Project }) {
               machines: 0,
               variants: {},
               calculators: area.calculators,
+              ignoredItems: area.ignoredItems,
+              theme: area.theme,
               title: area.title,
             },
           })),
-        ]);
-        setEdges(
-          doc.edges.map((edge) => ({
+        ];
+        const preparedEdges = await mapCooperatively(doc.edges, (edge) => ({
             ...edge,
             data: {
               reference: edge.reference,
@@ -532,8 +539,11 @@ function Editor({ project }: { project: Project }) {
               labelPosition: edge.labelPosition,
               imagePosition: edge.imagePosition,
             },
-          })),
-        );
+          }), cancelled);
+        await yieldToBrowser();
+        if (cancelled()) return;
+        setNodes(preparedNodes);
+        setEdges(preparedEdges);
         revision.current = doc.revision;
         captureLoadedContent.current = true;
         resetHistory();
@@ -541,7 +551,7 @@ function Editor({ project }: { project: Project }) {
         setDirty(false);
         dirtyRef.current = false;
         setReady(true);
-        setDiagramLoadPercent(100);
+
         flow.current?.setViewport(doc.viewport);
         window.history.replaceState(null, "", `?diagram=${id}`);
       } catch (e) {
@@ -742,15 +752,15 @@ function Editor({ project }: { project: Project }) {
   const paletteRecipes = useStableValues(nodes.map(node => node.data.recipe));
   const productionNodes = useStableValues(nodes, (a, b) => a.id === b.id && a.type === b.type &&
     a.data.recipe === b.data.recipe && a.data.variants === b.data.variants &&
-    a.data.machines === b.data.machines && a.data.machineId === b.data.machineId &&
+    a.data.machines === b.data.machines && a.data.machineId === b.data.machineId && a.data.multiblock === b.data.multiblock &&
     a.data.disabledPorts === b.data.disabledPorts);
   const productionEdges = useStableValues(edges, (a, b) => a.source === b.source && a.target === b.target && a.sourceHandle === b.sourceHandle && a.targetHandle === b.targetHandle && a.data?.reference === b.data?.reference);
   const utilization = useMemo(() => productionRates(productionNodes.filter(node => node.type === "recipe").map(node => ({
-    id: node.id, recipe: overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId),
+    id: node.id, recipe: overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId, node.data.multiblock),
     machines: node.data.machines, disabledPorts: node.data.disabledPorts,
   })), productionEdges), [productionNodes, productionEdges]);
   const networkFlows = useMemo(() => {
-    const recipes = new Map(productionNodes.filter(node => node.type === "recipe").map(node => [node.id, overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId)]));
+    const recipes = new Map(productionNodes.filter(node => node.type === "recipe").map(node => [node.id, overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId, node.data.multiblock)]));
     return productionEdges.map(edge => {
       const producer = recipes.get(edge.source), consumer = recipes.get(edge.target);
       const output = producer && port(producer, edge.sourceHandle), input = consumer && port(consumer, edge.targetHandle);
@@ -853,6 +863,10 @@ function Editor({ project }: { project: Project }) {
         );
         markDirty();
       },
+      configureMultiblock: (id: string, multiblock: import("@/lib/multiblock").MultiblockConfig) => {
+        setNodes(ns => ns.map(node => node.id === id ? { ...node, data: { ...node.data, multiblock } } : node));
+        markDirty();
+      },
       selectMachine: (id: string, machineId: string) => {
         setNodes((ns) =>
           ns.map((node) =>
@@ -950,7 +964,7 @@ function Editor({ project }: { project: Project }) {
   const runtimeRecipes = new Map(nodes.map(node => {
     let recipe = runtimeCache.current.get(node.data);
     if (!recipe) {
-      recipe = overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId);
+      recipe = overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId, node.data.multiblock);
       runtimeCache.current.set(node.data, recipe);
     }
     return [node.id, recipe];
@@ -1237,6 +1251,31 @@ function Editor({ project }: { project: Project }) {
   const changeRecipePage = (step: number) => {
     if (filtered.length) setRecipePage((page) => (page + step + filtered.length) % filtered.length);
   };
+  useEffect(() => {
+    if (!browser) return;
+    const navigate = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+      const target = event.target;
+      if (target instanceof HTMLElement &&
+          (target.isContentEditable || target.closest("input,textarea,select"))) return;
+      const pageStep = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      const typeStep = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+      if (!pageStep && !typeStep) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (pageStep && filtered.length) {
+        setRecipePage(page => (page + pageStep + filtered.length) % filtered.length);
+      } else if (typeStep) {
+        const types = [...new Set(recipes.map(recipe => recipe.handler))];
+        if (!types.length) return;
+        setHandler(current => types[(types.indexOf(current) + typeStep + types.length) % types.length]);
+        setRecipePage(0);
+      }
+    };
+    // Capture also handles focus on a tab/button or on the diagram behind the modal.
+    window.addEventListener("keydown", navigate, true);
+    return () => window.removeEventListener("keydown", navigate, true);
+  }, [browser, recipes, filtered.length]);
   const draggedCatalogItem = useRef<Item | null>(null);
   function addCard(
     recipe: Recipe,
@@ -1323,15 +1362,13 @@ function Editor({ project }: { project: Project }) {
       machineId: value.data.scaleMachineId ?? value.data.machineId,
     }));
     const utilization = productionRates(recipes.map(value => ({ ...value,
-      recipe: overclockRecipe(applyVariants(value.recipe, value.variants), value.machineId),
+      recipe: overclockRecipe(applyVariants(value.recipe, value.variants), value.machineId, value.multiblock),
     })), scaleEdges);
-    const affected = new Set(recipes.filter(value => result.scaled.has(value.id) || (value.scaleAmount ?? 0) > 0 ||
-      (!!value.scaleMachineId && value.scaleMachineId !== machineOptions(value.recipe).defaultMachine?.id)).map(value => value.id));
-    return { recipes: new Map(recipes.map(value => [value.id, value])), utilization, affected };
+    return { recipes: new Map(recipes.map(value => [value.id, value])), utilization };
   }, [sidebarScaleRequested, scaleInputs, scaleEdges, calculateScale]);
   const scaledSummaryCache = useRef(new AreaSummaryCache());
   scaledSummaryCache.current.retain(new Set(nodes.filter(node => node.type === "summary").map(node => node.id)));
-  const sidebarScaledBounds = sidebarScaled ? nodes.filter(value => sidebarScaled.affected.has(value.id)).map(value => ({
+  const sidebarScaledBounds = sidebarScaled ? nodes.filter(value => sidebarScaled.recipes.has(value.id) && !value.data.recipe.sourceItemId).map(value => ({
     ...sidebarScaled.recipes.get(value.id)!, position: value.position,
     width: value.measured?.width ?? 340, height: value.measured?.height ?? 240,
     utilization: sidebarScaled.utilization.get(value.id) ?? 1,
@@ -1347,11 +1384,15 @@ function Editor({ project }: { project: Project }) {
       ...node.data,
       utilization: utilization.get(node.id) ?? 1,
     }));
+  const groupInteracting = nodes.some(node => node.type === "summary" && (node.dragging || node.resizing));
+  const groupingCache = useRef(new GroupHierarchyCache());
+  const groupingTree = groupingCache.current.get(nodes.filter(node => node.type === "summary"), groupInteracting);
   const renderedNodes = nodes.map((node) =>
     node.type === "label" ? { ...node, data: { ...node.data, removeLabel: () => context.remove(node.id), updateLabel: (patch: { text?: string; fontSize?: number; textColor?: string; backgroundColor?: string }) => { setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, ...patch } } : value)); markDirty(); } } } :
     node.type === "summary"
       ? {
           ...node,
+          zIndex: -100 - groupingTree.depth.size + (groupingTree.depth.get(node.id) ?? 0),
           data: {
             ...node.data,
             selectRecipes: nodes.some(value => recipeInsideGroup(value, node)) ? () => {
@@ -1362,7 +1403,8 @@ function Editor({ project }: { project: Project }) {
               setNodes(values => values.map(value => value.selected === (value.id === node.id) ? value : { ...value, selected: value.id === node.id }));
               setEdges(values => values.map(value => value.selected ? { ...value, selected: false } : value));
             },
-            summary: areaSummaryCache.current.get(
+            isContainer: !!groupingTree.children.get(node.id)?.length,
+            summary: groupingTree.children.get(node.id)?.length ? undefined : areaSummaryCache.current.get(
               node.id,
               {
                 position: node.position,
@@ -1370,8 +1412,18 @@ function Editor({ project }: { project: Project }) {
                 height: node.height ?? 480,
               },
               recipeBounds,
-              !!(node.dragging || node.resizing),
+              groupInteracting,
             ),
+            updateTheme: (theme: import("@/lib/group-theme").GroupTheme) => {
+              setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, theme } } : value));
+              markDirty();
+            },
+            setItemIgnored: (itemId: string, ignored: boolean) => {
+              setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data,
+                ignoredItems: ignored ? [...new Set([...(value.data.ignoredItems ?? []), itemId])] : (value.data.ignoredItems ?? []).filter(id => id !== itemId),
+              } } : value));
+              markDirty();
+            },
             itemPortState: (itemId: string) => {
               let hasEnabled = false;
               let hasDisabled = false;
@@ -1486,6 +1538,14 @@ function Editor({ project }: { project: Project }) {
   const retainedIds = new Set(retainedOrder);
   const selectionOrder = [...retainedOrder, ...selectedMachines.filter(node => !retainedIds.has(node.id)).map(node => node.id)];
   useLayoutEffect(() => { machineSelectionOrder.current = selectionOrder; });
+  const diagramCounts = nodes.reduce((counts, node) => {
+    if (node.type === "summary") counts.groups++;
+    else if (node.type === "recipe") {
+      if (node.data.recipe.sourceItemId) counts.items++;
+      else counts.recipes++;
+    }
+    return counts;
+  }, { groups: 0, recipes: 0, items: 0 });
   const ratioMachines = selectionOrder.length >= 2 ? selectionOrder.map(id => selectedMachineMap.get(id)!) : null;
   const selectedNetworkIds = new Set(selectedRecipeNodes.map(node => node.id));
   const selectedNetworkFlows = selectionMenu?.onSelection ? networkFlows.filter(flow => !flow.reference && selectedNetworkIds.has(flow.source) && selectedNetworkIds.has(flow.target)) : [];
@@ -1502,8 +1562,7 @@ function Editor({ project }: { project: Project }) {
         <section className="dialog diagram-loading-dialog" role="dialog" aria-modal="true" aria-labelledby="diagram-loading-title" aria-busy="true">
           <h2 id="diagram-loading-title">Loading diagram</h2>
           <p role="status">{diagramLoadStage}</p>
-          <div className="diagram-loading-bar" role="progressbar" aria-label="Loading diagram" aria-valuemin={0} aria-valuemax={100} aria-valuenow={diagramLoadPercent}><span style={{ width: `${diagramLoadPercent}%` }} /></div>
-          <strong className="diagram-loading-percent">{diagramLoadPercent}%</strong>
+          <DiagramLoadingProgress key={epoch.current} />
         </section>
       </div>}
       <dialog ref={leaveDialog} className="dialog unsaved-changes-dialog" aria-labelledby="unsaved-changes-title" onCancel={(event) => {
@@ -1716,12 +1775,6 @@ function Editor({ project }: { project: Project }) {
                   <Save size={15} /> Save
                 </button>
               </div>
-              <p className="sidebar-card-count">{nodes.length} cards</p>
-              <p>Connect matching ports to calculate machine ratios.</p>
-              <small>
-                Ratios use base recipe times. Chance outputs show expected
-                averages.
-              </small>
             </div>
           </aside>}</ResizableSidebar>
           <section className="editor">
@@ -1783,7 +1836,7 @@ function Editor({ project }: { project: Project }) {
 
                   addCard(itemSourceRecipe(item), {}, false, flow.current.screenToFlowPosition({ x: event.clientX, y: event.clientY }));
                 }}
-                nodes={renderedNodes}
+                nodes={[...renderedNodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))}
                 edges={renderedEdges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
@@ -1975,7 +2028,9 @@ function Editor({ project }: { project: Project }) {
                   </button>
                 </Panel>
                 <Controls showInteractive={false} />
-                <MiniMap nodeColor="#a3a3a3" maskColor="rgba(18,18,18,.8)" />
+                <MiniMap nodeColor={node => node.type === "summary" ? "#26384b" : "#a3a3a3"}
+                  nodeStrokeColor={node => node.selected ? "#73baff" : node.type === "summary" ? "#526b8b" : "#343434"}
+                  nodeStrokeWidth={2} maskColor="rgba(18,18,18,.8)" />
               </ReactFlow>
               {!nodes.length && (
                 <div className="canvas-empty">
@@ -2005,40 +2060,87 @@ function Editor({ project }: { project: Project }) {
                 <button type="button" aria-pressed={!scaleView} onClick={() => setScaleView(false)}>Normal view</button>
                 <button type="button" aria-pressed={scaleView} onClick={() => setScaleView(true)}>Scale view</button>
               </div>
-              {ratioMachines && <div className="selected-machine-ratio" role="status" aria-label="Selected machine amount ratio" title="Current machine counts, in selection order">
+              {ratioMachines ? <div className="selected-machine-ratio" role="status" aria-label="Selected machine amount ratio" title="Current machine counts, in selection order">
                 <span className="selected-ratio-names">{ratioMachines.map(node => node.data.recipe.handler).join(" : ")}</span>
                 <strong>{machineAmountRatio(...ratioMachines.map(node => node.data.machines))}</strong>
-              </div>}
+              </div> : <div className="diagram-view-description">{scaleView ? "Set fixed machine amounts to scale connected production." : "Build production chains and balance machine ratios."}</div>}
+              <div className="diagram-footer-counts" aria-label="Diagram counts">
+                <span>{diagramCounts.groups} {diagramCounts.groups === 1 ? "group" : "groups"}</span><span aria-hidden="true">·</span>
+                <span>{diagramCounts.recipes} {diagramCounts.recipes === 1 ? "recipe card" : "recipe cards"}</span><span aria-hidden="true">·</span>
+                <span>{diagramCounts.items} {diagramCounts.items === 1 ? "item card" : "item cards"}</span>
+                <button type="button" className="diagram-shortcuts-help" aria-label="Diagram shortcuts">
+                  <Info size={14} aria-hidden="true" />
+                  <ItemTooltip compact followPointer={false} placement="top-end" anchorContainerSelector=".canvas-footer">
+                    <strong>Diagram shortcuts</strong>
+                    <span className="diagram-shortcut-list">
+                      {[
+                        ["Ctrl + S", "Save diagram"],
+                        ["Ctrl + Z", "Undo"],
+                        ["Ctrl + Shift + Z", "Redo"],
+                        ["Ctrl + C", "Copy selection"],
+                        ["Ctrl + X", "Cut selection"],
+                        ["Ctrl + V", "Paste"],
+                        ["Delete / Backspace", "Delete selection"],
+                        ["Escape", "Close menus and dialogs"],
+                        ["Ctrl + click", "Toggle selection"],
+                        ["Drag background", "Select an area"],
+                        ["Shift + drag background", "Deselect an area"],
+                        ["Middle-button drag", "Pan diagram"],
+                        ["Mouse wheel", "Zoom in or out"],
+                        ["Arrow keys on a line corner", "Move corner one grid step"],
+                      ].map(([keys, action]) => <span className="diagram-shortcut-row" key={keys}><span className="diagram-shortcut-keys">{keys.split(/( \+ | \/ )/).map((part, index) => part === " + " || part === " / " ? <span key={index} aria-hidden="true">{part.trim()}</span> : <kbd key={index}>{part}</kbd>)}</span><span>{action}</span></span>)}
+                    </span>
+                  </ItemTooltip>
+                </button>
+              </div>
               {!!scaleResult?.failed.size && <span role="status" className="scale-view-error">Cannot balance this network with the fixed amounts and tiers. Adjust or clear a fixed amount.</span>}
-              {!!scaleResult?.proportional.size && <span className="scale-view-note">Scaled existing proportions where no exact balance is available.</span>}
+
             </footer>
           </section>
           <ResizableSidebar side="right" defaultWidth={318}>{(collapse) => <Inventory
             onCollapse={collapse}
             areaSummaries={
-              <>
-                {renderedNodes.filter((node) => node.type === "summary").map((node, index) => {
+              <FrozenGroupingSidebar frozen={groupInteracting} render={() => <>
+                {(() => {
+                  const groups = renderedNodes.filter(node => node.type === "summary");
+                  const byId = new Map(groups.map(node => [node.id,node]));
+                  const renderGroup = (id: string): import("react").ReactNode => {
+                  const node = byId.get(id)!;
+                  const index = groups.indexOf(node);
+                  const childIds = groupingTree.children.get(id) ?? [];
+                  const container = childIds.length > 0;
                   const summary = "summary" in node.data ? node.data.summary : undefined;
-                  const members = nodes.filter(value => recipeInsideGroup(value, node) && !value.data.recipe.sourceItemId);
+                  const members = container ? [] : nodes.filter(value => recipeInsideGroup(value, node) && !value.data.recipe.sourceItemId);
                   const entry = (value: RecipeNode, scaled = false) => {
                     const machine = selectedMachine(value.data.recipe, scaled ? value.data.scaleMachineId ?? value.data.machineId : value.data.machineId);
                     const amount = scaled && !scaleView ? value.data.scaleAmount : value.data.machines;
                     return { id: value.id, name: value.data.recipe.name || value.data.recipe.handler, image: machine?.image,
                       detail: [amount == null ? "Automatic amount" : amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) + " ×", machine?.name.replace(/§./g, "")].filter(Boolean).join(" ") };
                   };
-                  return <SidebarGroupSummary key={node.id} connections={renderedEdges}
+                  return <SidebarGroupSummary key={node.id} groupId={node.id} parentId={groupingTree.parent.get(node.id)} onReorder={(source, after) => {
+                    setNodes(values => reorderSiblingGroups(values, source, node.id, after));
+                    markDirty();
+                  }} depth={groupingTree.depth.get(node.id) ?? 0} nestedGroups={container ? childIds.map(renderGroup) : undefined} connections={renderedEdges}
                     onRename={title => {
                       setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, title } } : value));
                       markDirty();
                     }}
                     title={node.data.title?.trim() || "Grouping " + (index + 1)}
                     summary={summary}
+                    theme={node.data.theme}
+                    ignoredItems={node.data.ignoredItems ?? []}
+                    setItemIgnored={"setItemIgnored" in node.data ? node.data.setItemIgnored : undefined}
                     setItemDisabled={"setItemDisabled" in node.data ? node.data.setItemDisabled : undefined}
                     itemPortState={"itemPortState" in node.data ? node.data.itemPortState : undefined}
-                    scaledSummary={sidebarScaled ? scaledSummaryCache.current.get(node.id, {
+                    scaledSummary={!container && sidebarScaled ? scaledSummaryCache.current.get(node.id, {
                       position: node.position, width: node.width ?? 640, height: node.height ?? 480,
                     }, sidebarScaledBounds, !!(node.dragging || node.resizing)) : undefined}
-                    scaledMachineRows={sidebarScaledBounds.filter(value =>
+                    machineRows={members.map(value => {
+                      const machine = selectedMachine(value.data.recipe, value.data.machineId);
+                      return { id: value.id, name: value.data.recipe.name || value.data.recipe.handler, image: machine?.image,
+                        amount: value.data.machines, detail: (machine?.name ?? value.data.recipe.handler).replace(/§./g, "") };
+                    })}
+                    scaledMachineRows={(container ? [] : sidebarScaledBounds).filter(value =>
                       value.position.x >= node.position.x && value.position.y >= node.position.y &&
                       value.position.x + value.width <= node.position.x + (node.width ?? 640) &&
                       value.position.y + value.height <= node.position.y + (node.height ?? 480)
@@ -2053,17 +2155,17 @@ function Editor({ project }: { project: Project }) {
                       setNodes(values => values.map(value => value.id === node.id ? { ...value, data: { ...value.data, calculators } } : value));
                       markDirty();
                     }}
-                    scaledRecipes={members.filter(value => (value.data.scaleAmount ?? 0) > 0 ||
-                      (!!value.data.scaleMachineId && value.data.scaleMachineId !== machineOptions(value.data.recipe).defaultMachine?.id) ||
-                      (!!scaleResult?.scaled.has(value.id))).map(value => entry(value, true))}
+                    scaledRecipes={members.map(value => entry(value, true))}
                     onLocate={(recipeId) => {
                       const target = recipeId ?? node.id;
                       setNodes(values => values.map(value => ({ ...value, selected: value.id === target })));
                       void flow.current?.fitView({ nodes: [{ id: target }], padding: 0.2, duration: 300 });
                     }} />;
-                })}
+                  };
+                  return groupingTree.roots.map(renderGroup);
+                })()}
                 {!renderedNodes.some((node) => node.type === "summary") && <p>No groupings in this diagram yet.</p>}
-              </>
+              </>} />
             }
             recentItems={recentItems}
             onBrowse={browse}
@@ -2323,11 +2425,7 @@ function Editor({ project }: { project: Project }) {
                           }
                           onKeyDown={(event) => {
                             const target =
-                              event.key === "ArrowRight"
-                                ? (index + 1) % recipeHandlers.length
-                                : event.key === "ArrowLeft"
-                                  ? (index - 1 + recipeHandlers.length) % recipeHandlers.length
-                                  : event.key === "Home"
+                              event.key === "Home"
                                     ? 0
                                     : event.key === "End"
                                       ? recipeHandlers.length - 1
@@ -2385,6 +2483,7 @@ function Editor({ project }: { project: Project }) {
                     <CyclingRecipe
                       key={selectedRecipe.id}
                       recipe={selectedRecipe}
+                      headerTier={browser.mode === "uses" && selectedRecipe.craftingMachines?.some(machine => machine.id === browser.item.id) ? machineTier(browser.item) : undefined}
                       navigation={{
                         previous: (
                           <button
@@ -2450,7 +2549,6 @@ function Editor({ project }: { project: Project }) {
                     {selectedRecipe.craftingMachines.map((machine) => (
                       <ItemSlot
                         key={machine.id}
-                        nativeTooltip
                         item={machine}
                         onBrowse={browse}
                       />

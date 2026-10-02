@@ -203,7 +203,7 @@ test("internal segments move perpendicular to their direction and keep both port
   const source = { x: 340, y: 60 },
     target = { x: 900, y: 180 };
   const route = connectionRoute(source, target, { x: 500, y: 120 });
-  const segments = draggableRouteSegments(route);
+  const segments = draggableRouteSegments(route).slice(1, -1);
   assert.deepEqual(
     segments.map((segment) => segment.indexes),
     [[1], [2], [3]],
@@ -233,7 +233,7 @@ test("internal segments move perpendicular to their direction and keep both port
   }
 });
 
-test("straight and collapsed endpoint sections cannot be dragged", () => {
+test("horizontal port sections are draggable while collapsed port verticals stay fixed", () => {
   assert.deepEqual(
     draggableRouteSegments(
       connectionRoute(
@@ -241,8 +241,8 @@ test("straight and collapsed endpoint sections cannot be dragged", () => {
         { x: 1000, y: 100 },
         { x: 300, y: 100 },
       ),
-    ),
-    [],
+    ).map(segment => segment.vertical),
+    [false],
   );
   const route = connectionRoute(
     { x: 0, y: 0 },
@@ -251,7 +251,7 @@ test("straight and collapsed endpoint sections cannot be dragged", () => {
   );
   assert.deepEqual(
     draggableRouteSegments(route).map((segment) => segment.indexes),
-    [[2], [3]],
+    [[2], [3], [4]],
   );
   const merged = connectionRoute(
     { x: 0, y: 0 },
@@ -259,7 +259,7 @@ test("straight and collapsed endpoint sections cannot be dragged", () => {
     { x: 200, y: 100 },
     200,
   );
-  const segments = draggableRouteSegments(merged);
+  const segments = draggableRouteSegments(merged).filter(segment => segment.vertical);
   assert.equal(segments.length, 1);
   assert.deepEqual(segments[0].indexes, [1, 3]);
   const edit = moveRouteSegment(merged, segments[0], { x: 240, y: 0 });
@@ -362,4 +362,25 @@ test("right-side corner edits survive diagram serialization", () => {
     edgeSchema.parse({ ...edge, targetBendX: undefined }).targetBendX,
     undefined,
   );
+});
+
+ test("horizontal port drags add bends and keep straight, stepped and custom routes attached", () => {
+  const source = { x: 0, y: 60 };
+  for (const target of [{ x: 600, y: 60 }, { x: 600, y: 240 }]) {
+    for (const custom of [false, true]) {
+      const base = connectionRoute(source, target, { x: 200, y: source.y });
+      const route = custom ? connectionRoute(source, target, undefined, undefined, base.points.slice(1, -1)) : base;
+      for (const segment of draggableRouteSegments(route).filter(s => !s.vertical)) {
+        const y = segment.start.y + 80;
+        const edit = moveRouteSegment(route, segment, { x: segment.start.x, y });
+        const moved = connectionRoute(source, target, edit.bend, edit.targetBendX, edit.waypoints);
+        assert.deepEqual(moved.points[0], source);
+        assert.deepEqual(moved.points.at(-1), target);
+        assert.equal(moved.points[1].y, source.y);
+        assert.equal(moved.points.at(-2)!.y, target.y);
+        assert.ok(moved.points.slice(1).every((p, i) => p.x === moved.points[i].x || p.y === moved.points[i].y));
+        assert.ok(moved.points.slice(1).some((p, i) => p.y === y && moved.points[i].y === y && p.x !== moved.points[i].x));
+      }
+    }
+  }
 });
