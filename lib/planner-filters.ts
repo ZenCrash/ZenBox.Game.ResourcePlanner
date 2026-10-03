@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { machineTiers } from "./machine-selection";
+import { plannerPriorityIds } from "./planner-priorities";
 
 export const plannerFiltersKey = "resource-planner:auto-planner-filters:v1";
 const item = z.object({
@@ -23,7 +24,9 @@ const count = z
 const filters = z.object({
   target: item.optional().catch(undefined),
   input: item.optional().catch(undefined),
-  priority: z.enum(["eu", "yield"]).catch("eu"),
+  inputs: z.array(item).max(100).optional().catch(undefined),
+  priority: z.enum(["eu", "yield", "output"]).catch("eu"),
+  priorities: z.array(z.enum(plannerPriorityIds)).length(4).refine(values => new Set(values).size === 4).optional().catch(undefined),
   allowMultiblocks: z.boolean().catch(false),
   maxTier: z
     .number()

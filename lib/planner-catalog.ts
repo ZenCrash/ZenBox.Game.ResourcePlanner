@@ -1,6 +1,8 @@
 import { catalog } from "./db";
-import type { Recipe } from "./model";
+import { acceptedItemIds, type Recipe } from "./model";
 import { machineIds } from "./recipe-data";
+import { plannerHandlerAllowed } from "./auto-planner";
+import { multiblockPartIds, multiblockProfile } from "./multiblock";
 
 /** Rank all candidates before applying the search cap. Bound every IN query,
  * including the relation queries Prisma emits when loading recipe ingredients.
@@ -28,6 +30,7 @@ export async function plannerRecipes(
     candidates.push(
       ...batch.filter(
         (recipe) =>
+          plannerHandlerAllowed(recipe.handler) &&
           (!allowed.size || allowed.has(recipe.handler)) &&
           !excluded.has(recipe.id),
       ),
@@ -57,7 +60,10 @@ export async function plannerRecipes(
   }
   const ranks = new Map(selected.map((recipe, index) => [recipe.id, index]));
   recipes.sort((a, b) => ranks.get(a.id)! - ranks.get(b.id)!);
-  const machineItemIds = [...new Set(recipes.flatMap(machineIds))];
+  // Search applies variants before the final response hydration. Load accepted
+  // alternatives here so a chosen container has a concrete Item at that point.
+  const machineItemIds = [...new Set([...recipes.flatMap(machineIds), ...multiblockPartIds,
+    ...recipes.flatMap(recipe => recipe.ingredients.flatMap(acceptedItemIds))])];
   const machines = [];
   for (let start = 0; start < machineItemIds.length; start += 300) {
     machines.push(
@@ -69,11 +75,15 @@ export async function plannerRecipes(
   const items = new Map(machines.map((item) => [item.id, item]));
   return {
     capped: candidates.length > 200,
-    recipes: recipes.map((recipe) => ({
-      ...recipe,
-      craftingMachines: machineIds(recipe).flatMap((id) =>
+    recipes: recipes.map((recipe) => {
+      const hydrated = { ...recipe, ingredients: recipe.ingredients.map(ingredient => ({
+        ...ingredient,
+        alternativeItems: acceptedItemIds(ingredient).flatMap(id => items.has(id) ? [items.get(id)!] : []),
+      })), craftingMachines: machineIds(recipe).flatMap((id) =>
         items.has(id) ? [items.get(id)!] : [],
-      ),
-    })),
+      ) };
+      return { ...hydrated, multiblockParts: hydrated.craftingMachines.some(machine => multiblockProfile(hydrated, machine.id))
+        ? multiblockPartIds.flatMap(id => items.has(id) ? [items.get(id)!] : []) : undefined };
+    }),
   };
 }

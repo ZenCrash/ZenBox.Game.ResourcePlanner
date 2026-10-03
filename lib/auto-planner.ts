@@ -1,18 +1,31 @@
 import {
-  acceptedItemIds,
+  ingredientVariants,
+  applyVariants,
   type Item,
   type Recipe,
   type VariantSelection,
 } from "./model";
-import { machineOptions, machineTier, machineTiers } from "./machine-selection";
+import { machineOptions, machineTier, machineTiers, selectedMachine } from "./machine-selection";
 import { overclockRecipe } from "./recipe-overclock";
 import { recipePowerInfo } from "./recipe-power";
+import { canonicalRecipeHandler } from "./recipe-handlers";
+import type { PlannerPriority } from "./planner-priorities";
+import type { MultiblockConfig } from "./multiblock";
+import { multiblockProfile } from "./multiblock";
+import { plannerMachineConfigurations } from "./planner-machine-options";
+import { knownPlannerMultiblock, plannerControllerAllowed } from './planner-progression';
+
+export function plannerHandlerAllowed(handler: string) {
+  return !["Combustion Generator Fuels", "Semifluid Generator Fuels", "Gas Turbine Fuel", "Gas Turbine Fuels", "Large Boiler"].includes(canonicalRecipeHandler(handler));
+}
 
 export type PlannerOptions = {
   targetId: string;
   exactTarget?: boolean;
   inputId?: string;
-  priority: "yield" | "eu";
+  inputIds?: string[];
+  priority: "yield" | "eu" | "output";
+  priorities?: PlannerPriority[];
   allowMultiblocks: boolean;
   maxTier: number;
   maxSteps: number;
@@ -29,6 +42,7 @@ export type PlannerOptions = {
 export type PlannerStep = {
   recipe: Recipe;
   machineId?: string;
+  multiblock?: MultiblockConfig;
   variants: VariantSelection;
   inputSlot?: number;
   outputSlot: number;
@@ -36,10 +50,12 @@ export type PlannerStep = {
   recovery?: boolean;
 };
 export type PlannerPlan = {
+  targetOutputId?: string;
   key: string;
   steps: PlannerStep[];
   totalEu: number;
   inputAmount: number;
+  outputPerBatch?: number;
   supplies: { item: Item; amount: number }[];
   links: {
     source: number;
@@ -55,6 +71,7 @@ export type PlannerResult = {
 };
 
 export function isPlannerMultiblock(recipe: Recipe, machine?: Item) {
+  if (machine && knownPlannerMultiblock(machine)) return true;
   if (machine && /^(minecraft|etfuturum|IC2):/.test(machine.registryId))
     return false;
   if (machine && machineTier(machine))
@@ -77,20 +94,21 @@ export function isPlannerMultiblock(recipe: Recipe, machine?: Item) {
 export function plannerMachine(
   recipe: Recipe,
   options: PlannerOptions,
-): { machineId?: string; runtime: Recipe } | null {
+): { machineId?: string; runtime: Recipe; multiblock?: MultiblockConfig } | null {
+  if (!plannerHandlerAllowed(recipe.handler)) return null;
   if (
     options.recipeTypes?.length &&
     !options.recipeTypes.includes(recipe.handler)
   )
     return null;
   const tier = recipePowerInfo(recipe).voltage?.match(/\((\w+)\)/)?.[1];
-  if (tier && machineTiers.indexOf(tier) > options.maxTier) return null;
   const machines = machineOptions(recipe).options;
   const eligible = machines.filter((machine) => {
     const tier = machineTier(machine);
     return (
       !options.bannedMachineIds?.includes(machine.id) &&
       (!tier || machineTiers.indexOf(tier) <= options.maxTier) &&
+      (!isPlannerMultiblock(recipe, machine) || plannerControllerAllowed(machine, options.maxTier)) &&
       (options.allowMultiblocks || !isPlannerMultiblock(recipe, machine))
     );
   });
@@ -102,21 +120,35 @@ export function plannerMachine(
   )
     return null;
   const candidates = (eligible.length ? eligible : [undefined])
-    .map((machine) => ({
-      machineId: machine?.id,
-      runtime: overclockRecipe(recipe, machine?.id),
-    }))
+    .flatMap(machine => {
+      const profile = multiblockProfile(recipe, machine?.id);
+      if ((!profile || profile.kind === "hatch-only") && tier && machineTiers.indexOf(tier) > options.maxTier) return [];
+      return plannerMachineConfigurations(recipe, machine?.id, options.maxTier);
+    })
     .filter(
       ({ runtime }) =>
         runtime.euPerTick >= 0 &&
         (runtime.euPerTick === 0 || runtime.durationTicks > 0),
     );
-  candidates.sort(
-    (a, b) =>
-      a.runtime.euPerTick * a.runtime.durationTicks -
-      b.runtime.euPerTick * b.runtime.durationTicks,
-  );
+  const machinePreference = (a: typeof candidates[number], b: typeof candidates[number]) =>
+    Number(isPlannerMultiblock(recipe, selectedMachine(recipe, a.machineId))) -
+    Number(isPlannerMultiblock(recipe, selectedMachine(recipe, b.machineId)));
+  const energy = (runtime: Recipe) => runtime.euPerTick * (runtime.cycleDurationTicks ?? runtime.durationTicks) / (runtime.parallel ?? 1);
+  const speed = (runtime: Recipe) => (runtime.parallel ?? 1) / Math.max(1, runtime.cycleDurationTicks ?? runtime.durationTicks);
+  candidates.sort((a, b) => {
+    for (const priority of options.priorities ?? ["eu", "singleblock"]) {
+      const order = priority === "eu" ? energy(a.runtime) - energy(b.runtime)
+        : priority === "output" ? (b.runtime.parallel ?? 1) - (a.runtime.parallel ?? 1)
+        : priority === "singleblock" ? machinePreference(a, b) : 0;
+      if (order) return order;
+    }
+    return speed(b.runtime) - speed(a.runtime);
+  });
   return candidates[0] ?? null;
+}
+
+function stepIngredients(step: PlannerStep) {
+  return overclockRecipe(applyVariants(step.recipe, step.variants), step.machineId, step.multiblock).ingredients;
 }
 
 /** Filling/draining carries the contents, not the empty packaging. Following
@@ -149,6 +181,19 @@ export function plannerConversionInputs(
   return [];
 }
 
+function isContainerFilling(recipe: Recipe) {
+  const inputs = recipe.ingredients.filter(i => i.direction === "input" && i.consumed && i.amount > 0);
+  const outputs = recipe.ingredients.filter(i => i.direction === "output" && i.amount > 0);
+  const fluids = inputs.filter(i => i.item.kind === "fluid");
+  if (outputs.some(i => i.item.kind === "fluid")) return false;
+  if (recipe.handler === "Bottler") return outputs.some(i => i.item.kind !== "fluid");
+  if (!fluids.length) return false;
+  return recipe.handler === "Fluid Canner" || outputs.some(output =>
+    fluids.some(fluid => output.item.containedFluidIds?.includes(fluid.itemId) ||
+      output.item.fluidContents?.some(contents => contents.fluidId === fluid.itemId)),
+  );
+}
+
 /** A conversion route; other inputs are explicitly counted as external supplies.
  * Costs are expected EU per one target unit, including probabilistic outputs.
  * No free-energy credit is assigned to byproducts or cyclic conversions.
@@ -167,7 +212,8 @@ async function findRoutes(
     visited: string[];
   };
   const inputFactors =
-    options.inputFactors ?? (options.inputId ? { [options.inputId]: 1 } : {});
+    options.inputFactors ?? Object.fromEntries((options.inputIds ?? (options.inputId ? [options.inputId] : [])).map(id => [id, 1]));
+  const hasInputs = Object.keys(inputFactors).length > 0;
   const isSource = (id: string) => Object.hasOwn(inputFactors, id);
   const queue: State[] = Object.entries(
     options.exactTarget ? { [options.targetId]: 1 } : options.targetAmounts ?? { [options.targetId]: 1 },
@@ -180,21 +226,25 @@ async function findRoutes(
   }));
   const found = new Map<string, PlannerPlan>();
   const cache = new Map<string, Promise<Recipe[]>>();
+  const machineCache = new Map<Recipe, ReturnType<typeof plannerMachine>>();
   const excluded = new Set(options.excludedRecipes);
   let examined = 0;
   let limited = false;
   const finish = (state: State) => {
     const steps = state.steps.toReversed();
+    // Filling may finish a production route, but must not be its starting
+    // operation. This also covers standalone and nested ingredient searches.
+    if (steps[0] && isContainerFilling(steps[0].recipe)) return;
     const key = steps
       .map(
         (step) =>
-          `${step.recipe.id}:${step.inputSlot ?? "_"}:${step.outputSlot}:${JSON.stringify(step.variants)}`,
+          `${step.recipe.id}:${step.inputSlot ?? "_"}:${step.outputSlot}:${JSON.stringify(step.variants)}${step.multiblock ? ":" + JSON.stringify(step.multiblock) : ""}`,
       )
       .join("|");
     if (options.excludedPlans.includes(key)) return;
     const supplies = new Map<string, { item: Item; amount: number }>();
     for (const step of steps)
-      for (const input of step.recipe.ingredients) {
+      for (const input of stepIngredients(step)) {
         if (
           input.direction !== "input" ||
           !input.consumed ||
@@ -215,7 +265,7 @@ async function findRoutes(
       supplies.delete(id);
     }
     if (
-      options.inputId &&
+      hasInputs &&
       Object.keys(options.targetAmounts ?? { [options.targetId]: 1 }).some(
         (id) => (supplies.get(id)?.amount ?? 0) > 0,
       )
@@ -229,9 +279,11 @@ async function findRoutes(
     }));
     found.set(key, {
       key,
+      targetOutputId: state.steps[0]?.recipe.ingredients.find(i => i.direction === 'output' && i.slot === state.steps[0].outputSlot)?.itemId,
       steps,
       links,
       totalEu: state.eu,
+      outputPerBatch: (overclockRecipe(steps.at(-1)!.recipe, steps.at(-1)!.machineId, steps.at(-1)!.multiblock).parallel ?? 1) / steps.at(-1)!.cycles,
       inputAmount:
         state.amount * (inputFactors[state.itemId] ?? 1) + extraSource,
       supplies: [...supplies.values()],
@@ -250,7 +302,7 @@ async function findRoutes(
         Number(a.steps.length > 0) - Number(b.steps.length > 0) ||
         Number(options.nearInputIds?.includes(b.itemId) ?? false) -
           Number(options.nearInputIds?.includes(a.itemId) ?? false) ||
-        (options.priority === "eu"
+        ((options.priorities?.[0] ?? options.priority) === "eu"
           ? a.eu - b.eu || a.steps.length - b.steps.length
           : a.steps.length - b.steps.length || a.amount - b.amount),
     );
@@ -278,7 +330,8 @@ async function findRoutes(
         state.steps.some((step) => step.recipe.id === recipe.id)
       )
         continue;
-      const machine = plannerMachine(recipe, options);
+      if (!machineCache.has(recipe)) machineCache.set(recipe, plannerMachine(recipe, options));
+      const machine = machineCache.get(recipe)!;
       if (!machine) continue;
       const outputs = recipe.ingredients.filter(
         (i) =>
@@ -295,26 +348,28 @@ async function findRoutes(
         state.eu +
         cycles *
           machine.runtime.euPerTick *
-          Math.max(0, machine.runtime.durationTicks);
+          Math.max(0, machine.runtime.cycleDurationTicks ?? machine.runtime.durationTicks) /
+          (machine.runtime.parallel ?? 1);
       if (!Number.isFinite(eu) || !Number.isFinite(cycles)) continue;
       const step: PlannerStep = {
         recipe,
         machineId: machine.machineId,
+        multiblock: machine.multiblock,
         variants: {},
         outputSlot: outputs[0].slot,
         cycles,
       };
-      if (!options.inputId) {
+      if (!hasInputs) {
         finish({ ...state, steps: [...state.steps, step], eu });
         continue;
       }
       const inputs = plannerConversionInputs(
-        recipe,
+        machine.runtime,
         step.outputSlot,
         state.steps.length === 0 && state.itemId === options.targetId,
       );
       for (const input of inputs) {
-        for (const itemId of acceptedItemIds(input)) {
+        for (const { id: itemId } of ingredientVariants(input)) {
           if (state.visited.includes(itemId) || itemId === state.itemId)
             continue;
           if (
@@ -362,13 +417,32 @@ function compareDependencies(options: PlannerOptions, a: PlannerPlan, b: Planner
 }
 
 function comparePlans(options: PlannerOptions, a: PlannerPlan, b: PlannerPlan) {
+  const multiblocks = (plan: PlannerPlan) => plan.steps.filter(step =>
+    isPlannerMultiblock(step.recipe, selectedMachine(step.recipe, step.machineId)),
+  ).length;
+  if (options.priorities) {
+    const dependencyOrder = compareDependencies(options, a, b);
+    if (dependencyOrder) return dependencyOrder;
+    const hasInputs = !!(options.inputIds?.length || options.inputId || Object.keys(options.inputFactors ?? {}).length);
+    for (const priority of options.priorities) {
+      const order = priority === "eu" ? a.totalEu - b.totalEu
+        : priority === "output" ? (b.outputPerBatch ?? 0) - (a.outputPerBatch ?? 0)
+        : priority === "yield" ? hasInputs ? a.inputAmount - b.inputAmount : 0
+        : multiblocks(a) - multiblocks(b);
+      if (order) return order;
+    }
+    return a.steps.length - b.steps.length || a.key.localeCompare(b.key);
+  }
   return (
     compareDependencies(options, a, b) ||
     (options.priority === "yield"
       ? a.inputAmount - b.inputAmount
-      : a.totalEu - b.totalEu) ||
+      : options.priority === "output"
+        ? (b.outputPerBatch ?? 0) - (a.outputPerBatch ?? 0)
+        : a.totalEu - b.totalEu) ||
     a.totalEu - b.totalEu ||
     a.steps.length - b.steps.length ||
+    multiblocks(a) - multiblocks(b) ||
     a.key.localeCompare(b.key)
   );
 }
@@ -392,7 +466,7 @@ function reuseByproducts(plan: PlannerPlan): PlannerPlan {
     );
   };
   plan.steps.forEach((producer, source) => {
-    for (const output of producer.recipe.ingredients) {
+    for (const output of stepIngredients(producer)) {
       if (
         output.direction !== "output" ||
         output.slot === producer.outputSlot ||
@@ -402,7 +476,7 @@ function reuseByproducts(plan: PlannerPlan): PlannerPlan {
       let available = output.amount * output.chance * producer.cycles;
       plan.steps.forEach((consumer, target) => {
         if (reaches(target, source)) return;
-        for (const input of consumer.recipe.ingredients) {
+        for (const input of stepIngredients(consumer)) {
           if (
             input.direction !== "input" ||
             !input.consumed ||
@@ -443,7 +517,7 @@ function reuseByproducts(plan: PlannerPlan): PlannerPlan {
 // Reserve target outputs and already allocated connections before considering
 // recycling. Several producers may jointly supply one recovery input.
 function spareByproducts(plan: PlannerPlan) {
-  const outputs = plan.steps.flatMap((step, source) => step.recipe.ingredients
+  const outputs = plan.steps.flatMap((step, source) => stepIngredients(step)
     .filter(i => i.direction === "output" && i.amount > 0 && i.chance > 0)
     .map(i => ({ source, slot: i.slot, itemId: i.itemId,
       amount: i.amount * i.chance * step.cycles, primary: i.slot === step.outputSlot })));
@@ -454,7 +528,7 @@ function spareByproducts(plan: PlannerPlan) {
   }
   for (const links of targets.values()) {
     const first = links[0], step = plan.steps[first.target];
-    const input = step.recipe.ingredients.find(i => i.direction === "input" && i.slot === first.targetSlot)!;
+    const input = stepIngredients(step).find(i => i.direction === "input" && i.slot === first.targetSlot)!;
     let remaining = input.amount * step.cycles;
     for (const link of links) {
       const output = outputs.find(o => o.source === link.source && o.slot === link.sourceSlot)!;
@@ -490,9 +564,9 @@ async function recoverByproducts(
         const links = [...plan.links], variants: VariantSelection = {};
         const index = plan.steps.length;
         let valid = true, fed = false;
-        for (const input of recipe.ingredients.filter(i => i.direction === "input" && i.consumed && i.amount > 0)) {
+        for (const input of machine.runtime.ingredients.filter(i => i.direction === "input" && i.consumed && i.amount > 0)) {
           const required = input.amount * cycles;
-          const id = acceptedItemIds(input).find(id => stock.filter(o => o.itemId === id).reduce((n, o) => n + o.amount, 0) + 1e-9 >= required);
+          const id = ingredientVariants(input).map(item => item.id).find(id => stock.filter(o => o.itemId === id).reduce((n, o) => n + o.amount, 0) + 1e-9 >= required);
           if (!id) { valid = false; break; }
           if (id !== input.itemId) variants["input:" + input.slot] = id;
           let remaining = required;
@@ -506,7 +580,7 @@ async function recoverByproducts(
         if (!valid || !fed) continue;
         let demand = 0;
         plan.steps.forEach((step, target) => {
-          for (const input of step.recipe.ingredients) {
+          for (const input of stepIngredients(step)) {
             if (input.direction !== "input" || !input.consumed || input.amount <= 0 ||
               (step.variants["input:" + input.slot] ?? input.itemId) !== supply.item.id ||
               plan.links.some(l => l.target === target && l.targetSlot === input.slot)) continue;
@@ -517,8 +591,8 @@ async function recoverByproducts(
         if (Math.abs(demand - supply.amount) > 1e-7 * Math.max(1, supply.amount)) continue;
         const candidate: PlannerPlan = {
           ...plan, key: plan.key + "~recover:" + recipe.id + ":" + output.slot,
-          steps: [...plan.steps, { recipe, machineId: machine.machineId, variants, cycles, outputSlot: output.slot, recovery: true }],
-          links, totalEu: plan.totalEu + cycles * machine.runtime.euPerTick * Math.max(0, machine.runtime.durationTicks),
+          steps: [...plan.steps, { recipe, machineId: machine.machineId, multiblock: machine.multiblock, variants, cycles, outputSlot: output.slot, recovery: true }],
+          links, totalEu: plan.totalEu + cycles * machine.runtime.euPerTick * Math.max(0, machine.runtime.cycleDurationTicks ?? machine.runtime.durationTicks) / (machine.runtime.parallel ?? 1),
           supplies: plan.supplies.filter(s => s.item.id !== supply.item.id),
         };
         if (!options.excludedPlans.includes(candidate.key)) candidates.push(candidate);
@@ -560,7 +634,7 @@ export async function findAutoPlans(
   for (const original of primary.plans) {
     let plan = reuseByproducts(original);
     const attempted = new Set<string>();
-    while (options.inputId && plan.steps.length < options.maxSteps) {
+    while ((options.inputIds?.length || options.inputId || Object.keys(options.inputFactors ?? {}).length) && plan.steps.length < options.maxSteps) {
       const supply = plan.supplies.find(
         (supply) => !attempted.has(supply.item.id),
       );
@@ -612,7 +686,7 @@ export async function findAutoPlans(
             })),
           ];
           plan.steps.forEach((step, target) =>
-            step.recipe.ingredients.forEach((ingredient) => {
+            stepIngredients(step).forEach((ingredient) => {
               if (
                 ingredient.direction === "input" &&
                 ingredient.consumed &&
@@ -631,6 +705,7 @@ export async function findAutoPlans(
           );
           return {
             key: `${plan.key}+[${branch.key}]`,
+            targetOutputId: plan.targetOutputId,
             steps: [
               ...plan.steps,
               ...branch.steps.map((step) => ({
@@ -641,6 +716,7 @@ export async function findAutoPlans(
             links,
             totalEu: plan.totalEu + branch.totalEu * supply.amount,
             inputAmount: plan.inputAmount + branch.inputAmount * supply.amount,
+            outputPerBatch: plan.outputPerBatch,
             supplies: [...supplies.values()],
           };
         })

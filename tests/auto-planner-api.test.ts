@@ -256,3 +256,18 @@ test("oil-to-diesel prefers producing both heavy and light fuel from oil", async
     }
   }
 });
+
+test('MV oil-to-diesel wizard hydrates Forestry container variants before evaluating routes', async () => {
+  const diesel = await catalog.item.findFirstOrThrow({ where: { name: 'Diesel Cell' } });
+  const response = await POST(request({
+    ...options, targetId: diesel.id, inputIds: ['gregtech:gt.metaitem.01:30707'],
+    priority: 'yield', priorities: ['yield', 'eu', 'output', 'singleblock'],
+    maxTier: 2, allowMultiblocks: true, maxSteps: 10, maxSuggestions: 100,
+  }));
+  assert.equal(response.status, 200);
+  const result: PlannerResult = await response.json();
+  assert(result.plans.length > 0);
+  const { applyVariants } = await import('../lib/model');
+  for (const plan of result.plans) for (const step of plan.steps)
+    assert.doesNotThrow(() => applyVariants(step.recipe, step.variants));
+});

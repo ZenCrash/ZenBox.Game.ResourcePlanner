@@ -55,6 +55,14 @@ function TierText({ text }: { text: string }) {
       );
     });
 }
+function RecipeDetailRow({ text }: { text: string }) {
+  const parts = text.match(/^([^:]+):\s*(.*)$/);
+  if (!parts) return <div><TierText text={text} /></div>;
+  return <div className="recipe-stat-row">
+    <strong>{parts[1]}:</strong>{" "}
+    <span><TierText text={parts[2]} /></span>
+  </div>;
+}
 function fluidSlotAmount(amount: number) {
   if (amount < 10_000) return `${amount}L`;
   const units = [
@@ -324,8 +332,13 @@ export function RecipeView({
       : undefined;
   const baseStats = reference ?? recipe;
   const basePower = recipePowerInfo(baseStats);
-  const timeReference = !isDefaultMachine && recipe.durationTicks > 0 &&
-    (referenceTimeTicks ?? 0) > 0 ? referenceTimeTicks : undefined;
+  const originalAmperage = Math.ceil(referenceRecipe ? recipePowerInfo(referenceRecipe).amperageValue : power.amperageValue);
+  const currentAmperage = Math.ceil(power.amperageValue * count);
+  const amperageChanged = originalAmperage !== currentAmperage;
+  const originalTimeTicks = referenceTimeTicks ?? referenceRecipe?.durationTicks;
+  const timeReference = recipe.durationTicks > 0 &&
+    (originalTimeTicks ?? 0) > 0 && originalTimeTicks !== recipe.durationTicks
+      ? originalTimeTicks : undefined;
   const isCrafting =
     recipe.handler === "Shaped Crafting" ||
     recipe.handler === "Shapeless Crafting";
@@ -431,7 +444,13 @@ export function RecipeView({
                   </span>
                 )}
               </div>
-              {power.amperage && <div>{power.amperage}</div>}
+              {power.amperage && <div className="recipe-stat-row">
+                <strong>Amperage:</strong>{" "}
+                <span className={amperageChanged ? "recipe-struck-stat" : undefined}>{originalAmperage.toLocaleString()} A</span>
+                {amperageChanged && <span className="recipe-comparison-stat recipe-updated-stat" style={{ color: comparisonColor }}>
+                  {countPrefix}{currentAmperage.toLocaleString()} A
+                </span>}
+              </div>}
             </>
           )}
           {recipe.durationTicks !== 0 && (
@@ -449,11 +468,7 @@ export function RecipeView({
               )}
             </div>
           )}
-          {power.details.map((d, i) => (
-            <div key={i}>
-              <TierText text={d} />
-            </div>
-          ))}
+          {power.details.map((d, i) => <RecipeDetailRow key={i} text={d} />)}
         </div>
         {footerControl}
       </div>

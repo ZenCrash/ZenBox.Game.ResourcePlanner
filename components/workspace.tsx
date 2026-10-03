@@ -110,6 +110,7 @@ import { selectedMachine, machineOptions, machineTier } from "@/lib/machine-sele
 import { ItemTooltip } from "./item-tooltip";
 import { recipeCategoryMod } from "@/lib/recipe-handlers";
 import { summaryRecipe } from "@/lib/area-summary";
+import { plannerGroupNode } from '@/lib/planner-group';
 import type { SummaryCalculation } from "@/lib/summary-rate";
 import { MachineCard, EditorContext, type RecipeNode } from "./machine-card";
 import { DiagramLabel } from "./diagram-label";
@@ -1346,7 +1347,8 @@ function Editor({ project }: { project: Project }) {
     const origin = insertionPoint();
     // Insert below existing cards so a complete route never lands on a recipe.
     if (nodes.length) origin.y = Math.max(origin.y, ...nodes.map((node) => node.position.y + (node.measured?.height ?? node.height ?? 480) + 160));
-    const pasted = pasteSelection(graph, origin, () => crypto.randomUUID());
+    const group = plannerGroupNode(graph);
+    const pasted = pasteSelection({ ...graph, nodes: group ? [{ ...group, draggable: true, selectable: true, dragHandle: '.summary-area-header, .summary-area-content' }, ...graph.nodes] : graph.nodes }, origin, () => crypto.randomUUID());
     setNodes((values) => [...values.map((node) => ({ ...node, selected: false })), ...pasted.nodes]);
     setEdges((values) => [...values.map((edge) => ({ ...edge, selected: false })), ...pasted.edges as DiagramEdge[]]);
     markDirty();
@@ -1990,7 +1992,7 @@ function Editor({ project }: { project: Project }) {
                   >
                     <PackagePlus size={20} />
                   </button>
-                  <button aria-label="Auto Recipe Planner" title="Auto Recipe Planner — Find and compare routes from an input item to a target item." disabled={!ready} onClick={() => setAutoPlanner(true)}>
+                  <button aria-label="Auto Wizzard" title="Auto Wizzard — Find and compare routes from an input item to a target item." disabled={!ready} onClick={() => setAutoPlanner(true)}>
                     <WandSparkles size={20} />
                   </button>
                   <button aria-label="Add label" title="Add label — Editable text with a font-size dropdown." disabled={!ready} onClick={addLabel}><Type size={20} /></button>

@@ -1,6 +1,6 @@
 "use client";
 import { useId, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import type { Item } from "@/lib/model";
 import {
   machineTier,
@@ -16,13 +16,15 @@ export function PlannerFilterDropdown({
   selected,
   onChange,
   loading = false,
+  singleSelect = false,
 }: {
   label: string;
   emptyLabel: string;
-  items: { id: string; name: string; machine?: Item }[];
+  items: { id: string; name: string; machine?: Item; disabled?: boolean }[];
   selected: string[];
   onChange: (ids: string[]) => void;
   loading?: boolean;
+  singleSelect?: boolean;
 }) {
   const menu = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -50,18 +52,21 @@ export function PlannerFilterDropdown({
             return;
           }
           const bounds = event.currentTarget.getBoundingClientRect();
-          popup.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - 528))}px`;
+          const width = Math.min(bounds.width, window.innerWidth - 16);
+          popup.style.width = `${width}px`;
+          popup.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - width - 8))}px`;
           popup.style.top = `${Math.max(8, Math.min(bounds.bottom + 4, window.innerHeight - 360))}px`;
           setQuery("");
           popup.showPopover();
-          input.current?.focus();
+          if (singleSelect) popup.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+          else input.current?.focus();
         }}
       >
         <span id={`${id}-value`}>
           {loading
             ? "Loading…"
             : selected.length
-              ? `${selected.length} selected${chosen.length === 1 ? `: ${chosen[0].name.replace(/§./g, "")}` : ""}`
+              ? singleSelect ? chosen[0]?.name.replace(/§./g, "") ?? emptyLabel : `${selected.length} selected${chosen.length === 1 ? `: ${chosen[0].name.replace(/§./g, "")}` : ""}`
               : emptyLabel}
         </span>
         <ChevronDown size={16} />
@@ -81,7 +86,7 @@ export function PlannerFilterDropdown({
             event.preventDefault();
             const buttons = [
               ...menu.current!.querySelectorAll<HTMLButtonElement>(
-                '[role="menuitemcheckbox"]',
+                '[role="menuitemcheckbox"]:not(:disabled), [role="menuitemradio"]:not(:disabled)',
               ),
             ];
             const current = buttons.indexOf(
@@ -96,7 +101,7 @@ export function PlannerFilterDropdown({
           }
         }}
       >
-        <div className="planner-filter-search">
+        {!singleSelect && <div className="planner-filter-search">
           <input
             ref={input}
             aria-label={`Search ${label.toLowerCase()}`}
@@ -106,28 +111,37 @@ export function PlannerFilterDropdown({
           />
           <button
             type="button"
+            className="planner-filter-clear"
+            aria-label={`Clear selected ${label.toLowerCase()}`}
+            title="Clear selection"
             disabled={!selected.length}
             onClick={() => onChange([])}
           >
-            Clear
+            <X size={14} />
           </button>
-        </div>
-        {matches.map(({ id, name, machine }) => {
+        </div>}
+        {matches.map(({ id, name, machine, disabled }) => {
           const tier = machine && machineTier(machine),
             voltage = machine && machineVoltage(machine);
           return (
             <button
               type="button"
-              role="menuitemcheckbox"
+              role={singleSelect ? "menuitemradio" : "menuitemcheckbox"}
+              disabled={disabled}
               aria-checked={selected.includes(id)}
               key={id}
-              onClick={() =>
+              onClick={() => {
+                if (singleSelect) {
+                  onChange([id]);
+                  menu.current?.hidePopover();
+                  return;
+                }
                 onChange(
                   selected.includes(id)
                     ? selected.filter((value) => value !== id)
                     : [...selected, id],
-                )
-              }
+                );
+              }}
             >
               {machine && (
                 <span className="machine-option-icon">

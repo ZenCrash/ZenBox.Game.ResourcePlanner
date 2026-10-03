@@ -7,6 +7,200 @@ import {
 } from "../lib/auto-planner";
 import type { Item, Ingredient, Recipe } from "../lib/model";
 import { parsePlannerFilters } from "../lib/planner-filters";
+import { summarizePlanner, plannerItemPortState, setPlannerItemDisabled } from "../lib/planner-summary";
+import type { PlannedGraph } from "../components/auto-recipe-planner";
+import { plannerBalance } from "../lib/planner-balance";
+import { rate } from "../lib/model";
+
+test("wizard scales all recipes up to whole balanced machine counts", async () => {
+  const producer = recipe("producer", ["raw"], "intermediate");
+  producer.durationTicks = 60;
+  producer.ingredients.at(-1)!.amount = 2;
+  const consumer = recipe("consumer", ["intermediate"], "target");
+  const result = await findAutoPlans(options, lookup([producer, consumer]));
+  const plan = result.plans[0];
+  const balance = plannerBalance(plan);
+  assert.deepEqual(balance.machines, [3, 2]);
+  assert.equal(balance.targetPerSecond, 2);
+  assert.equal(rate(producer.ingredients.at(-1)!, producer, balance.machines[0]), rate(consumer.ingredients[0], consumer, balance.machines[1]));
+});
+
+test("EU priority compares cost per target output rather than cost per recipe batch", async () => {
+  const small = recipe("small", ["raw"], "target", 2);
+  const bulk = recipe("bulk", ["raw"], "target", 6);
+  bulk.ingredients.at(-1)!.amount = 4;
+  const result = await findAutoPlans({ ...options, priorities: ["eu", "output", "yield", "singleblock"] }, lookup([small, bulk]));
+  assert.equal(result.plans[0].steps[0].recipe.id, "bulk");
+  assert.equal(result.plans[0].totalEu, 30);
+});
+
+test("balanced counts and EU cost account for parallel batches", async () => {
+  const producer = recipe("parallel", ["raw"], "intermediate", 8);
+  producer.parallel = 4;
+  const consumer = recipe("consumer", ["intermediate"], "target", 1);
+  const result = await findAutoPlans(options, lookup([producer, consumer]));
+  const plan = result.plans[0];
+  assert.deepEqual(plannerBalance(plan).machines, [1, 4]);
+  assert.equal(plan.totalEu, 60);
+});
+
+test("reordered wizard priorities change ranking and skip yield without inputs", async () => {
+  const cheap = recipe("cheap", ["raw"], "target", 1);
+  const large = recipe("large", ["raw"], "target", 20);
+  large.ingredients.at(-1)!.amount = 4;
+  const outputFirst = await findAutoPlans({ ...options, inputId: undefined, priorities: ["yield", "output", "eu", "singleblock"] }, lookup([cheap, large]));
+  assert.equal(outputFirst.plans[0].steps[0].recipe.id, "large");
+  const costFirst = await findAutoPlans({ ...options, priorities: ["eu", "output", "yield", "singleblock"] }, lookup([cheap, large]));
+  assert.equal(costFirst.plans[0].steps[0].recipe.id, "cheap");
+  cheap.handler = "Industrial Mixer";
+  const singleFirst = await findAutoPlans({ ...options, priorities: ["singleblock", "eu", "output", "yield"] }, lookup([cheap, large]));
+  assert.equal(singleFirst.plans[0].steps[0].recipe.id, "large");
+});
+
+test("priority order persists and rejects duplicate criteria", () => {
+  const priorities = ["singleblock", "yield", "output", "eu"];
+  assert.deepEqual(parsePlannerFilters({ priorities }).priorities, priorities);
+  assert.equal(parsePlannerFilters({ priorities: ["eu", "eu", "yield", "output"] }).priorities, undefined);
+});
+
+test("generator fuel and large boiler recipes are excluded from direct and nested wizard routes", async () => {
+  for (const handler of ["Combustion Generator Fuels", "Combustion Generator Fue...", "Semifluid Generator Fuels", "Gas Turbine Fuel", "Large Boiler"]) {
+    const fuel = { ...recipe("fuel", ["raw"], "fuel-output"), handler };
+    assert.equal(plannerMachine(fuel, options), null);
+    const direct = await findAutoPlans({ ...options, targetId: "fuel-output", inputId: undefined }, lookup([fuel]));
+    assert.equal(direct.plans.length, 0);
+    const main = recipe("main", ["raw", "fuel-output"], "target");
+    const nested = await findAutoPlans(options, lookup([fuel, main]));
+    assert(nested.plans.length > 0);
+    assert(nested.plans.every(plan => plan.steps.every(step => step.recipe.id !== "fuel")));
+  }
+});
+
+test("preview summary covers every node and disables matching ports and connections", () => {
+  const graph: PlannedGraph = {
+    nodes: [recipe("a", ["raw"], "intermediate"), recipe("b", ["intermediate"], "target")].map((r, index) => ({
+      id: r.id, type: "recipe", position: { x: index * -2000, y: index * 5000 },
+      data: { recipe: r, machines: 1, variants: {} },
+    })),
+    edges: [{ id: "connection", source: "a", target: "b", sourceHandle: "output:0", targetHandle: "input:0" }],
+    ignoredItems: ["raw"],
+  };
+  const summary = summarizePlanner(graph);
+  assert.equal(summary.recipeCount, 2);
+  assert.equal(summary.euPerTick, 2);
+  assert.equal(summary.totalEu, 40);
+  assert.deepEqual(summary.inputs.map(row => row.item.id), ["raw"]);
+  assert.deepEqual(plannerItemPortState(graph, "intermediate"), { hasEnabled: true, hasDisabled: false });
+  const disabled = setPlannerItemDisabled(graph, "intermediate", true);
+  assert.equal(disabled.edges.length, 0);
+  assert.equal(graph.edges.length, 1);
+  assert.deepEqual(disabled.ignoredItems, ["raw"]);
+  assert.deepEqual(summarizePlanner(disabled).disabled.map(row => row.item.id), ["intermediate"]);
+  assert.deepEqual(plannerItemPortState(disabled, "intermediate"), { hasEnabled: false, hasDisabled: true });
+  const enabled = setPlannerItemDisabled(disabled, "intermediate", false);
+  assert.equal(summarizePlanner(enabled).disabled.length, 0);
+  assert.equal(enabled.edges.length, 0);
+});
+
+test("singleblocks break otherwise equal planner ties without overriding EU cost", async () => {
+  const multi = recipe("a-multi", ["raw"], "target", 1);
+  multi.handler = "Industrial Mixer";
+  const single = recipe("z-single", ["raw"], "target", 1);
+  for (const priority of ["eu", "yield", "output"] as const) {
+    const tied = await findAutoPlans({ ...options, priority }, lookup([multi, single]));
+    assert.equal(tied.plans[0].steps[0].recipe.id, "z-single");
+    const expensiveSingle = { ...single, euPerTick: 2 };
+    const cost = await findAutoPlans({ ...options, priority }, lookup([multi, expensiveSingle]));
+    assert.equal(cost.plans[0].steps[0].recipe.id, "a-multi");
+  }
+});
+
+test("equally efficient machine choices prefer a singleblock", () => {
+  const r = recipe("machine-choice", ["raw"], "target");
+  r.craftingMachines = [
+    { ...item("a-controller"), name: "Industrial Mixer Controller" },
+    { ...item("z-single"), name: "Simple Mixer", registryId: "minecraft:mixer" },
+  ];
+  assert.equal(plannerMachine(r, options)?.machineId, "z-single");
+});
+
+test("container filling cannot stand alone or begin main or nested routes", async () => {
+  for (const handler of ["Fluid Canner", "Bottler", "Other container filler"]) {
+    const fill = recipe("fill", ["gas", "empty-cell"], "gas-cell");
+    fill.handler = handler;
+    fill.ingredients[0].item.kind = "fluid";
+    fill.ingredients.at(-1)!.item.containedFluidIds = ["gas"];
+    const consume = recipe("consume", ["gas-cell"], "target");
+    for (const inputIds of [[], ["gas"]]) {
+      const standalone = await findAutoPlans({ ...options, inputId: undefined, inputIds, targetId: "gas-cell", exactTarget: true }, lookup([fill]));
+      assert.equal(standalone.plans.length, 0, handler);
+    }
+    const route = await findAutoPlans({ ...options, inputId: "gas" }, lookup([fill, consume]));
+    assert.equal(route.plans.length, 0, handler);
+    const produce = recipe("produce", ["raw"], "gas");
+    produce.ingredients.at(-1)!.item.kind = "fluid";
+    const valid = await findAutoPlans({ ...options, targetId: "gas-cell", exactTarget: true }, lookup([produce, fill]));
+    assert(valid.plans.some(plan => plan.steps.map(step => step.recipe.id).join() === "produce,fill"), handler);
+    const main = recipe("main", ["raw", "gas-cell"], "target");
+    const nested = await findAutoPlans({ ...options, inputId: undefined, inputIds: ["raw", "gas"] }, lookup([main, fill]));
+    assert(nested.plans.length > 0);
+    assert(nested.plans.every(plan => plan.steps.every(step => step.recipe.id !== "fill")), handler);
+  }
+});
+
+test("most output ranks batch output first and total EU cost second without an input", async () => {
+  const small = recipe("small", ["ore"], "target", 1);
+  const large = recipe("large", ["ore"], "target", 20);
+  large.ingredients.at(-1)!.amount = 4;
+  const cheaperLarge = recipe("cheaper-large", ["ore"], "target", 10);
+  cheaperLarge.ingredients.at(-1)!.amount = 4;
+  const result = await findAutoPlans(
+    { ...options, inputId: undefined, priority: "output" }, lookup([small, large, cheaperLarge]),
+  );
+  assert.deepEqual(result.plans.map(plan => plan.steps[0].recipe.id), ["cheaper-large", "large", "small"]);
+  assert.equal(result.plans[0].outputPerBatch, 4);
+  assert.equal(parsePlannerFilters({ priority: "output" }).priority, "output");
+});
+
+test("yield ties prioritize total EU cost", async () => {
+  const cheap = recipe("cheap", ["raw"], "target", 1);
+  const costly = recipe("costly", ["raw"], "target", 10);
+  const result = await findAutoPlans({ ...options, priority: "yield" }, lookup([cheap, costly]));
+  assert.equal(result.plans[0].steps[0].recipe.id, "cheap");
+});
+
+test("multiple selected inputs supply separate branches without external requirements", async () => {
+  const recipes = [
+    recipe("left", ["raw-a"], "intermediate-a"),
+    recipe("right", ["raw-b"], "intermediate-b"),
+    recipe("combine", ["intermediate-a", "intermediate-b"], "target"),
+  ];
+  const result = await findAutoPlans(
+    { ...options, inputId: undefined, inputIds: ["raw-a", "raw-b"] },
+    lookup(recipes),
+  );
+  const complete = result.plans.find(plan => plan.supplies.length === 0);
+  assert(complete);
+  assert.deepEqual(new Set(complete.steps.map(step => step.recipe.id)), new Set(["left", "right", "combine"]));
+  assert.equal(complete.inputAmount, 2);
+});
+
+test("selected auxiliary inputs count toward combined yield without being external supplies", async () => {
+  const result = await findAutoPlans(
+    { ...options, inputId: undefined, inputIds: ["raw-a", "raw-b"], priority: "yield" },
+    lookup([recipe("combine", ["raw-a", "raw-b"], "target")]),
+  );
+  assert(result.plans.length > 0);
+  for (const plan of result.plans) {
+    assert.equal(plan.inputAmount, 2);
+    assert.equal(plan.supplies.length, 0);
+  }
+});
+
+test("planner filters retain multiple inputs", () => {
+  const inputs = [item("raw-a"), item("raw-b")];
+  assert.deepEqual(parsePlannerFilters({ inputs }).inputs, inputs);
+});
 
 test("draining oil and filling diesel through an empty bucket is not a fuel conversion", async () => {
   const drain = recipe("drain", ["oil-bucket"], "bucket");

@@ -55,7 +55,7 @@ export const nodeSchema = z.object({
   multiblock: z.object({
     coilId: z.string().min(1).optional(),
     energyHatchId: z.string().min(1).optional(),
-    energyHatches: z.number().int().min(1).max(2).optional(),
+    energyHatches: z.number().int().min(1).max(64).optional(),
   }).optional(),
   scaleAmount: z.number().finite().positive().max(1e9).optional(),
   scaleMachineId: z.string().min(1).optional(),

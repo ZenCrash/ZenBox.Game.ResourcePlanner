@@ -2,8 +2,9 @@ import { z } from "zod";
 import { catalog } from "@/lib/db";
 import { isGtnhInstalled } from "@/lib/game-packs";
 import { hydrateRecipeVariants } from "@/lib/recipe-data";
-import { findAutoPlans } from "@/lib/auto-planner";
+import { findAutoPlans, plannerHandlerAllowed } from "@/lib/auto-planner";
 import { machineTiers } from "@/lib/machine-selection";
+import { plannerPriorityIds } from "@/lib/planner-priorities";
 import { plannerRecipes } from "@/lib/planner-catalog";
 import {
   fluidLookupAmounts,
@@ -14,7 +15,9 @@ const schema = z.object({
   targetId: z.string().min(1).max(500),
   exactTarget: z.boolean().default(false),
   inputId: z.string().min(1).max(500).optional(),
-  priority: z.enum(["yield", "eu"]),
+  inputIds: z.array(z.string().min(1).max(500)).max(100).optional(),
+  priority: z.enum(["yield", "eu", "output"]),
+  priorities: z.array(z.enum(plannerPriorityIds)).length(4).refine(values => new Set(values).size === 4).optional(),
   allowMultiblocks: z.boolean(),
   maxTier: z
     .number()
@@ -51,31 +54,31 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const options = parsed.data;
-  if (options.targetId === options.inputId)
+  const selectedInputIds = [...new Set(options.inputIds ?? (options.inputId ? [options.inputId] : []))];
+  if (selectedInputIds.includes(options.targetId))
     return Response.json(
       { error: "Choose different input and target items." },
       { status: 400 },
     );
-  if (options.priority === "yield" && !options.inputId)
+  if (!options.priorities && options.priority === "yield" && !selectedInputIds.length)
     return Response.json(
       { error: "Choose an input item to compare output yield." },
       { status: 400 },
     );
   const started = Date.now();
   let capped = false;
-  const [targetAmounts, inputAmounts] = await Promise.all([
+  const [targetAmounts, inputForms] = await Promise.all([
     options.exactTarget ? Promise.resolve({ [options.targetId]: 1 }) : fluidLookupAmounts(options.targetId),
-    options.inputId
-      ? fluidLookupAmounts(options.inputId)
-      : Promise.resolve({} as Record<string, number>),
+    Promise.all(selectedInputIds.map(id => fluidLookupAmounts(id))),
   ]);
-  const inputIds = Object.keys(inputAmounts);
+  const inputFactors: Record<string, number> = {};
+  for (const forms of inputForms) for (const [id, amount] of Object.entries(forms)) {
+    inputFactors[id] = Math.min(inputFactors[id] ?? Infinity, 1 / amount);
+  }
+  const inputIds = Object.keys(inputFactors);
   const packagingItemIds = await emptyFluidContainers([
     ...new Set([...Object.keys(targetAmounts), ...inputIds]),
   ]);
-  const inputFactors = Object.fromEntries(
-    Object.entries(inputAmounts).map(([id, amount]) => [id, 1 / amount]),
-  );
   const sourceRecipes: { recipeId: string }[] = [];
   for (let start = 0; start < inputIds.length; start += 300) {
     const batch = inputIds.slice(start, start + 300);
@@ -187,6 +190,7 @@ export async function GET() {
     machines,
     recipeTypes: handlers
       .map((row) => row.handler)
+      .filter(plannerHandlerAllowed)
       .sort((a, b) => a.localeCompare(b)),
   });
 }

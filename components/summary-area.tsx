@@ -15,15 +15,11 @@ import { SummaryRateCalculator } from "./summary-rate-calculator";
 
 const number = (value: number) =>
   value.toLocaleString(undefined, { maximumFractionDigits: 3 });
-export function SummaryArea({
-  id,
-  selected,
-  data,
-}: NodeProps<
-  Node<{
+export type SummaryAreaData = {
     isContainer?: boolean;
     summary?: AreaSummary;
     theme?: GroupTheme;
+    defaultHeaderTheme?: boolean;
     updateTheme?: (theme: GroupTheme) => void;
     ignoredItems?: string[];
     setItemIgnored?: (itemId: string, ignored: boolean) => void;
@@ -36,8 +32,11 @@ export function SummaryArea({
     selectArea?: () => void;
     calculators?: SummaryCalculation[];
     updateCalculators?: (values: SummaryCalculation[]) => void;
-  }>
->) {
+};
+export function SummaryArea({ id, selected, data }: NodeProps<Node<SummaryAreaData>>) {
+  return <SummaryAreaView id={id} selected={selected} data={data} />;
+}
+export function SummaryAreaView({ id = "planner-summary", selected = false, data, overlay = false }: { id?: string; selected?: boolean; data: SummaryAreaData; overlay?: boolean }) {
   const { settings } = useDisplaySettings();
   const theme = data.theme === "default" ? interfaceTheme(settings) : groupTheme(data.theme);
   const defaultSelected = data.theme === "default" || ((data.theme ?? "blue") === "blue" && settings.theme === "blue");
@@ -73,8 +72,9 @@ export function SummaryArea({
     return () => { window.removeEventListener("pointerdown", close, true); window.removeEventListener("wheel", close, true); window.removeEventListener("keydown", key); };
   }, [menu]);
   return (
-    <div className={`summary-area${selected ? " selected" : ""}`} style={groupThemeStyle(theme)} onContextMenu={event => {
+    <div className={`summary-area${selected ? " selected" : ""}`} style={{ ...groupThemeStyle(theme), ...(data.defaultHeaderTheme ? { '--area-header': interfaceTheme(settings).header + 'ee' } : {}) }} onContextMenu={event => {
       event.preventDefault(); event.stopPropagation();
+      if (overlay) return;
       setThemePicker(false);
       setMenu({ x: Math.max(8, Math.min(event.clientX, window.innerWidth - 250)), y: Math.max(8, Math.min(event.clientY, window.innerHeight - 290)) });
     }}>
@@ -95,7 +95,7 @@ export function SummaryArea({
           </div>}
         </>}
       </div>, document.body)}
-      <NodeResizer
+      {!overlay && <><NodeResizer
         isVisible
         onResizeStart={() => data.selectArea?.()}
         minWidth={380}
@@ -129,6 +129,7 @@ export function SummaryArea({
           </button>
         </div>
       </div>
+      </>}
       {summary && summary.recipeCount > 0 && (
         <div className="summary-area-content nopan">
           <div className="summary-layout">
@@ -204,7 +205,7 @@ export function SummaryArea({
                     </section>
                   ))}
                 </div>
-            <div className="summary-calculators nodrag nopan">
+            {!overlay && <div className="summary-calculators nodrag nopan">
               <h3 className="summary-calculators-heading">Ratio calculators</h3>
               {calculators.map((calculation) => (
                 <div className="summary-saved-calculation" key={calculation.id}>
@@ -259,7 +260,7 @@ export function SummaryArea({
               <AddFuelCalculators summary={summary} disabled={(data.calculators?.length ?? 0) >= 100}
                 onAdd={value => data.updateCalculators?.([...(data.calculators ?? []), value])} />
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       )}

@@ -1,0 +1,995 @@
+{
+  "gregtech:gt.blockmachines:141": {
+    "name": "Fluid Drilling Rig II",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "HV",
+    "notes": "Energy Hatch: 1x HV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:142": {
+    "name": "Fluid Drilling Rig III",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "EV",
+    "notes": "Energy Hatch: 1x EV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:143": {
+    "name": "Concrete Backfiller",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "MV",
+    "notes": "Energy Hatch: 1x MV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:144": {
+    "name": "Advanced Concrete Backfiller",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "EV",
+    "notes": "Energy Hatch: 1x EV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:148": {
+    "name": "Infinite Fluid Drilling Rig",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "UHV",
+    "notes": "Energy Hatch: 1x UHV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:149": {
+    "name": "Fluid Drilling Rig IV",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "IV",
+    "notes": "Energy Hatch: 1x IV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:356": {
+    "name": "PCB Factory",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-2 or 1 TT energy hatch"
+  },
+  "gregtech:gt.blockmachines:358": {
+    "name": "Magnetic Flux Exhibitor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:360": {
+    "name": "TurboCan Pro",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Solid Steel Casing"
+  },
+  "gregtech:gt.blockmachines:366": {
+    "name": "Fluid Shaper",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:367": {
+    "name": "Solar Factory",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Machine Casing"
+  },
+  "gregtech:gt.blockmachines:686": {
+    "name": "Industrial Precision Lathe",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Solid Steel Casing"
+  },
+  "gregtech:gt.blockmachines:687": {
+    "name": "Industrial Autoclave",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Pressure Containment Casing"
+  },
+  "gregtech:gt.blockmachines:749": {
+    "name": "Nuclear Salt Processing Plant",
+    "min": 2,
+    "max": 2,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: Bottom Side, 2 Required"
+  },
+  "gregtech:gt.blockmachines:790": {
+    "name": "Industrial Centrifuge",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:791": {
+    "name": "Industrial Coke Oven",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Structural Coke Oven Casing"
+  },
+  "gregtech:gt.blockmachines:792": {
+    "name": "Industrial Material Press",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:796": {
+    "name": "Industrial Electrolyzer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:797": {
+    "name": "Industrial Maceration Stack",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:798": {
+    "name": "Industrial Wire Factory",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:799": {
+    "name": "Matter Fabrication CPU",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:810": {
+    "name": "Alloy Blast Smelter",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:811": {
+    "name": "Industrial Mixing Machine",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:812": {
+    "name": "Power Station Control Node",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:828": {
+    "name": "COMET - Compact Cyclotron",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:829": {
+    "name": "Zhuhai - Fishing Port",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:835": {
+    "name": "Reactor Fuel Processing Plant",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: Base platform"
+  },
+  "gregtech:gt.blockmachines:836": {
+    "name": "Tree Growth Simulator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:840": {
+    "name": "Large Sifter Control Block",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:849": {
+    "name": "Large Thermal Refinery",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:850": {
+    "name": "Ore Washing Plant",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:859": {
+    "name": "Industrial Extrusion Machine",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:862": {
+    "name": "High Current Industrial Arc Furnace",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:876": {
+    "name": "Large Scale Auto-Assembler v1.01",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:910": {
+    "name": "Cryogenic Freezer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:942": {
+    "name": "Amazon Warehousing Depot",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:963": {
+    "name": "Volcanus",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:964": {
+    "name": "Density^2",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:965": {
+    "name": "FusionTech MK IV",
+    "min": 1,
+    "max": 16,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-16, Specified casings"
+  },
+  "gregtech:gt.blockmachines:975": {
+    "name": "FusionTech MK V",
+    "min": 1,
+    "max": 16,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-16, Specified casings"
+  },
+  "gregtech:gt.blockmachines:992": {
+    "name": "Industrial Cutting Factory",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:995": {
+    "name": "Utupu-Tanuri",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:998": {
+    "name": "ExxonMobil Chemical Plant",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Bottom Casing"
+  },
+  "gregtech:gt.blockmachines:1000": {
+    "name": "Electric Blast Furnace",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:1001": {
+    "name": "Implosion Compressor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:1002": {
+    "name": "Vacuum Freezer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:1003": {
+    "name": "Multi Smelter",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom casing"
+  },
+  "gregtech:gt.blockmachines:1126": {
+    "name": "Distillation Tower",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing except top centre"
+  },
+  "gregtech:gt.blockmachines:1132": {
+    "name": "Integrated Ore Factory",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom Casing"
+  },
+  "gregtech:gt.blockmachines:1157": {
+    "name": "Fluid Drilling Rig",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "minTier": "MV",
+    "notes": "Energy Hatch: 1x MV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:1158": {
+    "name": "Ore Drilling Plant",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "MV",
+    "notes": "Energy Hatch: MV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:1159": {
+    "name": "Pyrolyse Oven",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:1160": {
+    "name": "Oil Cracking Unit",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:1169": {
+    "name": "Large Chemical Reactor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:1170": {
+    "name": "Assembly Line",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any layer 4 casing"
+  },
+  "gregtech:gt.blockmachines:1172": {
+    "name": "Cleanroom Controller",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: Any Plascrete Block. Exactly one"
+  },
+  "gregtech:gt.blockmachines:1177": {
+    "name": "Ore Drilling Plant II",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "HV",
+    "notes": "Energy Hatch: HV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:1178": {
+    "name": "Ore Drilling Plant III",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "EV",
+    "notes": "Energy Hatch: EV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:1179": {
+    "name": "Ore Drilling Plant IV",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "IV",
+    "notes": "Energy Hatch: IV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:1193": {
+    "name": "Fusion Control Computer Mark I",
+    "min": 1,
+    "max": 16,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-16, Specified casings"
+  },
+  "gregtech:gt.blockmachines:1194": {
+    "name": "Fusion Control Computer Mark II",
+    "min": 1,
+    "max": 16,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-16, Specified casings"
+  },
+  "gregtech:gt.blockmachines:1195": {
+    "name": "Fusion Control Computer Mark III",
+    "min": 1,
+    "max": 16,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-16, Specified casings"
+  },
+  "gregtech:gt.blockmachines:2730": {
+    "name": "Large Fluid Extractor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Robust Tungstensteel Machine Casing"
+  },
+  "gregtech:gt.blockmachines:2731": {
+    "name": "Matter Manipulator Quantum Uplink",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Advanced Iridium Plated Machine Casing (dots: 1) · Multi-Amp Energy Hatch: Any Advanced Iridium Plated Machine Casing (dots: 1)"
+  },
+  "gregtech:gt.blockmachines:3004": {
+    "name": "Hyper-Intensity Laser Engraver",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:3005": {
+    "name": "Large Electric Compressor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Electric Compressor Casing"
+  },
+  "gregtech:gt.blockmachines:3006": {
+    "name": "Hot Isostatic Pressurization Unit",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Electric Compressor Casing"
+  },
+  "gregtech:gt.blockmachines:3007": {
+    "name": "Neutronium Compressor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Neutronium Casing"
+  },
+  "gregtech:gt.blockmachines:3008": {
+    "name": "Pseudostable Black Hole Containment Field",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Radiation Absorbent Casing"
+  },
+  "gregtech:gt.blockmachines:3010": {
+    "name": "Dissection Apparatus",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Stainless Steel Casing"
+  },
+  "gregtech:gt.blockmachines:3011": {
+    "name": "Big Barrel Brewery",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Wooden Casing"
+  },
+  "gregtech:gt.blockmachines:5001": {
+    "name": "Draconic Evolution Fusion Crafter",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom casing"
+  },
+  "gregtech:gt.blockmachines:9402": {
+    "name": "Water Purification Plant",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1"
+  },
+  "gregtech:gt.blockmachines:10505": {
+    "name": "Linear Accelerator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block with dot 1"
+  },
+  "gregtech:gt.blockmachines:10506": {
+    "name": "Source Chamber",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block with dot 3"
+  },
+  "gregtech:gt.blockmachines:10507": {
+    "name": "Synchrotron",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block with dot 6"
+  },
+  "gregtech:gt.blockmachines:10508": {
+    "name": "Target Chamber",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:12020": {
+    "name": "Electric Air Filter T1",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12021": {
+    "name": "Electric Air Filter T2",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12022": {
+    "name": "Electric Air Filter T3",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12697": {
+    "name": "Manual Transformer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing · Energy Hatch: Touching Transformer-Winding Blocks"
+  },
+  "gregtech:gt.blockmachines:12712": {
+    "name": "Bacterial Vat",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:12729": {
+    "name": "Deep Earth Heating Pump",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "HV",
+    "notes": "Energy Hatch: HV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:12730": {
+    "name": "Mega Electric Blast Furnace",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12731": {
+    "name": "Mega Vacuum Freezer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Frost Proof Machine Casing"
+  },
+  "gregtech:gt.blockmachines:12733": {
+    "name": "Thorium High Temperature Reactor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12734": {
+    "name": "Electric Implosion Compressor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Bottom middle and/or top middle"
+  },
+  "gregtech:gt.blockmachines:12735": {
+    "name": "Circuit Assembly Line",
+    "min": 1,
+    "max": 1,
+    "verifiedAmountLimit": true,
+    "notes": "1x Energy Hatch: Any layer 3 casing"
+  },
+  "gregtech:gt.blockmachines:12738": {
+    "name": "Mega Distillation Tower",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:12739": {
+    "name": "Void Miner III",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "UV",
+    "notes": "Energy Hatch: UV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:12740": {
+    "name": "Void Miner II",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "ZPM",
+    "notes": "Energy Hatch: ZPM+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:12741": {
+    "name": "Void Miner I",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "minTier": "LuV",
+    "notes": "Energy Hatch: LuV+, Any base casing"
+  },
+  "gregtech:gt.blockmachines:12791": {
+    "name": "High Temperature Gas-cooled Reactor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom layer casing"
+  },
+  "gregtech:gt.blockmachines:12792": {
+    "name": "Extreme Industrial Greenhouse",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing (Except inner bottom ones)"
+  },
+  "gregtech:gt.blockmachines:13001": {
+    "name": "Research Completer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:13104": {
+    "name": "T.F.F.T",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any top or bottom casing"
+  },
+  "gregtech:gt.blockmachines:13106": {
+    "name": "Lapotronic Supercapacitor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:13366": {
+    "name": "Mega Chemical Reactor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block"
+  },
+  "gregtech:gt.blockmachines:13367": {
+    "name": "Mega Oil Cracker",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block"
+  },
+  "gregtech:gt.blockmachines:13532": {
+    "name": "Advanced Assembly Line",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any layer 4 casing"
+  },
+  "gregtech:gt.blockmachines:14002": {
+    "name": "Planetary Gas Siphon",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Planetary Siphon Casing"
+  },
+  "gregtech:gt.blockmachines:14003": {
+    "name": "Space Elevator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Space Elevator Base Casing with 1 dot"
+  },
+  "gregtech:gt.blockmachines:14101": {
+    "name": "Large Molecular Assembler",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:14201": {
+    "name": "Extreme Entity Crusher",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any bottom casing"
+  },
+  "gregtech:gt.blockmachines:14202": {
+    "name": "Industrial Apicultural Acclimatiser and Drone Domestication Station",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:15300": {
+    "name": "Active Transformer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any High Power Casing"
+  },
+  "gregtech:gt.blockmachines:15310": {
+    "name": "Weighted Network Switch With QoS",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Computer Casing (dots: 1, 2)"
+  },
+  "gregtech:gt.blockmachines:15311": {
+    "name": "Quantum Computer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Computer Casing on the first or last slice"
+  },
+  "gregtech:gt.blockmachines:15312": {
+    "name": "Microwave Grinder",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any outer casing on the bottom layer"
+  },
+  "gregtech:gt.blockmachines:15313": {
+    "name": "Data Bank",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any High Power Casing"
+  },
+  "gregtech:gt.blockmachines:15314": {
+    "name": "Tesla Tower",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any outer Tesla Base Casing"
+  },
+  "gregtech:gt.blockmachines:15315": {
+    "name": "Static Network Switch With QoS",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Computer Casing (dots: 1) · Multi-Amp Energy Hatch: Any Computer Casing (dots: 1)"
+  },
+  "gregtech:gt.blockmachines:15331": {
+    "name": "Research Station",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Computer Casing on the backside of the main body"
+  },
+  "gregtech:gt.blockmachines:15350": {
+    "name": "Energy Infuser",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any High Power Casing"
+  },
+  "gregtech:gt.blockmachines:15750": {
+    "name": "Entropic Processor",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Alchemically Resistant/Inert/Immune Casing (dots: 1)"
+  },
+  "gregtech:gt.blockmachines:15751": {
+    "name": "Decay Warehouse",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Radiation Proof Machine Casing (dots: 1)"
+  },
+  "gregtech:gt.blockmachines:16999": {
+    "name": "Naquadah Fuel Refinery",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: The casings adjacent to field restriction glass."
+  },
+  "gregtech:gt.blockmachines:31021": {
+    "name": "Dangote Distillus",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:31023": {
+    "name": "Zyngen",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Inconel Reinforced Casing"
+  },
+  "gregtech:gt.blockmachines:31027": {
+    "name": "IsaMill Grinding Machine",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:31028": {
+    "name": "Flotation Cell Regulator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Bottom Casing"
+  },
+  "gregtech:gt.blockmachines:31035": {
+    "name": "Sparge Tower Controller",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:31050": {
+    "name": "Elemental Duplicator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any 1 dot hint"
+  },
+  "gregtech:gt.blockmachines:31065": {
+    "name": "Boldarnator",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Thermal Processing Casing"
+  },
+  "gregtech:gt.blockmachines:31069": {
+    "name": "Industrial 3D Copying Machine",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any casing"
+  },
+  "gregtech:gt.blockmachines:31072": {
+    "name": "Molecular Transformer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Robust Tungstensteel Machine Casing"
+  },
+  "gregtech:gt.blockmachines:31075": {
+    "name": "Industrial Sledgehammer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:31077": {
+    "name": "Thermic Heating Device",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Multi-use Casing"
+  },
+  "gregtech:gt.blockmachines:31150": {
+    "name": "Mega Alloy Blast Smelter",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Input Bus, Output Bus, Input Hatch, Output Hatch, Energy Hatch: Bottom Casing"
+  },
+  "gregtech:gt.blockmachines:31151": {
+    "name": "Quantum Force Transformer",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Bottom Layer"
+  },
+  "gregtech:gt.blockmachines:32018": {
+    "name": "Precise Auto-Assembler MT-3662",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Any Casing"
+  },
+  "gregtech:gt.blockmachines:32019": {
+    "name": "Compact Fusion Computer MK-I Prototype",
+    "min": 1,
+    "max": 32,
+    "verifiedAmountLimit": true,
+    "minTier": "LuV",
+    "notes": "Energy Hatch: 1-32, Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:32020": {
+    "name": "Compact Fusion Computer MK-II",
+    "min": 1,
+    "max": 32,
+    "verifiedAmountLimit": true,
+    "minTier": "ZPM",
+    "notes": "Energy Hatch: 1-32, Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:32021": {
+    "name": "Compact Fusion Computer MK-III",
+    "min": 1,
+    "max": 32,
+    "verifiedAmountLimit": true,
+    "minTier": "UV",
+    "notes": "Energy Hatch: 1-32, Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:32022": {
+    "name": "Compact Fusion Computer MK-IV Prototype",
+    "min": 1,
+    "max": 32,
+    "verifiedAmountLimit": true,
+    "minTier": "UHV",
+    "notes": "Energy Hatch: 1-32, Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:32023": {
+    "name": "Compact Fusion Computer MK-V",
+    "min": 1,
+    "max": 32,
+    "verifiedAmountLimit": true,
+    "minTier": "UEV",
+    "notes": "Energy Hatch: 1-32, Hint block with dot 2"
+  },
+  "gregtech:gt.blockmachines:32024": {
+    "name": "Large Essentia Smeltery",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Hint block with dot 1"
+  },
+  "gregtech:gt.blockmachines:32026": {
+    "name": "Component Assembly Line",
+    "min": 1,
+    "max": 2,
+    "verifiedAmountLimit": false,
+    "notes": "Energy Hatch: Second-top layer"
+  },
+  "gregtech:gt.blockmachines:32027": {
+    "name": "Semi-Stable Antimatter Stabilization Sequencer",
+    "min": 1,
+    "max": 9,
+    "verifiedAmountLimit": true,
+    "notes": "Energy Hatch: 1-9, Hint block with dot 2"
+  }
+}

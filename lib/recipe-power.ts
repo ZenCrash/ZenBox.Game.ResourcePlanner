@@ -60,7 +60,7 @@ export function recipePowerInfo(
   const recordedVoltage = details.find((line) => /^Voltage:/i.test(line));
   const amps =
     Number(
-      amperage?.match(/^Amperage:\s*([\d,]+)\s*A/i)?.[1].replaceAll(",", ""),
+      amperage?.match(/^Amperage:\s*([\d,]+(?:\.\d+)?)\s*A/i)?.[1].replaceAll(",", ""),
     ) || 1;
   const voltage = Math.trunc(recipe.euPerTick / amps);
   const tier = tiers.find((_, index) => voltage <= 8 * 4 ** index);
@@ -70,7 +70,8 @@ export function recipePowerInfo(
         ? (recordedVoltage ??
           `Voltage: ${voltage.toLocaleString("en-US")} EU/t${tier ? ` (${tier})` : ""}`)
         : undefined,
-    amperage: recipe.euPerTick > 0 ? amperage : undefined,
+    amperage: recipe.euPerTick > 0 && amperage ? `Amperage: ${Math.ceil(amps).toLocaleString('en-US')} A` : undefined,
+    amperageValue: amps,
     details: details.filter(
       (line) => !/^(Voltage|Usage|Amperage):/i.test(line),
     ),

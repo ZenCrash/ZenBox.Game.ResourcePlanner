@@ -372,14 +372,15 @@ h3 {
 .dialog h2 {
   margin: 12px 0 24px;
 }
-.dialog label {
+/* Diagram controls keep their shared canvas styling inside wizard dialogs. */
+.dialog label:where(:not(.react-flow *)) {
   display: block;
   color: #c7c7c7;
   font-size: 12px;
   margin-bottom: 18px;
 }
-.dialog input,
-.dialog select {
+.dialog input:where(:not(.react-flow *)),
+.dialog select:where(:not(.react-flow *)) {
   margin-top: 8px;
 }
 .dialog p {
@@ -1613,26 +1614,135 @@ h3 {
 .auto-planner-dialog {
   width: min(1500px, 95vw);
   max-width: 95vw;
-  max-height: 94vh;
-  overflow: auto;
+  height: min(940px, calc(100dvh - 60px));
+  max-height: calc(100dvh - 60px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+.auto-planner-dialog > .recipe-browser-heading { flex-shrink: 0; }
 /* Keep flow geometry in unscaled CSS pixels. Scale the planner controls,
    rather than the ancestor of React Flow's node/handle measurements. */
 .workspace .dialog.auto-planner-dialog {
   zoom: 1;
 }
-.workspace .auto-planner-dialog > :not(.planner-preview) {
+.workspace .auto-planner-dialog > :not(.planner-preview):not(.planner-layout),
+.workspace .planner-layout > .planner-options,
+.workspace .planner-main > :not(.planner-preview) {
   zoom: var(--gui-scale, 1);
 }
+.planner-layout {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 32%);
+  gap: 14px;
+  align-items: stretch;
+}
+.planner-main { grid-column: 1; grid-row: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.planner-main > :not(.planner-preview) { flex-shrink: 0; }
+.planner-calculator-results-fit {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+.planner-calculator-results {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: max-content;
+  transform-origin: top left;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  white-space: nowrap;
+}
+.planner-calculator-results .summary-rate-text {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.planner-calculator-results .summary-rate-text + .summary-rate-text {
+  border-left: 1px solid #526b8b;
+  padding-left: 12px;
+}
+.planner-calculator-results .summary-rate-text > span,
+.planner-calculator-results .summary-rate-text-resource > span,
+.planner-calculator-results .summary-rate-resource-label > span {
+  flex: 0 0 auto;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.planner-calculator-results .summary-rate-text-resource { grid-template-columns: max-content max-content; }
+.planner-calculator-results .summary-rate-resource-label {
+  padding: 4px;
+  border: 1px solid #488bc3;
+  border-radius: 4px;
+  background: transparent;
+  color: #e8f4ff;
+}
+.planner-calculator-results .summary-rate-resource-label,
+.planner-calculator-results .summary-rate-resource-amount {
+  box-sizing: border-box;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+.planner-calculator-results .summary-rate-resource-amount {
+  padding: 0 6px 0 4px;
+  gap: 3px;
+  border: 1px solid #526b8b;
+  border-radius: 4px;
+  background: var(--panel-gradient);
+  color: #e6e6e6;
+}
+.planner-calculator-results .summary-rate-resource-unit { color: #e8f4ff; }
+.planner-calculator-results .summary-rate-resource-label,
+.planner-calculator-results .summary-rate-resource-amount {
+  border-color: #394b62;
+  opacity: .6;
+  cursor: default;
+}
+.planner-calculator-results .summary-rate-text > svg { color: #b2cbe1; }
 .planner-options {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin: 16px 0 10px;
+  grid-column: 2;
+  grid-row: 1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 12px 8px;
+  font-size: 13px;
+  color: #a8bbcf;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
 }
+.planner-options > p, .planner-options > details, .planner-options > small, .planner-options > .planner-step-list { grid-column: 1 / -1; }
+.planner-options.settings-section h3 { margin: 0; font-size: 13px; }
+.planner-options.settings-section h3:not(:first-child) { margin-top: 10px; }
+.planner-options label, .planner-options .planner-filter { font-size: 13px; gap: 3px; }
+.planner-options button:not(.planner-filter-menu button),
+.planner-options input:not(.planner-filter-menu input),
+.planner-options select { font: inherit; padding: 6px 8px; }
+.planner-options .planner-item-choice, .planner-options .planner-filter > button, .planner-options > button { min-height: 34px; }
+.planner-options .planner-item-choice img { width: 20px; height: 20px; flex-shrink: 0; }
+.planner-options .planner-item-choice { height: 34px; }
+.planner-options .planner-item-choice > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .planner-options label { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; }
 .planner-options > button { align-self: end; min-height: 42px; }
 .planner-options select { margin: 0; }
+.planner-options select,
+.planner-options .planner-filter > button,
+.planner-options .planner-item-choice {
+  min-height: 34px;
+  background: #0b121d;
+  color: #e6e6e6;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
 .planner-options input, .planner-options select { width: 100%; min-width: 0; }
 .planner-options .planner-checkbox { flex-direction: row; align-items: center; }
 .planner-filter { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -1644,33 +1754,102 @@ h3 {
   inset: auto;
   margin: 0;
   transform: none;
-  width: max-content;
-  min-width: min(320px, calc(100vw - 16px));
-  max-width: min(520px, calc(100vw - 16px));
+  min-width: 0;
+  max-width: calc(100vw - 16px);
   max-height: min(350px, calc(100vh - 16px));
   font: 13px/1.5 monospace;
+  background: var(--interface-body, var(--panel));
+  color: var(--foreground);
 }
-.planner-filter-menu .machine-option-description { white-space: normal; }
-.planner-filter-search { display: flex; gap: 6px; position: sticky; top: -2px; background: #555; padding: 4px 2px 6px; z-index: 1; }
-.planner-filter-search input { min-width: 0; flex: 1; background: #383838; color: white; border: 2px solid; border-color: #373737 #fff #fff #373737; border-radius: 0; font: inherit; }
+.machine-selector-menu.planner-filter-menu > button[aria-checked="true"] {
+  background: var(--interface-selected, #60a5fa33);
+}
+.machine-selector-menu.planner-filter-menu > button:hover,
+.machine-selector-menu.planner-filter-menu > button:focus-visible {
+  background: var(--interface-hover, #223046);
+}
+.planner-filter-menu .machine-option-description { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.planner-filter-search { display: flex; gap: 6px; position: sticky; top: -2px; background: var(--interface-body, var(--panel)); padding: 4px 2px 6px; z-index: 1; }
+.planner-filter-search input { min-width: 0; flex: 1; background: var(--background); color: var(--foreground); border: 2px solid; border-color: #373737 #fff #fff #373737; border-radius: 0; font: inherit; }
+.planner-filter-search input { padding-right: 28px; margin-top: 0; }
+.planner-filter-search .planner-filter-clear {
+  position: absolute;
+  right: 6px;
+  top: calc(50% - 1px);
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
 .planner-filter-check { margin-left: auto; flex-shrink: 0; }
 .planner-checkbox input { width: auto; }
+.planner-options label { color: #a8bbcf; gap: 3px; }
+.planner-options .settings-switch-row input[type="checkbox"] { flex: 0 0 34px; width: 34px; height: 20px; padding: 2px; margin: 0; }
+.planner-options .settings-switch-row input::before { width: 14px; height: 14px; }
+.planner-options .settings-switch-row input:checked::before { transform: translateX(14px); }
 .planner-item-choice, .planner-input-choice { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .planner-item-choice { width: 100%; min-height: 42px; text-align: left; overflow-wrap: anywhere; }
 .planner-item-choice img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
 .planner-item-choice svg { flex-shrink: 0; margin-left: auto; }
+.planner-input-list { display: grid; gap: 4px; min-width: 0; }
+.planner-selected-input { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.planner-selected-input img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
+.planner-options { grid-template-columns: minmax(100px, 42%) minmax(0, 1fr); }
+.planner-options > h3, .planner-options > button, .planner-options > [role="alert"] { grid-column: 1 / -1; }
+.planner-options > label, .planner-options > .planner-filter, .planner-options > .planner-input-list, .planner-options > .planner-priority-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  column-gap: 4px;
+}
+.planner-input-values { display: grid; gap: 4px; min-width: 0; }
+.planner-options input, .planner-options .planner-item-choice { text-align: left; }
+.planner-options .planner-item-choice { justify-content: flex-start; }
+.planner-options .planner-input-values > .planner-item-choice svg { margin-left: 0; }
+.planner-options > label > input { margin-top: 0; }
+.planner-options > .planner-checkbox > input { justify-self: start; }
+.planner-options > .planner-checkbox { min-height: 34px; }
+.planner-options > .planner-priority-row { align-items: center; }
+.planner-priority-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 0; }
+.planner-priority-list li { display: flex; align-items: center; gap: 4px; padding: 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--interface-body, var(--panel)); cursor: grab; }
+.planner-priority-list li > svg { flex-shrink: 0; color: var(--muted); }
+.planner-priority-list li > span { flex: 1; min-width: 0; }
+.planner-priority-list li > .planner-priority-number { flex: 0 0 1.5em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.planner-priority-list .inactive-priority > span { color: var(--muted); }
+.planner-priority-move { display: flex; flex-direction: column; }
+.planner-options .planner-priority-move button { min-height: 0; padding: 1px; border: 0; }
+.planner-priority-menu .planner-priority-list li:hover { background: var(--interface-hover, #223046); }
+.planner-priority-menu .planner-priority-list { font-size: 11px; }
 .planner-explanation { color: #a9bacb; font-size: 12px; }
 .planner-notice { color: #facc15; }
 .planner-results-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
-.planner-preview { height: 880px; min-height: 250px; border: 1px solid #488bc3; background: #171c19; }
-.planner-preview-embedded { height: 440px; }
+.planner-preview { flex: 1; height: 0; min-height: 0; border: 1px solid #488bc3; background: #171c19; }
 .planner-preview-card { width: 400px; }
+.planner-preview-actions { display: flex; justify-content: flex-end; padding-top: 8px; }
+.planner-summary-overlay { width: min(520px, calc(100% - 24px)); max-height: calc(100% - 24px); }
+.planner-summary-overlay .summary-area { width: max-content; height: auto; }
+.planner-summary-overlay .summary-area-content { max-height: none; overflow: visible; cursor: default; content-visibility: visible; }
+.planner-summary-overlay .summary-layout { flex-wrap: nowrap; width: max-content; gap: 10px; }
+.planner-summary-overlay .summary-overview .summary-breakdown { min-width: 0; width: auto; }
+.planner-summary-overlay .summary-flows { display: flex; flex-wrap: nowrap; gap: 12px; }
+.planner-summary-overlay .summary-flow-name { white-space: normal; overflow-wrap: anywhere; }
 .planner-line-label { position: absolute; display: flex; align-items: center; gap: 8px; max-width: 290px; padding: 8px; background: #100e18f5; border: 2px solid #488bc3; color: white; pointer-events: all; }
 .planner-step-list, .planner-supplies { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
 .planner-step-list > span, .planner-supplies > span { display: flex; align-items: center; gap: 6px; }
 .planner-item-picker { min-height: 400px; height: 65vh; }
 .planner-item-picker .inventory { height: 100%; }
-@media (max-width: 900px) { .planner-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.planner-picker-backdrop { z-index: 100001; }
+.planner-picker-backdrop .item-picker-dialog { max-height: 94vh; overflow: auto; }
+@media (max-width: 600px) {
+  .planner-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .planner-options { grid-column: 1; grid-row: 1; }
+  .planner-main { grid-row: 2; }
+}
 .summary-area {
   pointer-events: auto;
   width: 100%;
@@ -2425,18 +2604,21 @@ input.summary-area-name:hover {
 }
 .multiblock-controls {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px;
   padding: 8px 0 0;
   color: #555;
   font-size: 12px;
   background: inherit;
 }
-.multiblock-part-row { display: flex; align-items: center; gap: 8px; }
+.multiblock-part-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; gap: 8px; }
+.multiblock-controls > span { grid-column: 1 / -1; }
+.multiblock-bonuses { display: grid; grid-column: 1 / -1; gap: 0; line-height: 16.5px; }
 .multiblock-part-description { color: #555; }
 .multiblock-parts-menu { left: 0; transform: none; max-width: 520px; }
 .multiblock-error { color: #a02020; max-width: 380px; }
+.multiblock-model-note { max-width: 340px; white-space: normal; }
 .machine-selector-menu > button {
   display: flex;
   align-items: center;
@@ -4496,7 +4678,7 @@ input.summary-area-name:hover {
   height: 52px;
 }
 
-.planner-inline .auto-planner-dialog { width: 100%; height: 100%; max-width: none; max-height: none; overflow: auto; }
+.planner-inline .auto-planner-dialog { width: 100%; height: 100%; max-width: none; max-height: none; overflow: hidden; }
 .planner-inline { cursor: default; pointer-events: auto; }
 .planner-floating-window { position: absolute; pointer-events: auto; z-index: 1; }
 .planner-floating-window > .planner-inline { width: 100%; height: 100%; }

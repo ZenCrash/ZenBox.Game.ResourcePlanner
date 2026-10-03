@@ -1,13 +1,13 @@
 "use client";
-import { useContext, useEffect, useId, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ReactFlow, Controls, ViewportPortal, applyNodeChanges, useReactFlow } from "@xyflow/react";
+import { ReactFlow, Controls, ViewportPortal, applyNodeChanges, useReactFlow, useStore, getViewportForBounds } from "@xyflow/react";
 import { WandSparkles } from "lucide-react";
 import { MachineCard, EditorContext } from "./machine-card";
 import { GridEdge, type DiagramEdge } from "./grid-edge";
 import { GridBackground } from "./grid-background";
 import { ItemSlot } from "./recipe-view";
-import { AutoRecipePlanner, type PlannedGraph } from "./auto-recipe-planner";
+import { AutoRecipePlanner, type PlannedGraph, type PlannedNode } from "./auto-recipe-planner";
 import { applyVariants, itemColor, port, rate, supplyColor, connectionColors, hasRecipeTiming, type Item } from "@/lib/model";
 import { overclockRecipe } from "@/lib/recipe-overclock";
 import { connectionSummary } from "@/lib/connection-summary";
@@ -16,12 +16,35 @@ import { appendPlannerBranch } from "@/lib/planner-branch";
 import { useDisplaySettings } from "./display-settings";
 import { initialRoute } from "@/lib/initial-route";
 import { PlannerWindow } from "./planner-window";
+import { SummaryAreaView, type SummaryAreaData } from "./summary-area";
+import type { Node, NodeProps, NodeChange } from "@xyflow/react";
+import { plannerGroupNode } from "@/lib/planner-group";
+import { summarizePlanner, plannerItemPortState, setPlannerItemDisabled } from '@/lib/planner-summary';
+import { plannerPreviewBounds } from '@/lib/planner-preview-bounds';
+import { useFuelValues } from './use-fuel-values';
+import { plannerDefaultCalculators } from '@/lib/planner-calculators';
 
-const nodeTypes = { recipe: MachineCard };
+
+function PlannerGroup({ data }: NodeProps<Node<SummaryAreaData & { measureHeader: (height: number) => void }>>) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const header = ref.current?.querySelector('.summary-area-header');
+    if (!header) return;
+    const content = ref.current?.querySelector('.summary-area-content');
+    const measure = () => data.measureHeader((header as HTMLElement).offsetHeight + (content ? (content as HTMLElement).scrollHeight : 0));
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    if (content) observer.observe(content);
+    measure();
+    return () => observer.disconnect();
+  }, [data.measureHeader, data.summary, data.calculators]);
+  return <div ref={ref} style={{ width: '100%', height: '100%' }}><SummaryAreaView data={data} /></div>;
+}
+const nodeTypes = { recipe: MachineCard, summary: PlannerGroup };
 const edgeTypes = { grid: GridEdge };
 type IngredientTarget = { nodeId: string; slot: number; item: Item };
 
-export function PlannerPreview({ graph, onChange }: { graph: PlannedGraph; onChange: (graph: PlannedGraph) => void }) {
+export function PlannerPreview({ graph, onChange, machineLimits }: { graph: PlannedGraph; onChange: (graph: PlannedGraph) => void; machineLimits: { allowMultiblocks: boolean; maxTier: number } }) {
   const wheelBoundary = `planner-wheel-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const inherited = useContext(EditorContext);
   const { settings } = useDisplaySettings();
@@ -29,6 +52,52 @@ export function PlannerPreview({ graph, onChange }: { graph: PlannedGraph; onCha
   const [menu, setMenu] = useState<{ x: number; y: number; targets: IngredientTarget[] }>();
   const [branch, setBranch] = useState<IngredientTarget & { x: number; y: number }>();
   const [error, setError] = useState("");
+  const previewContainer = useRef<HTMLDivElement>(null);
+  const latest = useRef({ graph, onChange });
+  latest.current = { graph, onChange };
+  const targetFuel = useFuelValues(graph.group?.targetItem ? [graph.group.targetItem.id] : []);
+  useEffect(() => {
+    const { graph, onChange } = latest.current;
+    const target = graph.group?.targetItem;
+    if (!graph.group?.fuelDefaultsPending || !target || !targetFuel[target.id]) return;
+    onChange({ ...graph, group: { ...graph.group, fuelDefaultsPending: false, calculators: plannerDefaultCalculators(target, true) } });
+  }, [targetFuel, graph.group?.targetItem?.id, graph.group?.fuelDefaultsPending]);
+  const measureHeader = useCallback((height: number) => {
+    const { graph, onChange } = latest.current;
+    if (graph.group && graph.group.headerHeight !== height) onChange({ ...graph, group: { ...graph.group, headerHeight: height } });
+  }, []);
+  const viewportWidth = useStore(state => state.width);
+  const viewportHeight = useStore(state => state.height);
+  const initiallyFitted = useRef(false);
+  const bounds = plannerPreviewBounds(graph);
+  const readyToFit = !!bounds && (!graph.group || graph.nodes.length < 2 || graph.group.headerHeight !== undefined);
+  const fitKey = readyToFit ? JSON.stringify(bounds) : '';
+  useEffect(() => {
+    if (initiallyFitted.current || !flow.viewportInitialized || !fitKey || !viewportWidth || !viewportHeight) return;
+    // Depend on geometry, not render/update callbacks: dimension notifications
+    // must not continually cancel the initial fit, and React Flow must not race it.
+    const timer = window.setTimeout(() => {
+      const viewport = getViewportForBounds(JSON.parse(fitKey), viewportWidth, viewportHeight, .001, 1, .15);
+      void flow.setViewport(viewport, { duration: 0 }).then(fitted => {
+        if (fitted) initiallyFitted.current = true;
+      });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [fitKey, viewportWidth, viewportHeight, flow, flow.viewportInitialized]);
+  const group = plannerGroupNode(graph);
+  const displayNodes: Node[] = group ? [{ ...group, data: { ...group.data,
+    measureHeader,
+    defaultHeaderTheme: true,
+    summary: summarizePlanner(graph),
+    updateTheme: (theme: NonNullable<PlannedGraph['group']>['theme']) => { if (graph.group) onChange({ ...graph, group: { ...graph.group, theme } }); },
+    updateCalculators: (calculators: NonNullable<PlannedGraph['group']>['calculators']) => { if (graph.group) onChange({ ...graph, group: { ...graph.group, calculators, fuelDefaultsPending: false } }); },
+    selectRecipes: () => onChange({ ...graph, nodes: graph.nodes.map(node => ({ ...node, selected: true })) }),
+    setItemIgnored: (itemId: string, ignored: boolean) => onChange({ ...graph, ignoredItems: ignored ? [...new Set([...(graph.ignoredItems ?? []), itemId])] : (graph.ignoredItems ?? []).filter(id => id !== itemId) }),
+    itemPortState: (itemId: string) => plannerItemPortState(graph, itemId),
+    setItemDisabled: (itemId: string, disabled: boolean) => onChange(setPlannerItemDisabled(graph, itemId, disabled)),
+    updateTitle: (title: string) => { if (graph.group) onChange({ ...graph, group: { ...graph.group, title } }); },
+    removeArea: () => onChange({ ...graph, group: undefined }),
+  } }, ...graph.nodes] : graph.nodes;
   useEffect(() => {
     if (!graph.nodes.every(n => n.measured?.width && n.measured?.height)) return;
     let changed = false;
@@ -52,7 +121,7 @@ export function PlannerPreview({ graph, onChange }: { graph: PlannedGraph; onCha
   const updateNode = (id: string, patch: Record<string, unknown>) => onChange({ ...graph, nodes: graph.nodes.map(n => n.id === id ? { ...n, data: { ...n.data, ...patch } } : n) });
   const recipeFor = (id: string) => {
     const node = graph.nodes.find(n => n.id === id)!;
-    return overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId);
+    return overclockRecipe(applyVariants(node.data.recipe, node.data.variants), node.data.machineId, node.data.multiblock);
   };
   const edges: DiagramEdge[] = graph.edges.map(edge => {
     const source = graph.nodes.find(n => n.id === edge.source)!;
@@ -76,11 +145,12 @@ export function PlannerPreview({ graph, onChange }: { graph: PlannedGraph; onCha
   });
   return <EditorContext.Provider value={{ ...inherited, browse: () => {}, connected, selectedConnections: new Map(), color: itemColor,
     count: (id, machines) => updateNode(id, { machines }), selectMachine: (id, machineId) => updateNode(id, { machineId }),
+    configureMultiblock: (id, multiblock) => updateNode(id, { multiblock }),
     movePorts: (id, portRows) => updateNode(id, { portRows }), togglePort: () => {},
     disconnect: id => onChange({ ...graph, edges: graph.edges.filter(e => e.id !== id) }),
-    remove: id => onChange({ nodes: graph.nodes.filter(n => n.id !== id), edges: graph.edges.filter(e => e.source !== id && e.target !== id) }),
+    remove: id => onChange({ ...graph, nodes: graph.nodes.filter(n => n.id !== id), edges: graph.edges.filter(e => e.source !== id && e.target !== id) }),
   }}>
-    <div style={{ height: "100%" }} onPointerDown={() => setMenu(undefined)} onContextMenuCapture={event => {
+    <div ref={previewContainer} style={{ height: "100%" }} onPointerDown={() => setMenu(undefined)} onContextMenuCapture={event => {
       const element = event.target as HTMLElement;
       if (element.closest(".planner-inline")) return;
       const lineItem = element.closest("[data-planner-target]");
@@ -88,20 +158,20 @@ export function PlannerPreview({ graph, onChange }: { graph: PlannedGraph; onCha
       const itemId = element.closest("[data-item-id]")?.getAttribute("data-item-id");
       const node = graph.nodes.find(n => n.id === nodeId);
       if (!node) return;
-      const targets = applyVariants(node.data.recipe, node.data.variants).ingredients.filter(i => i.direction === "input" && i.amount > 0 && (lineItem ? i.slot === Number(lineItem.getAttribute("data-planner-slot")) : !itemId || i.itemId === itemId)).map(i => ({ nodeId: node.id, slot: i.slot, item: i.item }));
+      const targets = recipeFor(node.id).ingredients.filter(i => i.direction === "input" && i.amount > 0 && (lineItem ? i.slot === Number(lineItem.getAttribute("data-planner-slot")) : !itemId || i.itemId === itemId)).map(i => ({ nodeId: node.id, slot: i.slot, item: i.item }));
       if (!targets.length) return;
       event.preventDefault(); event.stopPropagation();
       setMenu({ x: event.clientX, y: event.clientY, targets });
     }}>
-      <ReactFlow nodes={graph.nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+      <ReactFlow nodes={displayNodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         noWheelClassName={wheelBoundary}
-        onNodesChange={changes => onChange({ ...graph, nodes: applyNodeChanges(changes, graph.nodes) })}
-        fitView fitViewOptions={{ padding: .15, maxZoom: 1 }} minZoom={.02} maxZoom={2}
+        onNodesChange={changes => onChange({ ...graph, nodes: applyNodeChanges<PlannedNode>(changes.filter(change => change.type !== "add" && change.type !== "replace" && change.id !== "planner-group") as NodeChange<PlannedNode>[], graph.nodes) })}
+        minZoom={.001} maxZoom={2}
         nodesConnectable={false} deleteKeyCode={null} colorMode="dark" panOnDrag={[1]}>
         <GridBackground /><Controls showInteractive={false} />
         {branch && <ViewportPortal><PlannerWindow key={`${branch.nodeId}/${branch.slot}`} x={branch.x} y={branch.y} wheelBoundary={wheelBoundary}>
           {error && <p role="alert">{error}</p>}
-          <AutoRecipePlanner key={`${branch.nodeId}/${branch.slot}`} embedded initialTarget={branch.item} onClose={() => setBranch(undefined)} onAdd={addition => {
+          <AutoRecipePlanner key={`${branch.nodeId}/${branch.slot}`} embedded initialMachineLimits={machineLimits} initialTarget={branch.item} onClose={() => setBranch(undefined)} onAdd={addition => {
             try { onChange(appendPlannerBranch(graph, addition, branch.nodeId, branch.slot, crypto.randomUUID())); setBranch(undefined); setError(""); requestAnimationFrame(() => flow.fitView({ padding: .15 })); }
             catch (e) { setError((e as Error).message); }
           }} />

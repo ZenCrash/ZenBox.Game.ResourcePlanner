@@ -22,3 +22,13 @@ test("combustion conversion does not change other handlers' values", () => {
     }).details, [expected]);
   }
 });
+
+test('amperage display rounds up without rounding the voltage calculation', () => {
+  for (const [amps, expected] of [['0.25', '1'], ['1', '1'], ['1.0001', '2'], ['3.75', '4'], ['1,000.2', '1,001']]) {
+    const value = Number(amps.replaceAll(',', ''));
+    const info = recipePowerInfo({ euPerTick: value * 128, details: JSON.stringify([`Amperage: ${amps} A`]) });
+    assert.equal(info.amperage, `Amperage: ${expected} A`);
+    assert.equal(info.amperageValue, value);
+    assert.equal(info.voltage, 'Voltage: 128 EU/t (MV)');
+  }
+});

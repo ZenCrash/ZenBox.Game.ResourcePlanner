@@ -1,0 +1,1207 @@
+{
+  "version": "2.8.4",
+  "basis": "Assumed quest progression tiers",
+  "controllers": [
+    {
+      "id": "gregtech:gt.blockmachines:9414",
+      "name": "Absolute Baryonic Perfection Purification Unit",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15300",
+      "name": "Active Transformer",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13532",
+      "name": "Advanced Assembly Line",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:144",
+      "name": "Advanced Concrete Backfiller",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:997",
+      "name": "Algae Farm",
+      "tier": "MV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:810",
+      "name": "Alloy Blast Smelter",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:942",
+      "name": "Amazon Warehousing Depot",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1170",
+      "name": "Assembly Line",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12712",
+      "name": "Bacterial Vat",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3011",
+      "name": "Big Barrel Brewery",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31065",
+      "name": "Boldarnator",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:140",
+      "name": "Bricked Blast Furnace",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1155",
+      "name": "Charcoal Pile Igniter",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12735",
+      "name": "Circuit Assembly Line",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9403",
+      "name": "Clarifier Purification Unit",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1172",
+      "name": "Cleanroom Controller",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:828",
+      "name": "COMET - Compact Cyclotron",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32019",
+      "name": "Compact Fusion Computer MK-I Prototype",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32020",
+      "name": "Compact Fusion Computer MK-II",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32021",
+      "name": "Compact Fusion Computer MK-III",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32022",
+      "name": "Compact Fusion Computer MK-IV Prototype",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32023",
+      "name": "Compact Fusion Computer MK-V",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32026",
+      "name": "Component Assembly Line",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:143",
+      "name": "Concrete Backfiller",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32025",
+      "name": "Coolant Tower",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:910",
+      "name": "Cryogenic Freezer",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31021",
+      "name": "Dangote Distillus",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15313",
+      "name": "Data Bank",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15751",
+      "name": "Decay Warehouse",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12729",
+      "name": "Deep Earth Heating Pump",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:964",
+      "name": "Density^2",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10500",
+      "name": "Digester",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1004",
+      "name": "Dimensionally Transcendent Plasma Forge",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3010",
+      "name": "Dissection Apparatus",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10501",
+      "name": "Dissolution Tank",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1126",
+      "name": "Distillation Tower",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:5001",
+      "name": "Draconic Evolution Fusion Crafter",
+      "tier": "UHV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9400",
+      "name": "Drone Centre",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14001",
+      "name": "Dyson Swarm Ground Unit",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12020",
+      "name": "Electric Air Filter T1",
+      "tier": "LV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12021",
+      "name": "Electric Air Filter T2",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12022",
+      "name": "Electric Air Filter T3",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1000",
+      "name": "Electric Blast Furnace",
+      "tier": "LV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12734",
+      "name": "Electric Implosion Compressor",
+      "tier": "UHV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31050",
+      "name": "Elemental Duplicator",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15350",
+      "name": "Energy Infuser",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15750",
+      "name": "Entropic Processor",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:2105",
+      "name": "Extreme Combustion Engine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14201",
+      "name": "Extreme Entity Crusher",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32017",
+      "name": "Extreme Heat Exchanger",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12792",
+      "name": "Extreme Industrial Greenhouse",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9408",
+      "name": "Extreme Temperature Fluctuation Purification Unit",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:998",
+      "name": "ExxonMobil Chemical Plant",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15410",
+      "name": "Eye of Harmony",
+      "tier": "UMV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9405",
+      "name": "Flocculation Purification Unit",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31028",
+      "name": "Flotation Cell Regulator",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1157",
+      "name": "Fluid Drilling Rig",
+      "tier": "MV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:141",
+      "name": "Fluid Drilling Rig II",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:142",
+      "name": "Fluid Drilling Rig III",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:149",
+      "name": "Fluid Drilling Rig IV",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:366",
+      "name": "Fluid Shaper",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15411",
+      "name": "Forge of the Gods",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1193",
+      "name": "Fusion Control Computer Mark I",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1194",
+      "name": "Fusion Control Computer Mark II",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1195",
+      "name": "Fusion Control Computer Mark III",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:965",
+      "name": "FusionTech MK IV",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:975",
+      "name": "FusionTech MK V",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15412",
+      "name": "Helioflare Power Forge",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15413",
+      "name": "Helioflux Melting Core",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15415",
+      "name": "Heliofusion Exoticizer",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15414",
+      "name": "Heliothermal Plasma Fabricator",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:862",
+      "name": "High Current Industrial Arc Furnace",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9409",
+      "name": "High Energy Laser Purification Unit",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12791",
+      "name": "High Temperature Gas-cooled Reactor",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3006",
+      "name": "Hot Isostatic Pressurization Unit",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3004",
+      "name": "Hyper-Intensity Laser Engraver",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1001",
+      "name": "Implosion Compressor",
+      "tier": "MV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31069",
+      "name": "Industrial 3D Copying Machine",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14202",
+      "name": "Industrial Apicultural Acclimatiser and Drone Domestication Station",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:687",
+      "name": "Industrial Autoclave",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:790",
+      "name": "Industrial Centrifuge",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:791",
+      "name": "Industrial Coke Oven",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:992",
+      "name": "Industrial Cutting Factory",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:796",
+      "name": "Industrial Electrolyzer",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:859",
+      "name": "Industrial Extrusion Machine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:797",
+      "name": "Industrial Maceration Stack",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:792",
+      "name": "Industrial Material Press",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:811",
+      "name": "Industrial Mixing Machine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:686",
+      "name": "Industrial Precision Lathe",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31075",
+      "name": "Industrial Sledgehammer",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:798",
+      "name": "Industrial Wire Factory",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:148",
+      "name": "Infinite Fluid Drilling Rig",
+      "tier": "UHV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1132",
+      "name": "Integrated Ore Factory",
+      "tier": "UHV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31027",
+      "name": "IsaMill Grinding Machine",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13106",
+      "name": "Lapotronic Supercapacitor",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1020",
+      "name": "Large Bronze Boiler",
+      "tier": "LV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1169",
+      "name": "Large Chemical Reactor",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1171",
+      "name": "Large Combustion Engine",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3005",
+      "name": "Large Electric Compressor",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32024",
+      "name": "Large Essentia Smeltery",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:2730",
+      "name": "Large Fluid Extractor",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1151",
+      "name": "Large Gas Turbine",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1154",
+      "name": "Large Heat Exchanger",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1152",
+      "name": "Large HP Steam Turbine",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14101",
+      "name": "Large Molecular Assembler",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12732",
+      "name": "Large Naquadah Reactor",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1153",
+      "name": "Large Plasma Turbine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:876",
+      "name": "Large Scale Auto-Assembler v1.01",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31026",
+      "name": "Large Semifluid Burner",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:840",
+      "name": "Large Sifter Control Block",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1131",
+      "name": "Large Steam Turbine",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1021",
+      "name": "Large Steel Boiler",
+      "tier": "MV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32016",
+      "name": "Large Supercritical Steam Turbine",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:849",
+      "name": "Large Thermal Refinery",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1022",
+      "name": "Large Titanium Boiler",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1023",
+      "name": "Large Tungstensteel Boiler",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10505",
+      "name": "Linear Accelerator",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:358",
+      "name": "Magnetic Flux Exhibitor",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12697",
+      "name": "Manual Transformer",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:799",
+      "name": "Matter Fabrication CPU",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:2731",
+      "name": "Matter Manipulator Quantum Uplink",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31150",
+      "name": "Mega Alloy Blast Smelter",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13366",
+      "name": "Mega Chemical Reactor",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12738",
+      "name": "Mega Distillation Tower",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12730",
+      "name": "Mega Electric Blast Furnace",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13367",
+      "name": "Mega Oil Cracker",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12731",
+      "name": "Mega Vacuum Freezer",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15312",
+      "name": "Microwave Grinder",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13115",
+      "name": "Miniature Wormhole Generator",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31072",
+      "name": "Molecular Transformer",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1003",
+      "name": "Multi Smelter",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:357",
+      "name": "Nano Forge",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:16999",
+      "name": "Naquadah Fuel Refinery",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32013",
+      "name": "Neutron Activator",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3007",
+      "name": "Neutronium Compressor",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:749",
+      "name": "Nuclear Salt Processing Plant",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1160",
+      "name": "Oil Cracking Unit",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1158",
+      "name": "Ore Drilling Plant",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1177",
+      "name": "Ore Drilling Plant II",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1178",
+      "name": "Ore Drilling Plant III",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1179",
+      "name": "Ore Drilling Plant IV",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:850",
+      "name": "Ore Washing Plant",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9404",
+      "name": "Ozonation Purification Unit",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:356",
+      "name": "PCB Factory",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9406",
+      "name": "pH Neutralization Purification Unit",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14002",
+      "name": "Planetary Gas Siphon",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:812",
+      "name": "Power Station Control Node",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32018",
+      "name": "Precise Auto-Assembler MT-3662",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:3008",
+      "name": "Pseudostable Black Hole Containment Field",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1159",
+      "name": "Pyrolyse Oven",
+      "tier": "MV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15311",
+      "name": "Quantum Computer",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31151",
+      "name": "Quantum Force Transformer",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:835",
+      "name": "Reactor Fuel Processing Plant",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13001",
+      "name": "Research Completer",
+      "tier": "LV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15331",
+      "name": "Research Station",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9412",
+      "name": "Residual Decontaminant Degasser Purification Unit",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:996",
+      "name": "Rocketdyne F-1A Engine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32027",
+      "name": "Semi-Stable Antimatter Stabilization Sequencer",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32028",
+      "name": "Shielded Lagrangian Annihilation Matrix",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:367",
+      "name": "Solar Factory",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:863",
+      "name": "Solar Tower",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13101",
+      "name": "Solid-Oxide Fuel Cell Mk I",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13102",
+      "name": "Solid-Oxide Fuel Cell Mk II",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10506",
+      "name": "Source Chamber",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14004",
+      "name": "Space Assembler Module MK-I",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14005",
+      "name": "Space Assembler Module MK-II",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14006",
+      "name": "Space Assembler Module MK-III",
+      "tier": "UMV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14003",
+      "name": "Space Elevator",
+      "tier": "UV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14007",
+      "name": "Space Mining Module MK-I",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14008",
+      "name": "Space Mining Module MK-II",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14009",
+      "name": "Space Mining Module MK-III",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14010",
+      "name": "Space Pumping Module MK-I",
+      "tier": "UEV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14011",
+      "name": "Space Pumping Module MK-II",
+      "tier": "UMV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:14014",
+      "name": "Space Pumping Module MK-III",
+      "tier": "UMV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31035",
+      "name": "Sparge Tower Controller",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15315",
+      "name": "Static Network Switch With QoS",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31084",
+      "name": "Steam Blender",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31086",
+      "name": "Steam Fuser",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31041",
+      "name": "Steam Grinder",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31083",
+      "name": "Steam Presser",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31082",
+      "name": "Steam Purifier",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31080",
+      "name": "Steam Separator",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31078",
+      "name": "Steam Squasher",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10507",
+      "name": "Synchrotron",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:13104",
+      "name": "T.F.F.T",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:10508",
+      "name": "Target Chamber",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15314",
+      "name": "Tesla Tower",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:875",
+      "name": "Thermal Boiler",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31077",
+      "name": "Thermic Heating Device",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12733",
+      "name": "Thorium High Temperature Reactor",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:751",
+      "name": "Thorium Reactor [LFTR]",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1006",
+      "name": "Transcendent Plasma Mixer",
+      "tier": "UIV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:836",
+      "name": "Tree Growth Simulator",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:360",
+      "name": "TurboCan Pro",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32001",
+      "name": "Universal Chemical Fuel Engine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:995",
+      "name": "Utupu-Tanuri",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:1002",
+      "name": "Vacuum Freezer",
+      "tier": "HV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12741",
+      "name": "Void Miner I",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12740",
+      "name": "Void Miner II",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12739",
+      "name": "Void Miner III",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:963",
+      "name": "Volcanus",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31085",
+      "name": "Water Pump",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:9402",
+      "name": "Water Purification Plant",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:15310",
+      "name": "Weighted Network Switch With QoS",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31079",
+      "name": "Whakawhiti Wera XL",
+      "tier": null
+    },
+    {
+      "id": "gregtech:gt.blockmachines:12698",
+      "name": "Windmill",
+      "tier": "Steam"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31073",
+      "name": "XL Turbo Gas Turbine",
+      "tier": "LuV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:866",
+      "name": "XL Turbo HP Steam Turbine",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31074",
+      "name": "XL Turbo Plasma Turbine",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31076",
+      "name": "XL Turbo SC Steam Turbine",
+      "tier": "ZPM"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:865",
+      "name": "XL Turbo Steam Turbine",
+      "tier": "EV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:32014",
+      "name": "YOTTank",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:829",
+      "name": "Zhuhai - Fishing Port",
+      "tier": "IV"
+    },
+    {
+      "id": "gregtech:gt.blockmachines:31023",
+      "name": "Zyngen",
+      "tier": "IV"
+    }
+  ],
+  "coils": [
+    {
+      "id": "gregtech:gt.blockcasings5",
+      "name": "Cupronickel Coil Block",
+      "heat": 1801,
+      "tier": "LV",
+      "quests": [
+        "0:876",
+        "0:77",
+        "0:766",
+        "0:781"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:1",
+      "name": "Kanthal Coil Block",
+      "heat": 2701,
+      "tier": "MV",
+      "quests": [
+        "0:78"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:2",
+      "name": "Nichrome Coil Block",
+      "heat": 3601,
+      "tier": "HV",
+      "quests": [
+        "0:79"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:3",
+      "name": "TPV-Alloy Coil Block",
+      "heat": 4501,
+      "tier": "EV",
+      "quests": [
+        "0:86"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:4",
+      "name": "HSS-G Coil Block",
+      "heat": 5401,
+      "tier": "IV",
+      "quests": [
+        "0:475"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:5",
+      "name": "Naquadah Coil Block",
+      "heat": 7201,
+      "tier": "LuV",
+      "quests": [
+        "0:476"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:6",
+      "name": "Naquadah Alloy Coil Block",
+      "heat": 8101,
+      "tier": "LuV",
+      "quests": [
+        "0:477"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:7",
+      "name": "Electrum Flux Coil Block",
+      "heat": 9901,
+      "tier": "UV",
+      "quests": [
+        "0:1817"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:8",
+      "name": "Awakened Draconium Coil Block",
+      "heat": 10801,
+      "tier": "UHV",
+      "quests": [
+        "0:1833"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:9",
+      "name": "HSS-S Coil Block",
+      "heat": 6301,
+      "tier": "IV",
+      "quests": [
+        "0:2892"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:10",
+      "name": "Trinium Coil Block",
+      "heat": 9001,
+      "tier": "ZPM",
+      "quests": [
+        "0:2893"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:11",
+      "name": "Infinity Coil Block",
+      "heat": 11701,
+      "tier": "UEV",
+      "quests": [
+        "0:3217"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:12",
+      "name": "Hypogen Coil Block",
+      "heat": 12601,
+      "tier": "UIV",
+      "quests": [
+        "0:3218"
+      ]
+    },
+    {
+      "id": "gregtech:gt.blockcasings5:13",
+      "name": "Eternal Coil Block",
+      "heat": 13501,
+      "tier": "UMV",
+      "quests": [
+        "0:3219"
+      ]
+    }
+  ]
+}

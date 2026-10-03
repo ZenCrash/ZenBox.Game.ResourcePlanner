@@ -189,7 +189,7 @@ export function SummaryRateCalculator({
           {flow.item.kind === "energy" ? <Zap size={14} aria-hidden="true" /> : flow.item.image && <img src={flow.item.image} alt="" className={flow.item.kind === "fluid" ? "summary-fluid-image" : undefined} />}
           <span>{name(flow)}</span>
         </span>
-        <span className="summary-rate-resource-amount">{amount}{" "}<span className="summary-rate-resource-unit">{unit}</span></span>
+        <span className="summary-rate-resource-amount" data-calculated={isNetFuel || flow.item.kind === 'energy' || undefined}>{amount}{" "}<span className="summary-rate-resource-unit">{unit}</span></span>
       </span>;
     };
     return <div className="summary-rate-text" data-fuel={isFuel || undefined} aria-label="Resource rate calculator">
